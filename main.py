@@ -419,7 +419,7 @@ def OnSelection(event):
 # function to display dialog about the software
 def OnAbout(event):
     name = 'Multi-Scale Regression Analysis'
-    version = 'v1.0'
+    version = 'v0.1'
     description = 'An Open-Source, Python-Based application to perform multi-scale \n' \
                   'regression analysis using results from Surfract and MountainsMap. \n' \
                   'Developed in collaboration with Christopher A. Brown, Ph.D., PE, \n' \
@@ -436,7 +436,7 @@ def OnAbout(event):
                                      style=wx.ALIGN_CENTER_HORIZONTAL)
 
     github = wx.adv.HyperlinkCtrl(aboutInfo, id=wx.ID_ANY, label='Open-Source Code',
-                                  url='https://github.com/nrutkowski1',
+                                  url='https://github.com/MatthewSpofford/Multiscale-Statistical-Analysis',
                                   pos=(180, 150), style=wx.adv.HL_DEFAULT_STYLE)
     donate = wx.adv.HyperlinkCtrl(aboutInfo, id=wx.ID_ANY, label='Support Development',
                                   url='https://paypal.me/nrutkowski1?locale.x=en_US',
