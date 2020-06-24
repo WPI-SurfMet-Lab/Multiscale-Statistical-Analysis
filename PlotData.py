@@ -1,6 +1,14 @@
 
+import main
+import os
+import wx
 import csv
 import numpy as np
+import pyautogui
+import subprocess
+import re.sub
+import winreg
+
 
 # Class PlotData:
 # the purpose of this class is to create an object which stores all of the data opened from files as well as user inputs
@@ -247,6 +255,52 @@ class PlotData:
         self.get_grid().Refresh()
 
         self.get_error_text().AppendText("Done." + '\n')
+
+    def open_sur(self, file_paths) -> None :
+        """Takes an input of an array of strings for the file path of each surface being analyzed. These surfaces are
+        input into MountainsMap using mouse and keyboard control. The user is then given a choice of selecting either
+        length-scale, area-scale, or complexity analysis. These results are then record in various text files which are
+        then also opened.
+        """
+        
+        # TODO: Create popup that takes in scale-sensitive/complexity option, form of scale analysis, as well as
+        #       the directory for storing the results files.
+        # width, height = wx.DisplaySize()
+        # frame = wx.PopupWindow(parent=None)
+        # frame.CenterOnScreen()
+        # frame.Layout()
+        # frame.Show()
+        
+        wd = os.getcwd() + "\\"
+        cmd_path = wd + "temp-cmds.txt"
+        tmplt_path = wd + "ssfa-template.mnt"
+        results_dir = wd # TODO: Change this to fit input from popup
+        result_file_paths = []
+
+        for surf_file_path in file_paths :
+            # Generate name for results file to be used
+            re.sub()
+            # Write external command file for MountainsMap
+            cmd_file = open(cmd_path, "w")
+            cmd_contents = [
+                "SHOW",
+                "LOAD_DOCUMENT \"" + tmplt_path + "\"",
+                "AUTOSAVE OFF",
+                "SUBSTITUTE_STUDIABLE \"" + surf_file_path + "\" 1 MULTILAYER_MODE=-1",
+                "EXPORT_RESULTS \"" + result_path + "\"",
+                "QUIT"
+            ]
+            cmd_file.writelines(cmd_contents)
+            cmd_file.close()
+
+            # Launch Mountains
+            # subprocess.call()
+
+            # Remove temporary script files
+            subprocess.call(["rm -f \"" + cmd_path + "\""])
+
+        # Open generated result text files
+        open_file2(result_file_paths)
 
     def get_relative_area(self): return self.relative_area
     def get_results_scale(self): return self.results_scale

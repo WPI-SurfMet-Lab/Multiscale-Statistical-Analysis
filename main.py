@@ -13,7 +13,7 @@ from Dialogs import R2byScaleDialog
 from Dialogs import SclbyAreaDialog
 from Dialogs import XRValuesDialog
 from Dialogs import HHPlotDialog
-from PlotData import PlotData
+import PlotData # Using PlotData class
 from StatsTestsUI import FtestDialog
 from StatsTestsUI import TtestDialog
 from StatsTestsUI import ANOVAtestDialog
@@ -23,6 +23,10 @@ global wb_counter
 wb_counter = 1
 global wb_list
 wb_list = []
+global frame
+frame = None
+global app
+app = None
 
 # function to exit the software
 def OnExit(event):
@@ -370,8 +374,11 @@ def OnOpen(event):
     frame.EnableCloseButton(False)
     #     # create the open file dialog, if a file exists the user is able to open it will probably change it so
     #     # only the MountainsMap data file format can be opened
-    openFileDialog = wx.FileDialog(frame, "Open",  # wildcard="CSV UTF-8 (Comma delimited) (*.csv)|*.csv" ,# \ "
-                                   # "TXT (*.txt)|*.txt",
+    openFileDialog = wx.FileDialog(frame, "Open",
+                                   wildcard=
+                                   "MountainsMap Surface Files (*.sur)|*.sur|"    
+                                   "Comma Seperated Values - UTF-8 (*.csv)|*.csv|"
+                                   "Text File (*.txt)|*.txt",
                                    style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST | wx.FD_MULTIPLE)
     openFileDialog.CenterOnScreen()
     # shows the dialog on screen
@@ -385,6 +392,8 @@ def OnOpen(event):
             data.open_file(filepath)
         if filepath[0][len(filepath[0]) - 3:len(filepath[0])] == 'txt':
             data.open_file2(filepath)
+        if filepath[0][len(filepath[0]) - 3:len(filepath[0])] == 'sur':
+            data.open_sur(filepath)
         frame.EnableCloseButton(True)
         return True
     elif result == wx.ID_CANCEL:
@@ -570,143 +579,143 @@ def OnSave(event):
     elif result == wx.ID_CANCEL:
         return False
 
+if __name__ == '__main__' :
+    app = wx.App(redirect=False)
 
-app = wx.App(redirect=False)
+    # sets the size of the window to be the size of the users computer screen can be set to integers instead
+    screen = wx.DisplaySize()
+    width = screen[0]
+    height = screen[1]
+    frame = wx.Frame(None, title='Multiscale Analysis')
 
-# sets the size of the window to be the size of the users computer screen can be set to integers instead
-screen = wx.DisplaySize()
-width = screen[0]
-height = screen[1]
-
-frame = wx.Frame(None, title='Multiscale Analysis')
-frame.SetSize(0.0, 0.0, width, height)
-frame.SetBackgroundColour('#ffffff')
-frame.EnableCloseButton(enable=True)
-# this is a bunch of GUI stuff
-# general curve fit object which has all of the regression curve functions
-cvf = CurveFit()
-# create the menu bar and populate it
-filemenu = wx.Menu()
-openitem = wx.MenuItem(parentMenu=filemenu, id=wx.ID_OPEN, text="Open")
-openfile = filemenu.Append(openitem)
-new_wb = filemenu.Append(wx.ID_ANY, 'New Workbook', 'New Workbook')
-frame.Bind(wx.EVT_MENU, OnNewWB, new_wb)
-save = wx.MenuItem(filemenu, wx.ID_SAVEAS, 'Save As')
-frame.Bind(wx.EVT_MENU, OnSave, save)
-filemenu.Append(save)
-# bind functions to menu objects
-about = wx.MenuItem(filemenu, wx.ID_ABOUT, 'About')
-filemenu.Append(about)
-exitprogram = wx.MenuItem(filemenu, wx.ID_CLOSE, 'Exit')
-filemenu.Append(exitprogram)
-
-
-analysismenu = wx.Menu()
-regression = analysismenu.Append(wx.ID_ANY, 'Curve Fit', 'Curve Fit')
-ftest = analysismenu.Append(wx.ID_ANY, 'F-test', 'F-test')
-ttest = analysismenu.Append(wx.ID_ANY, 'T-test', 'T-test')
-anova = analysismenu.Append(wx.ID_ANY, 'ANOVA (one-way)', 'ANOVA (one-way)')
-# bind functions to menu objects
-frame.Bind(wx.EVT_MENU, OnRegression, regression)
-frame.Bind(wx.EVT_MENU, OnFtest, ftest)
-frame.Bind(wx.EVT_MENU, OnTtest, ttest)
-frame.Bind(wx.EVT_MENU, OnANOVA, anova)
-datamenu = wx.Menu()
-xyvals = datamenu.Append(wx.ID_ANY, 'Regression Values', 'Regression Values')
-datamenu.Bind(wx.EVT_MENU, OnData)
-
-graphmenu = wx.Menu()
-area_scale = graphmenu.Append(wx.ID_ANY, 'Area - Scale Plot', 'Area - Scale Plot')
-comp_scale = graphmenu.Append(wx.ID_ANY, 'Complexity - Scale Plot', 'Complexity - Scale Plot')
-HHplot = graphmenu.Append(wx.ID_ANY, 'Height-Height Plot', 'Height-Height Plot')
-frame.Bind(wx.EVT_MENU, OnAreaPlot, area_scale)
-frame.Bind(wx.EVT_MENU, OnComplexityPlot, comp_scale)
-frame.Bind(wx.EVT_MENU, OnHHPlot, HHplot)
-
-menuBar = wx.MenuBar()
-menuBar.Append(filemenu, 'File')
-menuBar.Append(analysismenu, 'Analysis')
-menuBar.Append(datamenu, 'Data')
-menuBar.Append(graphmenu, 'Graphs')
-frame.SetMenuBar(menuBar)
-frame.Bind(wx.EVT_MENU, OnOpen, openfile)
-frame.Bind(wx.EVT_MENU, OnExit, exitprogram)
-frame.Bind(wx.EVT_CLOSE, OnExit)
-frame.Bind(wx.EVT_MENU, OnAbout, about)
-
-# splits the main window into 3 sections, main empty space, side bar with graphs, error logging window
-vsplitter = wx.SplitterWindow(frame)
-vsplitter.SetBackgroundColour('#ffffff')
-hsplitter = wx.SplitterWindow(vsplitter)
+    frame.SetSize(0.0, 0.0, width, height)
+    frame.SetBackgroundColour('#ffffff')
+    frame.EnableCloseButton(enable=True)
+    # this is a bunch of GUI stuff
+    # general curve fit object which has all of the regression curve functions
+    cvf = CurveFit()
+    # create the menu bar and populate it
+    filemenu = wx.Menu()
+    openitem = wx.MenuItem(parentMenu=filemenu, id=wx.ID_OPEN, text="Open")
+    openfile = filemenu.Append(openitem)
+    new_wb = filemenu.Append(wx.ID_ANY, 'New Workbook', 'New Workbook')
+    frame.Bind(wx.EVT_MENU, OnNewWB, new_wb)
+    save = wx.MenuItem(filemenu, wx.ID_SAVEAS, 'Save As')
+    frame.Bind(wx.EVT_MENU, OnSave, save)
+    filemenu.Append(save)
+    # bind functions to menu objects
+    about = wx.MenuItem(filemenu, wx.ID_ABOUT, 'About')
+    filemenu.Append(about)
+    exitprogram = wx.MenuItem(filemenu, wx.ID_CLOSE, 'Exit')
+    filemenu.Append(exitprogram)
 
 
-# -------------------------------------------------------------------------------------------------------
-v_sizer = wx.BoxSizer(wx.VERTICAL)
-h_sizer = wx.BoxSizer(wx.VERTICAL)
+    analysismenu = wx.Menu()
+    regression = analysismenu.Append(wx.ID_ANY, 'Curve Fit', 'Curve Fit')
+    ftest = analysismenu.Append(wx.ID_ANY, 'F-test', 'F-test')
+    ttest = analysismenu.Append(wx.ID_ANY, 'T-test', 'T-test')
+    anova = analysismenu.Append(wx.ID_ANY, 'ANOVA (one-way)', 'ANOVA (one-way)')
+    # bind functions to menu objects
+    frame.Bind(wx.EVT_MENU, OnRegression, regression)
+    frame.Bind(wx.EVT_MENU, OnFtest, ftest)
+    frame.Bind(wx.EVT_MENU, OnTtest, ttest)
+    frame.Bind(wx.EVT_MENU, OnANOVA, anova)
+    datamenu = wx.Menu()
+    xyvals = datamenu.Append(wx.ID_ANY, 'Regression Values', 'Regression Values')
+    datamenu.Bind(wx.EVT_MENU, OnData)
+
+    graphmenu = wx.Menu()
+    area_scale = graphmenu.Append(wx.ID_ANY, 'Area - Scale Plot', 'Area - Scale Plot')
+    comp_scale = graphmenu.Append(wx.ID_ANY, 'Complexity - Scale Plot', 'Complexity - Scale Plot')
+    HHplot = graphmenu.Append(wx.ID_ANY, 'Height-Height Plot', 'Height-Height Plot')
+    frame.Bind(wx.EVT_MENU, OnAreaPlot, area_scale)
+    frame.Bind(wx.EVT_MENU, OnComplexityPlot, comp_scale)
+    frame.Bind(wx.EVT_MENU, OnHHPlot, HHplot)
+
+    menuBar = wx.MenuBar()
+    menuBar.Append(filemenu, 'File')
+    menuBar.Append(analysismenu, 'Analysis')
+    menuBar.Append(datamenu, 'Data')
+    menuBar.Append(graphmenu, 'Graphs')
+    frame.SetMenuBar(menuBar)
+    frame.Bind(wx.EVT_MENU, OnOpen, openfile)
+    frame.Bind(wx.EVT_MENU, OnExit, exitprogram)
+    frame.Bind(wx.EVT_CLOSE, OnExit)
+    frame.Bind(wx.EVT_MENU, OnAbout, about)
+
+    # splits the main window into 3 sections, main empty space, side bar with graphs, error logging window
+    vsplitter = wx.SplitterWindow(frame)
+    vsplitter.SetBackgroundColour('#ffffff')
+    hsplitter = wx.SplitterWindow(vsplitter)
 
 
-# main panel with workbook view
-main_panel = wx.Panel(hsplitter, style=wx.SIMPLE_BORDER)
-main_panel.SetBackgroundColour('#ffffff')
+    # -------------------------------------------------------------------------------------------------------
+    v_sizer = wx.BoxSizer(wx.VERTICAL)
+    h_sizer = wx.BoxSizer(wx.VERTICAL)
 
-main_sizer = wx.BoxSizer(wx.VERTICAL)
 
-# --------------------------------------------------------------------------------------------------
-h_sizer.Add(main_panel, 1, wx.EXPAND)
-main_panel.Layout()
-main_panel.SetSizerAndFit(main_sizer)
+    # main panel with workbook view
+    main_panel = wx.Panel(hsplitter, style=wx.SIMPLE_BORDER)
+    main_panel.SetBackgroundColour('#ffffff')
 
-# error panel for error logging
-error_panel = wx.Panel(hsplitter, style=wx.BORDER_SUNKEN)
+    main_sizer = wx.BoxSizer(wx.VERTICAL)
 
-# ------------------------------------------------------------------------------------------------------
-h_sizer.Add(error_panel, 1, wx.EXPAND)
+    # --------------------------------------------------------------------------------------------------
+    h_sizer.Add(main_panel, 1, wx.EXPAND)
+    main_panel.Layout()
+    main_panel.SetSizerAndFit(main_sizer)
 
-# left panel for holding workbook trees on left
-left_panel = wx.Panel(vsplitter, style=wx.SIMPLE_BORDER)
+    # error panel for error logging
+    error_panel = wx.Panel(hsplitter, style=wx.BORDER_SUNKEN)
 
-# ---------------------------------------------------------------------------------------------------------
-v_sizer.Add(left_panel, 1, wx.EXPAND)
+    # ------------------------------------------------------------------------------------------------------
+    h_sizer.Add(error_panel, 1, wx.EXPAND)
 
-# create the error text box which displays the text for errors
-error_sizer = wx.BoxSizer(wx.VERTICAL)
-error_txt = wx.TextCtrl(error_panel, style=wx.TE_READONLY | wx.TE_MULTILINE)
-error_txt.SetBackgroundColour('#000000')
-error_txt.SetForegroundColour('#ff8d00')
-error_sizer.Add(error_txt, 1, wx.EXPAND)
-error_panel.SetSizer(error_sizer)
-hsplitter.SplitHorizontally(main_panel, error_panel, sashPosition=580)
-vsplitter.SplitVertically(left_panel, hsplitter, sashPosition=200)
-sizer = wx.BoxSizer(wx.VERTICAL)
-sizer.Add(vsplitter, 1, wx.EXPAND)
-# tree which contains the graphs when created, names can be editted
-tree_sizer = wx.BoxSizer(wx.VERTICAL)
-tree_menu = wx.TreeCtrl(left_panel, style=wx.TR_HAS_BUTTONS | wx.TR_HIDE_ROOT | wx.TR_LINES_AT_ROOT | wx.TR_SINGLE |
-                                          wx.TR_FULL_ROW_HIGHLIGHT | wx.TR_EDIT_LABELS)
-root = tree_menu.AddRoot("Graphs")
-tree_sizer.Add(tree_menu, 1, wx.EXPAND)
-left_panel.SetSizer(tree_sizer)
-frame.Bind(wx.EVT_TREE_ITEM_ACTIVATED, OnSelection, tree_menu)
+    # left panel for holding workbook trees on left
+    left_panel = wx.Panel(vsplitter, style=wx.SIMPLE_BORDER)
 
-main_sizer.Clear()
-main_sizer.Layout()
-grid = wx.grid.Grid(main_panel, wx.ID_ANY, style=wx.HSCROLL | wx.VSCROLL | wx.ALWAYS_SHOW_SB)
+    # ---------------------------------------------------------------------------------------------------------
+    v_sizer.Add(left_panel, 1, wx.EXPAND)
 
-main_sizer.Add(grid, 1, wx.EXPAND)
-main_panel.SetSizer(main_sizer)
-grid.CreateGrid(1000, 100)
+    # create the error text box which displays the text for errors
+    error_sizer = wx.BoxSizer(wx.VERTICAL)
+    error_txt = wx.TextCtrl(error_panel, style=wx.TE_READONLY | wx.TE_MULTILINE)
+    error_txt.SetBackgroundColour('#000000')
+    error_txt.SetForegroundColour('#ff8d00')
+    error_sizer.Add(error_txt, 1, wx.EXPAND)
+    error_panel.SetSizer(error_sizer)
+    hsplitter.SplitHorizontally(main_panel, error_panel, sashPosition=580)
+    vsplitter.SplitVertically(left_panel, hsplitter, sashPosition=200)
+    sizer = wx.BoxSizer(wx.VERTICAL)
+    sizer.Add(vsplitter, 1, wx.EXPAND)
+    # tree which contains the graphs when created, names can be editted
+    tree_sizer = wx.BoxSizer(wx.VERTICAL)
+    tree_menu = wx.TreeCtrl(left_panel, style=wx.TR_HAS_BUTTONS | wx.TR_HIDE_ROOT | wx.TR_LINES_AT_ROOT | wx.TR_SINGLE |
+                                              wx.TR_FULL_ROW_HIGHLIGHT | wx.TR_EDIT_LABELS)
+    root = tree_menu.AddRoot("Graphs")
+    tree_sizer.Add(tree_menu, 1, wx.EXPAND)
+    left_panel.SetSizer(tree_sizer)
+    frame.Bind(wx.EVT_TREE_ITEM_ACTIVATED, OnSelection, tree_menu)
 
-OnNewWB(wx.EVT_ACTIVATE_APP)
-# d = {(0, 0): "yeet", (1, 1): "two", (2, 2): "yes"}
-# table = Workbook(d, 'Yeet', grid.GetNumberRows(), grid.GetNumberCols())
-# grid.SetTable(table)
-# item = tree_menu.AppendItem(root, 'workbook{}'.format(wb_counter), data=table)
-# tree_menu.SelectItem(item)
-data = PlotData(error_txt, tree_menu, wb_list, grid)
+    main_sizer.Clear()
+    main_sizer.Layout()
+    grid = wx.grid.Grid(main_panel, wx.ID_ANY, style=wx.HSCROLL | wx.VSCROLL | wx.ALWAYS_SHOW_SB)
 
-frame.Maximize(True)
-frame.CenterOnScreen()
-frame.Layout()
-frame.SetSizer(sizer)
-frame.Show()
-app.MainLoop()
+    main_sizer.Add(grid, 1, wx.EXPAND)
+    main_panel.SetSizer(main_sizer)
+    grid.CreateGrid(1000, 100)
+
+    OnNewWB(wx.EVT_ACTIVATE_APP)
+    # d = {(0, 0): "yeet", (1, 1): "two", (2, 2): "yes"}
+    # table = Workbook(d, 'Yeet', grid.GetNumberRows(), grid.GetNumberCols())
+    # grid.SetTable(table)
+    # item = tree_menu.AppendItem(root, 'workbook{}'.format(wb_counter), data=table)
+    # tree_menu.SelectItem(item)
+    data = PlotData.PlotData(error_txt, tree_menu, wb_list, grid)
+
+    frame.Maximize(True)
+    frame.CenterOnScreen()
+    frame.Layout()
+    frame.SetSizer(sizer)
+    frame.Show()
+    app.MainLoop()
