@@ -154,32 +154,40 @@ class PlotData:
             # complexity data
             complexList = []
 
+            # Defines if the data values have been found, so float warnings can be ignored
+            dataFound = False
+
             # open the file
             with open(file) as openfile:
-
+                # Line number
+                lineNum = 0
                 # variable which contains a list of all of the lines in the text file
                 lines = openfile.readlines()
                 # iterate over each line in the text file
                 for line in lines:
-
+                    lineNum += 1 # Increase line counter
                     try:
                         # process text in file each line becomes a list of words and numbers
                         line = line.split("\t")
                         # the first value in the list is always either scale value or text
                         # if it is text a value error will be thrown here and is skipped
                         # otherwise check if the scale value is in the list of scales
-                        if not self.get_results_scale().__contains__(np.round_(np.sqrt(2*float(line[0])), 4)):
+                        scaleVal = np.sqrt(2*float(line[0]))
+                        if not np.round_(scaleVal, 4) in self.get_results_scale():
                             # if not add the value to the list of scales
-                            self.get_results_scale().append(np.round_(np.sqrt(2*float(line[0])), 4))
-
+                            self.get_results_scale().append(np.round_(scaleVal, 4))
+                            
                         # second value in the line is always relative area add to temp list
                         tempList.append(np.round_(float(line[1]), 4))
                         # third value in the line is always complexity add to temp list
                         complexList.append(np.round_(float(line[2]), 4))
+                        # With the float conversions being successful, data has been found
+                        dataFound = True
                     # throw and log errors
                     except ValueError as e:
                         s.append(line)
-                        self.get_error_text().AppendText("Open: " + str(e) + '\n')
+                        if dataFound :
+                            self.get_error_text().AppendText("Open (" + openfile.name + ":" + str(lineNum) + "): " + str(e) + '\n')
                 # append temp lists to complexity and relative area lists
                 self.get_relative_area().append(tempList)
                 self.get_complexity().append(complexList)
