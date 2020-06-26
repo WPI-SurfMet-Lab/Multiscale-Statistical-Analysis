@@ -18,6 +18,12 @@ from StatsTestsUI import FtestDialog
 from StatsTestsUI import TtestDialog
 from StatsTestsUI import ANOVAtestDialog
 
+__name__ = 'Multiscale Statisitcal Analysis'
+__version__ = '0.1.1'
+__license__ = 'MIT'
+__author__ = 'Matthew Spofford, Nathaniel Rutkowski'
+__author_email__ = 'mespofford@wpi.edu'
+__url__ = 'https://github.com/MatthewSpofford/Multiscale-Statistical-Analysis'
 
 global wb_counter
 wb_counter = 1
@@ -418,18 +424,20 @@ def OnSelection(event):
         selected.Show()
 # function to display dialog about the software
 def OnAbout(event):
-    name = 'Multi-Scale Regression Analysis'
-    version = 'v0.1'
+    version = 'v' + __version__
     description = 'An Open-Source, Python-Based application to perform multi-scale \n' \
-                  'regression analysis using results from Surfract and MountainsMap. \n' \
-                  'Developed in collaboration with Christopher A. Brown, Ph.D., PE, \n' \
-                  'and the WPI Surface Metrology Lab. Contact _________ for details. \n' \
-                  'You can support the development of this software by donating below.'
-    developers = 'Nathaniel Rutkowski'
+                  'regression and discrimination analysis using results from Surfract\n' \
+                  'and MountainsMap. Developed in collaboration with Christopher A.\n' \
+                  'Brown, Ph.D., PE, and the WPI Surface Metrology Lab. Contact\n' \
+                  'mespofford@wpi.edu for details. You can support the development of this.\n' \
+                  'software by donating below.\n'
 
-    aboutInfo = wx.Dialog(frame, wx.ID_ANY, 'About ' + name + ' ' + version, size=(480, 400))
+    # Reconfigure author strings to use newline seperate and not comma seperation
+    developers = "\n".join(__author__.split(", "))
 
-    title_text = wx.StaticText(aboutInfo, wx.ID_ANY, label=name + ' ' + version, pos=(60, 20),
+    aboutInfo = wx.Dialog(frame, wx.ID_ANY, 'About ' + __name__ + ' ' + version, size=(480, 400))
+
+    title_text = wx.StaticText(aboutInfo, wx.ID_ANY, label=__name__ + ' ' + version, pos=(60, 20),
                                style=wx.ALIGN_CENTER_HORIZONTAL)
     title_text.SetFont(wx.Font(wx.FontInfo(14)).Bold())
     description_text = wx.StaticText(aboutInfo, wx.ID_ANY, label=description, pos=(45, 50),
@@ -442,7 +450,7 @@ def OnAbout(event):
                                   url='https://paypal.me/nrutkowski1?locale.x=en_US',
                                   pos=(173, 170), style=wx.adv.HL_DEFAULT_STYLE)
     lab_site = wx.adv.HyperlinkCtrl(aboutInfo, id=wx.ID_ANY, label='WPI Surface Metrology Lab',
-                                    url='https://www.wpi.edu/people/faculty/brown',
+                                    url='https://www.surfacemetrology.org/',
                                     pos=(159, 190), style=wx.adv.HL_DEFAULT_STYLE)
 
     line = wx.StaticLine(aboutInfo, id=wx.ID_ANY, pos=(10, 220), size=(450, -1), style=wx.LI_HORIZONTAL)
