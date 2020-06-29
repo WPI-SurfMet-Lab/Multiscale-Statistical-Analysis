@@ -632,7 +632,7 @@ regres_menu = wx.Menu()
 xyvals = regres_menu.Append(wx.ID_ANY, 'Regression Values', 'Regression Values')
 regression = regres_menu.Append(wx.ID_ANY, 'Curve Fit', 'Curve Fit')
 # bind functions to menu objects
-regres_menu.Bind(wx.EVT_MENU, OnData)
+frame.Bind(wx.EVT_MENU, OnData, xyvals)
 frame.Bind(wx.EVT_MENU, OnRegression, regression)
 
 # Discrimination menu initialization
