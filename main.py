@@ -627,19 +627,23 @@ exitprogram = wx.MenuItem(filemenu, wx.ID_CLOSE, 'Exit')
 filemenu.Append(exitprogram)
 
 
-analysismenu = wx.Menu()
-regression = analysismenu.Append(wx.ID_ANY, 'Curve Fit', 'Curve Fit')
-ftest = analysismenu.Append(wx.ID_ANY, 'F-test', 'F-test')
-ttest = analysismenu.Append(wx.ID_ANY, 'T-test', 'T-test')
-anova = analysismenu.Append(wx.ID_ANY, 'ANOVA (one-way)', 'ANOVA (one-way)')
+# Regression menu initialization
+regres_menu = wx.Menu()
+xyvals = regres_menu.Append(wx.ID_ANY, 'Regression Values', 'Regression Values')
+regression = regres_menu.Append(wx.ID_ANY, 'Curve Fit', 'Curve Fit')
 # bind functions to menu objects
+regres_menu.Bind(wx.EVT_MENU, OnData)
 frame.Bind(wx.EVT_MENU, OnRegression, regression)
+
+# Discrimination menu initialization
+discrim_menu = wx.Menu()
+ftest = discrim_menu.Append(wx.ID_ANY, 'F-test', 'F-test')
+ttest = discrim_menu.Append(wx.ID_ANY, 'T-test', 'T-test')
+anova = discrim_menu.Append(wx.ID_ANY, 'ANOVA (one-way)', 'ANOVA (one-way)')
+# bind functions to menu objects
 frame.Bind(wx.EVT_MENU, OnFtest, ftest)
 frame.Bind(wx.EVT_MENU, OnTtest, ttest)
 frame.Bind(wx.EVT_MENU, OnANOVA, anova)
-datamenu = wx.Menu()
-xyvals = datamenu.Append(wx.ID_ANY, 'Regression Values', 'Regression Values')
-datamenu.Bind(wx.EVT_MENU, OnData)
 
 graphmenu = wx.Menu()
 area_scale = graphmenu.Append(wx.ID_ANY, 'Area - Scale Plot', 'Area - Scale Plot')
@@ -651,8 +655,8 @@ frame.Bind(wx.EVT_MENU, OnHHPlot, HHplot)
 
 menuBar = wx.MenuBar()
 menuBar.Append(filemenu, 'File')
-menuBar.Append(analysismenu, 'Analysis')
-menuBar.Append(datamenu, 'Data')
+menuBar.Append(regres_menu, 'Regression')
+menuBar.Append(discrim_menu, 'Discrimination')
 menuBar.Append(graphmenu, 'Graphs')
 frame.SetMenuBar(menuBar)
 frame.Bind(wx.EVT_MENU, OnOpen, openfile)
