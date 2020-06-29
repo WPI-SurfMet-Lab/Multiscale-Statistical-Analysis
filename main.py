@@ -47,6 +47,7 @@ def OnExit(event):
         frame.EnableCloseButton(True)
         exitdialog.Destroy()
         return False
+
 # function for show the curve fit dialog and get regression graphs
 def OnRegression(event):
 
@@ -371,6 +372,7 @@ def OnRegression(event):
 
     except (RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
         error_txt.AppendText("Graph: " + str(e) + '\n')
+
 # function to open the data files
 def OnOpen(event):
     frame.EnableCloseButton(False)
@@ -396,6 +398,7 @@ def OnOpen(event):
     elif result == wx.ID_CANCEL:
         frame.EnableCloseButton(True)
         return False
+
 # function to get the x-regression values
 def OnData(event):
     datadialog = XRValuesDialog(frame, data.get_x_regress())
@@ -405,6 +408,7 @@ def OnData(event):
     if result == wx.ID_OK:
         datadialog.SaveString()
         data.set_x_regress(datadialog.get_xvals())
+
 # function to get selected graph on left side of main screen
 def OnSelection(event):
 
@@ -422,6 +426,7 @@ def OnSelection(event):
     else:
         selected.CenterOnScreen()
         selected.Show()
+
 # function to display dialog about the software
 def OnAbout(event):
     version = 'v' + __version__
@@ -463,6 +468,7 @@ def OnAbout(event):
 
     aboutInfo.CenterOnScreen()
     aboutInfo.ShowModal()
+
 # function to show F-test dialog
 def OnFtest(event):
     # selectedWorkbook = tree_menu.GetItemData(tree_menu.GetSelection())
@@ -472,6 +478,8 @@ def OnFtest(event):
     dlg = FtestDialog(frame, data, error_txt, tree_menu, selectedWorkbook)
     dlg.CenterOnScreen()
     dlg.ShowModal()
+    tree_menu.Refresh()
+
 # current: paired two tails t-test, which one should I use or options...?
 # function to show T-test dialog
 def OnTtest(event):
@@ -482,7 +490,9 @@ def OnTtest(event):
     dlg = TtestDialog(frame, data, error_txt, tree_menu, selectedWorkbook)
     dlg.CenterOnScreen()
     dlg.ShowModal()
+    tree_menu.Refresh()
     # dlg.PooledVarianceTTest()
+
 # function to show the ANOVA test dialog
 def OnANOVA(event):
     # selectedWorkbook = tree_menu.GetItemData(tree_menu.GetSelection())
@@ -490,8 +500,11 @@ def OnANOVA(event):
     selectedWorkbook = wb_list[0]
 
     dlg = ANOVAtestDialog(frame, data, error_txt, tree_menu, selectedWorkbook)
+    selectedWorkbook
     dlg.CenterOnScreen()
     dlg.ShowModal()
+    tree_menu.Refresh()
+
 # function to create the scale area plot
 def OnAreaPlot(event):
     # selectedWorkbook = tree_menu.GetItemData(tree_menu.GetSelection())
@@ -503,13 +516,16 @@ def OnAreaPlot(event):
                              data.get_legend_txt(), data)
     # try:
     gdlg17.get_graph().draw_plot()
-    tree_menu.AppendItem(selectedWorkbook, "Relative Area - Scale", data=gdlg17)
+    tree_menu.AppendItem(parent=selectedWorkbook, text="Relative Area - Scale", data=gdlg17)
+    tree_menu.Refresh()
     # except (RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
     #     error_txt.AppendText("Area-Scale Graph: " + str(e) + '\n')
+
 # function to create the scale complexity plot
 def OnComplexityPlot(event):
     # selectedWorkbook = tree_menu.GetItemData(tree_menu.GetSelection())
     global wb_list
+    global root
     selectedWorkbook = wb_list[0]
 
     gdlg18 = SclbyAreaDialog(frame, "Scale by Complexity", data.get_results_scale(), data.get_complexity(),
@@ -518,6 +534,7 @@ def OnComplexityPlot(event):
     try:
         gdlg18.get_graph().draw_complexity_plot()
         tree_menu.AppendItem(selectedWorkbook, "Complexity - Scale", data=gdlg18)
+        tree_menu.Refresh()
     except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning, RuntimeWarning) as e:
         error_txt.AppendText("Complexity-Scale Graph: " + str(e) + '\n')
 
@@ -526,6 +543,7 @@ def OnHHPlot(event):
     gdlg19 = HHPlotDialog(frame, 'Height-Height Plot')
     gdlg19.CenterOnScreen()
     resid = gdlg19.Show()
+    tree_menu.Refresh()
 
 def OnNewWB(event):
 
@@ -691,7 +709,7 @@ sizer.Add(vsplitter, 1, wx.EXPAND)
 tree_sizer = wx.BoxSizer(wx.VERTICAL)
 tree_menu = wx.TreeCtrl(left_panel, style=wx.TR_HAS_BUTTONS | wx.TR_HIDE_ROOT | wx.TR_LINES_AT_ROOT | wx.TR_SINGLE |
                                           wx.TR_FULL_ROW_HIGHLIGHT | wx.TR_EDIT_LABELS)
-root = tree_menu.AddRoot("Graphs")
+root = tree_menu.AddRoot("graphs-root")
 tree_sizer.Add(tree_menu, 1, wx.EXPAND)
 left_panel.SetSizer(tree_sizer)
 frame.Bind(wx.EVT_TREE_ITEM_ACTIVATED, OnSelection, tree_menu)
