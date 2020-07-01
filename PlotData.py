@@ -13,10 +13,10 @@ from wx.grid import Grid
 
 class PlotData:
 
-    def __init__(self, error_txt:TextCtrl, grid:Grid, wb:Workbook):
+    def __init__(self, error_text:TextCtrl, grid:Grid, wb:Workbook):
 
         # the error text object which allows for errors to be logged in the main window.
-        self.error_text = error_txt
+        self.error_text = error_text
         # saves a list of the scales from the data files. It is important that the data files that are opened at the same time
         # all have the same scales
         self.results_scale = []

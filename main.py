@@ -376,32 +376,6 @@ def OnRegression(event):
     except (RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
         error_txt.AppendText("Graph: " + str(e) + '\n')
 
-# function to open the data files
-def OnOpen(event):
-    frame.EnableCloseButton(False)
-    #     # create the open file dialog, if a file exists the user is able to open it will probably change it so
-    #     # only the MountainsMap data file format can be opened
-    openFileDialog = wx.FileDialog(frame, "Open",  # wildcard="CSV UTF-8 (Comma delimited) (*.csv)|*.csv" ,# \ "
-                                   # "TXT (*.txt)|*.txt",
-                                   style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST | wx.FD_MULTIPLE)
-    openFileDialog.CenterOnScreen()
-    # shows the dialog on screen
-    result = openFileDialog.ShowModal()
-    # only opens the file if 'open' in dialog is pressed otherwise if 'cancel' in dialog is pressed closes dialog
-    if result == wx.ID_OK:
-        # gets the file path
-        filepath = openFileDialog.GetPaths()
-        # opens the file and reads it
-        if filepath[0][len(filepath[0]) - 3:len(filepath[0])] == 'csv':
-            data.open_file(filepath)
-        if filepath[0][len(filepath[0]) - 3:len(filepath[0])] == 'txt':
-            data.open_file2(filepath)
-        frame.EnableCloseButton(True)
-        return True
-    elif result == wx.ID_CANCEL:
-        frame.EnableCloseButton(True)
-        return False
-
 # function to get the x-regression values
 def OnData(event):
     datadialog = XRValuesDialog(frame, data.get_x_regress())
@@ -490,21 +464,18 @@ def OnHHPlot(event):
 
 # function to get selected graph on left side of main screen
 def OnSelection(event):
-    global wb_list
     selected = tree_menu.GetItemData(tree_menu.GetSelection())
-    data = PlotData(error_txt, grid, selected)
+    selectedWb = selected.get_wb()
+    selected.get_error_text().AppendText("Wb: Switching to -- " + selectedWb.get_name() + "\n")
 
-    print(selected.data)
-
-    if isinstance(selected, Workbook):
-        grid.SetTable(selected)
-        #for wb in wb_list:
-        #    if tree_menu.GetItemData(wb).get_name() == selected.get_name():
-        #        grid.SetTable(selected)
-        #        break
+    if isinstance(selectedWb, Workbook):
+        grid.SetTable(selectedWb)
+        grid.AutoSizeColumns()
+        grid.Refresh()
     else:
-        selected.CenterOnScreen()
-        selected.Show()
+        print("Workbook not found :(")
+        selectedWb.CenterOnScreen()
+        selectedWb.Show()
 
 # function to display dialog about the software
 def OnAbout(event):
@@ -548,10 +519,37 @@ def OnAbout(event):
     aboutInfo.CenterOnScreen()
     aboutInfo.ShowModal()
 
+# function to open the data files
+def OnOpen(event):
+    frame.EnableCloseButton(False)
+    #     # create the open file dialog, if a file exists the user is able to open it will probably change it so
+    #     # only the MountainsMap data file format can be opened
+    openFileDialog = wx.FileDialog(frame, "Open",  # wildcard="CSV UTF-8 (Comma delimited) (*.csv)|*.csv" ,# \ "
+                                   # "TXT (*.txt)|*.txt",
+                                   style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST | wx.FD_MULTIPLE)
+    openFileDialog.CenterOnScreen()
+    # shows the dialog on screen
+    result = openFileDialog.ShowModal()
+    # only opens the file if 'open' in dialog is pressed otherwise if 'cancel' in dialog is pressed closes dialog
+    if result == wx.ID_OK:
+        # gets the file path
+        filepath = openFileDialog.GetPaths()
+        data = tree_menu.GetItemData(tree_menu.GetSelection())
+
+        # opens the file and reads it
+        if filepath[0][len(filepath[0]) - 3:len(filepath[0])] == 'csv':
+            data.open_file(filepath)
+        if filepath[0][len(filepath[0]) - 3:len(filepath[0])] == 'txt':
+            data.open_file2(filepath)
+        frame.EnableCloseButton(True)
+        return True
+    elif result == wx.ID_CANCEL:
+        frame.EnableCloseButton(True)
+        return False
+
 def OnNewWB(event):
 
     global wb_counter
-    global wb_list
 
     grid.ClearGrid()
     d = {}
@@ -561,7 +559,7 @@ def OnNewWB(event):
     if event is not wx.EVT_ACTIVATE_APP:
         grid.SetTable(table)
 
-    item = tree_menu.AppendItem(root, table.name, data)
+    item = tree_menu.AppendItem(root, table.name, data=data)
     tree_menu.SelectItem(item)
 
     wb_list.append(item)
@@ -570,7 +568,7 @@ def OnNewWB(event):
 
 def OnSave(event):
     selectedID = tree_menu.GetSelection()
-    selectedWorkbook = tree_menu.GetItemData(selectedID)
+    selectedWorkbook = tree_menu.GetItemData(selectedID).get_wb()
 
     saveFileDialog = wx.FileDialog(frame, "Save", selectedWorkbook.name, "xlsx (*.xlsx)|*.xlsx", wx.FD_SAVE)
     saveFileDialog.CenterOnScreen()
