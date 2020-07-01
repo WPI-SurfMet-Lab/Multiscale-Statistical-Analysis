@@ -1,6 +1,10 @@
 
 import csv
 import numpy as np
+from Workbook import Workbook
+from wx import TextCtrl, TreeCtrl
+from wx.grid import Grid
+
 
 # Class PlotData:
 # the purpose of this class is to create an object which stores all of the data opened from files as well as user inputs
@@ -9,7 +13,7 @@ import numpy as np
 
 class PlotData:
 
-    def __init__(self, error_txt, tree_menu, wbs,  grid):
+    def __init__(self, error_txt:TextCtrl, grid:Grid, wb:Workbook):
 
         # the error text object which allows for errors to be logged in the main window.
         self.error_text = error_txt
@@ -32,9 +36,8 @@ class PlotData:
         self.complexity = []
 
         self.strings = []
-        self.wbs = wbs
         self.grid = grid
-        self.tree_menu = tree_menu
+        self.wb = wb
 
     # function to open .csv files from Sfrax
     # takes in a list of file paths for the files the user opens
@@ -205,8 +208,6 @@ class PlotData:
             self.get_regress_sets().append(list(y_values))
 
         # add data to workbook hopefully ----------------------------------------------------
-        newWB = self.get_tree().GetItemData(self.get_wbs()[len(self.get_wbs()) - 1])
-
         [print(x) for x in s]
 
         start = 5
@@ -249,9 +250,9 @@ class PlotData:
         add_data.__setitem__((start + len(self.get_results_scale()) + 18, 0), "line_symbol")
         add_data.__setitem__((start + len(self.get_results_scale()) + 19, 0), "legend_text")
 
-        newWB.set_data(add_data)
-        self.get_grid().SetTable(newWB)
-        # self.get_grid().AutoSizeColumns()
+        self.wb.set_data(add_data)
+        self.get_grid().SetTable(self.wb)
+        self.get_grid().AutoSizeColumns()
         self.get_grid().Refresh()
 
         self.get_error_text().AppendText("Done." + '\n')
@@ -269,8 +270,8 @@ class PlotData:
     def get_error_text(self): return self.error_text
     def get_complexity(self): return self.complexity
     def set_complexity(self, comp): self.complexity = comp
-    def get_wbs(self): return self.wbs
     def get_grid(self): return self.grid
-    def get_tree(self): return self.tree_menu
+    def get_wb(self): return self.wb
+    def set_wb(self, wb): self.wb = wb
     def get_strings(self): return self.strings
     def set_strings(self, string): self.strings = string

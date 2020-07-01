@@ -18,6 +18,9 @@ from StatsTestsUI import FtestDialog
 from StatsTestsUI import TtestDialog
 from StatsTestsUI import ANOVAtestDialog
 
+import faulthandler
+faulthandler.enable()
+
 __name__ = 'Multiscale Statisitcal Analysis'
 __version__ = '0.1.1'
 __license__ = 'MIT'
@@ -409,66 +412,6 @@ def OnData(event):
         datadialog.SaveString()
         data.set_x_regress(datadialog.get_xvals())
 
-# function to get selected graph on left side of main screen
-def OnSelection(event):
-
-    # global wb_list
-    selected = tree_menu.GetItemData(tree_menu.GetSelection())
-
-    if isinstance(selected, Workbook):
-
-        for wb in wb_list:
-
-            if tree_menu.GetItemData(wb).get_tag() == selected.get_tag():
-
-                grid.SetTable(selected.get_data(), True)
-
-    else:
-        selected.CenterOnScreen()
-        selected.Show()
-
-# function to display dialog about the software
-def OnAbout(event):
-    version = 'v' + __version__
-    description = 'An Open-Source, Python-Based application to perform multi-scale \n' \
-                  'regression and discrimination analysis using results from Surfract\n' \
-                  'and MountainsMap. Developed in collaboration with Christopher A.\n' \
-                  'Brown, Ph.D., PE, and the WPI Surface Metrology Lab. Contact\n' \
-                  'mespofford@wpi.edu for details. You can support the development of this.\n' \
-                  'software by donating below.\n'
-
-    # Reconfigure author strings to use newline seperate and not comma seperation
-    developers = "\n".join(__author__.split(", "))
-
-    aboutInfo = wx.Dialog(frame, wx.ID_ANY, 'About ' + __name__ + ' ' + version, size=(480, 400))
-
-    title_text = wx.StaticText(aboutInfo, wx.ID_ANY, label=__name__ + ' ' + version, pos=(60, 20),
-                               style=wx.ALIGN_CENTER_HORIZONTAL)
-    title_text.SetFont(wx.Font(wx.FontInfo(14)).Bold())
-    description_text = wx.StaticText(aboutInfo, wx.ID_ANY, label=description, pos=(45, 50),
-                                     style=wx.ALIGN_CENTER_HORIZONTAL)
-
-    github = wx.adv.HyperlinkCtrl(aboutInfo, id=wx.ID_ANY, label='Open-Source Code',
-                                  url='https://github.com/MatthewSpofford/Multiscale-Statistical-Analysis',
-                                  pos=(180, 150), style=wx.adv.HL_DEFAULT_STYLE)
-    donate = wx.adv.HyperlinkCtrl(aboutInfo, id=wx.ID_ANY, label='Support Development',
-                                  url='https://paypal.me/nrutkowski1?locale.x=en_US',
-                                  pos=(173, 170), style=wx.adv.HL_DEFAULT_STYLE)
-    lab_site = wx.adv.HyperlinkCtrl(aboutInfo, id=wx.ID_ANY, label='WPI Surface Metrology Lab',
-                                    url='https://www.surfacemetrology.org/',
-                                    pos=(159, 190), style=wx.adv.HL_DEFAULT_STYLE)
-
-    line = wx.StaticLine(aboutInfo, id=wx.ID_ANY, pos=(10, 220), size=(450, -1), style=wx.LI_HORIZONTAL)
-
-    d_title = wx.StaticText(aboutInfo, wx.ID_ANY, label='Developers', pos=(190, 240))
-    d_title.SetFont(wx.Font(wx.FontInfo(11)).Bold())
-    devs = wx.StaticText(aboutInfo, wx.ID_ANY, label=developers, pos=(178, 260), style=wx.ALIGN_CENTER_HORIZONTAL)
-
-    okbtn = wx.Button(aboutInfo, wx.ID_OK, pos=(365, 325))
-
-    aboutInfo.CenterOnScreen()
-    aboutInfo.ShowModal()
-
 # function to show F-test dialog
 def OnFtest(event):
     # selectedWorkbook = tree_menu.GetItemData(tree_menu.GetSelection())
@@ -545,29 +488,91 @@ def OnHHPlot(event):
     resid = gdlg19.Show()
     tree_menu.Refresh()
 
-def OnNewWB(event):
+# function to get selected graph on left side of main screen
+def OnSelection(event):
+    global wb_list
+    selected = tree_menu.GetItemData(tree_menu.GetSelection())
+    data = PlotData(error_txt, grid, selected)
 
-    # selected = tree_menu.GetItemData(tree_menu.GetSelection())
+    print(selected.data)
+
+    if isinstance(selected, Workbook):
+        grid.SetTable(selected)
+        #for wb in wb_list:
+        #    if tree_menu.GetItemData(wb).get_name() == selected.get_name():
+        #        grid.SetTable(selected)
+        #        break
+    else:
+        selected.CenterOnScreen()
+        selected.Show()
+
+# function to display dialog about the software
+def OnAbout(event):
+    version = 'v' + __version__
+    description = 'An Open-Source, Python-Based application to perform multi-scale \n' \
+                  'regression and discrimination analysis using results from Surfract\n' \
+                  'and MountainsMap. Developed in collaboration with Christopher A.\n' \
+                  'Brown, Ph.D., PE, and the WPI Surface Metrology Lab. Contact\n' \
+                  'mespofford@wpi.edu for details. You can support the development of this.\n' \
+                  'software by donating below.\n'
+
+    # Reconfigure author strings to use newline seperate and not comma seperation
+    developers = "\n".join(__author__.split(", "))
+
+    aboutInfo = wx.Dialog(frame, wx.ID_ANY, 'About ' + __name__ + ' ' + version, size=(480, 400))
+
+    title_text = wx.StaticText(aboutInfo, wx.ID_ANY, label=__name__ + ' ' + version, pos=(60, 20),
+                               style=wx.ALIGN_CENTER_HORIZONTAL)
+    title_text.SetFont(wx.Font(wx.FontInfo(14)).Bold())
+    description_text = wx.StaticText(aboutInfo, wx.ID_ANY, label=description, pos=(45, 50),
+                                     style=wx.ALIGN_CENTER_HORIZONTAL)
+
+    github = wx.adv.HyperlinkCtrl(aboutInfo, id=wx.ID_ANY, label='Open-Source Code',
+                                  url='https://github.com/MatthewSpofford/Multiscale-Statistical-Analysis',
+                                  pos=(180, 150), style=wx.adv.HL_DEFAULT_STYLE)
+    donate = wx.adv.HyperlinkCtrl(aboutInfo, id=wx.ID_ANY, label='Support Development',
+                                  url='https://paypal.me/nrutkowski1?locale.x=en_US',
+                                  pos=(173, 170), style=wx.adv.HL_DEFAULT_STYLE)
+    lab_site = wx.adv.HyperlinkCtrl(aboutInfo, id=wx.ID_ANY, label='WPI Surface Metrology Lab',
+                                    url='https://www.surfacemetrology.org/',
+                                    pos=(159, 190), style=wx.adv.HL_DEFAULT_STYLE)
+
+    line = wx.StaticLine(aboutInfo, id=wx.ID_ANY, pos=(10, 220), size=(450, -1), style=wx.LI_HORIZONTAL)
+
+    d_title = wx.StaticText(aboutInfo, wx.ID_ANY, label='Developers', pos=(190, 240))
+    d_title.SetFont(wx.Font(wx.FontInfo(11)).Bold())
+    devs = wx.StaticText(aboutInfo, wx.ID_ANY, label=developers, pos=(178, 260), style=wx.ALIGN_CENTER_HORIZONTAL)
+
+    okbtn = wx.Button(aboutInfo, wx.ID_OK, pos=(365, 325))
+
+    aboutInfo.CenterOnScreen()
+    aboutInfo.ShowModal()
+
+def OnNewWB(event):
 
     global wb_counter
     global wb_list
 
-    # grid.ClearGrid()
-    # d1 = {(0, 0): "yeet", (1, 1): "two", (2, 2): "yes"}
+    grid.ClearGrid()
     d = {}
-    table1 = Workbook(d, 'wb'.format(wb_counter), grid.GetNumberRows(), grid.GetNumberCols())
-    # grid.SetTable(table1, True)
+    table = Workbook(d, 'workbook{}'.format(wb_counter), grid.GetNumberRows(), grid.GetNumberCols())
+    data = PlotData(error_txt, grid, table)
 
-    item = tree_menu.AppendItem(root, 'workbook{}'.format(wb_counter), data=table1)
+    if event is not wx.EVT_ACTIVATE_APP:
+        grid.SetTable(table)
+
+    item = tree_menu.AppendItem(root, table.name, data)
     tree_menu.SelectItem(item)
 
     wb_list.append(item)
-    error_txt.AppendText('Wb: New Workbook Created -- workbook{}\n'.format(wb_counter))
+    error_txt.AppendText('Wb: New Workbook Created -- ' + table.name + '\n')
     wb_counter += 1
 
 def OnSave(event):
+    selectedID = tree_menu.GetSelection()
+    selectedWorkbook = tree_menu.GetItemData(selectedID)
 
-    saveFileDialog = wx.FileDialog(frame, "Save", "", "untitled-workbook", "xlsx (*.xlsx)|*.xlsx", wx.FD_SAVE | wx.FD_SAVE)
+    saveFileDialog = wx.FileDialog(frame, "Save", selectedWorkbook.name, "xlsx (*.xlsx)|*.xlsx", wx.FD_SAVE)
     saveFileDialog.CenterOnScreen()
     # shows the dialog on screen when pushes button
     result = saveFileDialog.ShowModal()
@@ -575,11 +580,6 @@ def OnSave(event):
     if result == wx.ID_OK:
         # gets the file path
         filepath = saveFileDialog.GetPath()
-        # selected = tree_menu.GetItemData(tree_menu.GetSelection())
-
-        # selectedWorkbook = tree_menu.GetItemData(tree_menu.GetSelection())
-        global wb_list
-        selectedWorkbook = tree_menu.GetItemData(wb_list[0])
 
         cells = selectedWorkbook.get_data().keys()
         values = selectedWorkbook.get_data().values()
@@ -727,12 +727,6 @@ main_panel.SetSizer(main_sizer)
 grid.CreateGrid(1000, 100)
 
 OnNewWB(wx.EVT_ACTIVATE_APP)
-# d = {(0, 0): "yeet", (1, 1): "two", (2, 2): "yes"}
-# table = Workbook(d, 'Yeet', grid.GetNumberRows(), grid.GetNumberCols())
-# grid.SetTable(table)
-# item = tree_menu.AppendItem(root, 'workbook{}'.format(wb_counter), data=table)
-# tree_menu.SelectItem(item)
-data = PlotData(error_txt, tree_menu, wb_list, grid)
 
 frame.Maximize(True)
 frame.CenterOnScreen()
