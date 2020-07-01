@@ -53,7 +53,7 @@ def OnRegression(event):
                                              data.get_regress_sets(), cvf, selectedID, tree_menu)
                     gdlg1.get_graph().proportional_fit_plot()
                     tree_menu.AppendItem(selectedID, "Proportional Regression", data=gdlg1)
-                except (RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
+                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
                     error_txt.AppendText("Proportional: " + str(e) + '\n')
 
             if rsdlg.lin1check.IsChecked():
@@ -63,7 +63,7 @@ def OnRegression(event):
                                              data.get_regress_sets(), cvf, selectedID, tree_menu)
                     gdlg2.get_graph().linear_fit_plot()
                     tree_menu.AppendItem(selectedID, "Linear Regression", data=gdlg2)
-                except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning, RuntimeWarning, ValueError) as e:
+                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, OptimizeWarning, RuntimeWarning, ValueError) as e:
                     error_txt.AppendText("Linear: " + str(e) + '\n')
 
             if rsdlg.quad1check.IsChecked():
@@ -72,7 +72,7 @@ def OnRegression(event):
                 try:
                     gdlg3.get_graph().quadratic_fit_plot()
                     tree_menu.AppendItem(selectedID, "Quadratic Regression", data=gdlg3)
-                except (RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
+                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
                     error_txt.AppendText("Quadratic: " + str(e) + '\n')
 
             if rsdlg.cubic1check.IsChecked():
@@ -81,7 +81,7 @@ def OnRegression(event):
                 try:
                     gdlg4.get_graph().cubic_fit_plot()
                     tree_menu.AppendItem(selectedID, "Cubic Regression", data=gdlg4)
-                except (RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
+                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
                     error_txt.AppendText("Cubic: " + str(e) + '\n')
 
             if rsdlg.quart1check.IsChecked():
@@ -90,7 +90,7 @@ def OnRegression(event):
                 try:
                     gdlg5.get_graph().quartic_fit_plot()
                     tree_menu.AppendItem(selectedID, "Quartic Regression", data=gdlg5)
-                except (RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
+                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
                     error_txt.AppendText("Quartic: " + str(e) + '\n')
 
             if rsdlg.quint1check.IsChecked():
@@ -99,7 +99,7 @@ def OnRegression(event):
                 try:
                     gdlg6.get_graph().quintic_fit_plot()
                     tree_menu.AppendItem(selectedID, "Quintic Regression", data=gdlg6)
-                except (RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
+                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
                     error_txt.AppendText("Quintic: " + str(e) + '\n')
 
             if rsdlg.pow1check.IsChecked():
@@ -108,7 +108,7 @@ def OnRegression(event):
                 try:
                     gdlg7.get_graph().power_fit_plot()
                     tree_menu.AppendItem(selectedID, "Power Regression", data=gdlg7)
-                except (RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
+                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
                     error_txt.AppendText("Power: " + str(e) + '\n')
 
             if rsdlg.inverse1check.IsChecked():
@@ -117,7 +117,7 @@ def OnRegression(event):
                 try:
                     gdlg8.get_graph().inverse_fit_plot()
                     tree_menu.AppendItem(selectedID, "Inverse Regression", data=gdlg8)
-                except (RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
+                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
                     error_txt.AppendText("Inverse: " + str(e) + '\n')
 
             if rsdlg.insq1check.IsChecked():
@@ -126,7 +126,7 @@ def OnRegression(event):
                 try:
                     gdlg9.get_graph().inverse_squared_fit_plot()
                     tree_menu.AppendItem(selectedID, "Inverse Square Regression", data=gdlg9)
-                except (RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
+                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
                     error_txt.AppendText("Inverse Square: " + str(e) + '\n')
 
             if rsdlg.nexp1check.IsChecked():
@@ -135,7 +135,7 @@ def OnRegression(event):
                 try:
                     gdlg10.get_graph().naturalexp_fit_plot()
                     tree_menu.AppendItem(selectedID, "Natural Exponent Regression", data=gdlg10)
-                except (RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
+                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
                     error_txt.AppendText("Natural Exponent: " + str(e) + '\n')
 
             if rsdlg.Ln1check.IsChecked():
@@ -144,7 +144,7 @@ def OnRegression(event):
                 try:
                     gdlg11.get_graph().loge_fit_plot()
                     tree_menu.AppendItem(selectedID, "Natural Log Regression", data=gdlg11)
-                except (RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
+                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
                     error_txt.AppendText("Natural Log: " + str(e) + '\n')
 
             if rsdlg.b10log1check.IsChecked():
@@ -153,7 +153,7 @@ def OnRegression(event):
                 try:
                     gdlg12.get_graph().log10_fit_plot()
                     tree_menu.AppendItem(selectedID, "Base-10 Log Regression", data=gdlg12)
-                except (RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
+                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
                     error_txt.AppendText("Log10: " + str(e) + '\n')
 
             if rsdlg.invexp1check.IsChecked():
@@ -162,7 +162,7 @@ def OnRegression(event):
                 try:
                     gdlg13.get_graph().inverseexp_fit_plot()
                     tree_menu.AppendItem(selectedID, "Inverse Exponent Regression", data=gdlg13)
-                except (RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
+                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
                     error_txt.AppendText("Inverse Exponent: " + str(e) + '\n')
 
             if rsdlg.sin1check.IsChecked():
@@ -171,7 +171,7 @@ def OnRegression(event):
                 try:
                     gdlg14.get_graph().sin_fit_plot()
                     tree_menu.AppendItem(selectedID, "Sine Regression", data=gdlg14)
-                except (RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
+                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
                     error_txt.AppendText("Sine: " + str(e) + '\n')
 
             if rsdlg.cos1check.IsChecked():
@@ -180,7 +180,7 @@ def OnRegression(event):
                 try:
                     gdlg15.get_graph().cos_fit_plot()
                     tree_menu.AppendItem(selectedID, "Cosine Regression", data=gdlg15)
-                except (RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
+                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
                     error_txt.AppendText("Cosine: " + str(e) + '\n')
 
             if rsdlg.gauss1check.IsChecked():
@@ -189,7 +189,7 @@ def OnRegression(event):
                 try:
                     gdlg16.get_graph().gaussian_fit_plot()
                     tree_menu.AppendItem(selectedID, "Gaussian Regression", data=gdlg16)
-                except (RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
+                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
                     error_txt.AppendText("Gaussian: " + str(e) + '\n')
 
             if rsdlg.prop2check.IsChecked():
@@ -199,7 +199,7 @@ def OnRegression(event):
                 try:
                     gdlg.get_graph().proportional_plot()
                     tree_menu.AppendItem(selectedID, "Proportional R^2 - Scale", data=gdlg)
-                except (RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
+                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
                     error_txt.AppendText("Proportional R^2: " + str(e) + '\n')
 
             if rsdlg.lin2check.IsChecked():
@@ -209,7 +209,7 @@ def OnRegression(event):
                 try:
                     gdlg.get_graph().linear_plot()
                     tree_menu.AppendItem(selectedID, "Linear R^2 - Scale", data=gdlg)
-                except (RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
+                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
                     error_txt.AppendText("Linear R^2: " + str(e) + '\n')
 
             if rsdlg.quad2check.IsChecked():
@@ -219,7 +219,7 @@ def OnRegression(event):
                 try:
                     gdlg.get_graph().quadratic_plot()
                     tree_menu.AppendItem(selectedID, "Quadratic R^2 - Scale", data=gdlg)
-                except (RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
+                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
                     error_txt.AppendText("Quadratic R^2: " + str(e) + '\n')
 
             if rsdlg.cubic2check.IsChecked():
@@ -229,7 +229,7 @@ def OnRegression(event):
                 try:
                     gdlg.get_graph().cubic_plot()
                     tree_menu.AppendItem(selectedID, "Cubic R^2 - Scale", data=gdlg)
-                except (RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
+                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
                     error_txt.AppendText("Cubic R^2: " + str(e) + '\n')
 
             if rsdlg.quart2check.IsChecked():
@@ -239,7 +239,7 @@ def OnRegression(event):
                 try:
                     gdlg.get_graph().quartic_plot()
                     tree_menu.AppendItem(selectedID, "Quartic R^2 - Scale", data=gdlg)
-                except (RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
+                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
                     error_txt.AppendText("Quartic R^2: " + str(e) + '\n')
 
             if rsdlg.quint2check.IsChecked():
@@ -249,7 +249,7 @@ def OnRegression(event):
                 try:
                     gdlg.get_graph().quintic_plot()
                     tree_menu.AppendItem(selectedID, "Quintic R^2 - Scale", data=gdlg)
-                except (RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
+                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
                     error_txt.AppendText("Quintic R^2: " + str(e) + '\n')
 
             if rsdlg.pow2check.IsChecked():
@@ -259,7 +259,7 @@ def OnRegression(event):
                 try:
                     gdlg.get_graph().power_plot()
                     tree_menu.AppendItem(selectedID, "Power R^2 - Scale", data=gdlg)
-                except (RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
+                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
                     error_txt.AppendText("Power R^2: " + str(e) + '\n')
 
             if rsdlg.inverse2check.IsChecked():
@@ -269,7 +269,7 @@ def OnRegression(event):
                 try:
                     gdlg.get_graph().inverse_plot()
                     tree_menu.AppendItem(selectedID, "Inverse R^2 - Scale", data=gdlg)
-                except (RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
+                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
                     error_txt.AppendText("Inverse R^2: " + str(e) + '\n')
 
             if rsdlg.insq2check.IsChecked():
@@ -279,7 +279,7 @@ def OnRegression(event):
                 try:
                     gdlg.get_graph().inverse_squared_plot()
                     tree_menu.AppendItem(selectedID, "Inverse Square R^2 - Scale", data=gdlg)
-                except (RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
+                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
                     error_txt.AppendText("Inverse Squared R^2: " + str(e) + '\n')
 
             if rsdlg.nexp2check.IsChecked():
@@ -289,7 +289,7 @@ def OnRegression(event):
                 try:
                     gdlg.get_graph().natural_exp_plot()
                     tree_menu.AppendItem(selectedID, "Natural Exponent R^2 - Scale", data=gdlg)
-                except (RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
+                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
                     error_txt.AppendText("Natural Exponent R^2: " + str(e) + '\n')
 
             if rsdlg.Ln2check.IsChecked():
@@ -299,7 +299,7 @@ def OnRegression(event):
                 try:
                     gdlg.get_graph().loge_plot()
                     tree_menu.AppendItem(selectedID, "Natural Log R^2 - Scale", data=gdlg)
-                except (RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
+                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
                     error_txt.AppendText("Natural Log R^2: " + str(e) + '\n')
 
             if rsdlg.b10log2check.IsChecked():
@@ -309,7 +309,7 @@ def OnRegression(event):
                 try:
                     gdlg.get_graph().log10_plot()
                     tree_menu.AppendItem(selectedID, "Base-10 R^2 - Scale", data=gdlg)
-                except (RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
+                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
                     error_txt.AppendText("Log10 R^2: " + str(e) + '\n')
 
             if rsdlg.invexp2check.IsChecked():
@@ -319,7 +319,7 @@ def OnRegression(event):
                 try:
                     gdlg.get_graph().inverse_exp_plot()
                     tree_menu.AppendItem(selectedID, "Inverse Exponent R^2 - Scale", data=gdlg)
-                except (RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
+                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
                     error_txt.AppendText("Inverse Exponent R^2: " + str(e) + '\n')
 
             if rsdlg.sin2check.IsChecked():
@@ -329,7 +329,7 @@ def OnRegression(event):
                 try:
                     gdlg.get_graph().sin_plot()
                     tree_menu.AppendItem(selectedID, "Sine R^2 - Scale", data=gdlg)
-                except (RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
+                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
                     error_txt.AppendText("Sine R^2: " + str(e) + '\n')
 
             if rsdlg.cos2check.IsChecked():
@@ -339,7 +339,7 @@ def OnRegression(event):
                 try:
                     gdlg.get_graph().cos_plot()
                     tree_menu.AppendItem(selectedID, "Cosine R^2 - Scale", data=gdlg)
-                except (RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
+                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
                     error_txt.AppendText("Cosine R^2: " + str(e) + '\n')
 
             if rsdlg.gauss2check.IsChecked():
@@ -349,7 +349,7 @@ def OnRegression(event):
                 try:
                     gdlg.get_graph().gaussian_plot()
                     tree_menu.AppendItem(selectedID, "Gaussian R^2 - Scale", data=gdlg)
-                except (RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
+                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
                     error_txt.AppendText("Gaussian R^2: " + str(e) + '\n')
 
     except (RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
@@ -372,7 +372,11 @@ def OnFtest(event):
     selectedID = getPlotDataID()
     data = tree_menu.GetItemData(selectedID)
 
-    dlg = FtestDialog(frame, data, error_txt, tree_menu, selectedID)
+    try:
+        dlg = FtestDialog(frame, data, error_txt, tree_menu, selectedID)
+    except (ZeroDivisionError) as e:
+        error_txt.AppendText("F-test: " + str(e) + '\n')
+
     dlg.CenterOnScreen()
     dlg.ShowModal()
     tree_menu.Refresh()
@@ -383,7 +387,11 @@ def OnTtest(event):
     selectedID = getPlotDataID()
     data = tree_menu.GetItemData(selectedID)
 
-    dlg = TtestDialog(frame, data, error_txt, tree_menu, selectedID)
+    try:
+        dlg = TtestDialog(frame, data, error_txt, tree_menu, selectedID)
+    except (ZeroDivisionError) as e:
+        error_txt.AppendText("T-test: " + str(e) + '\n')
+
     dlg.CenterOnScreen()
     dlg.ShowModal()
     tree_menu.Refresh()
@@ -394,8 +402,11 @@ def OnANOVA(event):
     selectedID = getPlotDataID()
     data = tree_menu.GetItemData(selectedID)
 
-    dlg = ANOVAtestDialog(frame, data, error_txt, tree_menu, selectedID)
-    selectedID
+    try:
+        dlg = ANOVAtestDialog(frame, data, error_txt, tree_menu, selectedID)
+    except (ZeroDivisionError) as e:
+        error_txt.AppendText("Anova: " + str(e) + '\n')
+
     dlg.CenterOnScreen()
     dlg.ShowModal()
     tree_menu.Refresh()
@@ -415,7 +426,7 @@ def OnAreaPlot(event):
         gdlg17.get_graph().draw_plot()
         tree_menu.AppendItem(parent=selectedID, text="Relative Area - Scale", data=gdlg17)
         tree_menu.Refresh()
-    except (RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
+    except (RuntimeError, ZeroDivisionError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
          error_txt.AppendText("Area-Scale Graph: " + str(e) + '\n')
 
 # function to create the scale complexity plot
@@ -433,7 +444,7 @@ def OnComplexityPlot(event):
         gdlg18.get_graph().draw_complexity_plot()
         tree_menu.AppendItem(selectedID, "Complexity - Scale", data=gdlg18)
         tree_menu.Refresh()
-    except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning, RuntimeWarning) as e:
+    except (RuntimeError, ZeroDivisionError, Exception, Warning, TypeError, OptimizeWarning, RuntimeWarning) as e:
         error_txt.AppendText("Complexity-Scale Graph: " + str(e) + '\n')
 
 def OnHHPlot(event):
