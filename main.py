@@ -81,7 +81,7 @@ def OnRegression(event):
                 try:
                     gdlg4.get_graph().cubic_fit_plot()
                     tree_menu.AppendItem(selectedID, "Cubic Regression", data=gdlg4)
-                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
+                except (ZeroDivisionError, OptimizeWarning) as e: #RuntimeError, Exception, Warning, TypeError, RuntimeWarning,
                     error_txt.AppendText("Cubic: " + str(e) + '\n')
 
             if rsdlg.quart1check.IsChecked():
@@ -351,8 +351,9 @@ def OnRegression(event):
                     tree_menu.AppendItem(selectedID, "Gaussian R^2 - Scale", data=gdlg)
                 except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
                     error_txt.AppendText("Gaussian R^2: " + str(e) + '\n')
-
-    except (RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
+        # Refresh tree menu to show newly created graphs
+        tree_menu.Refresh()
+    except (OptimizeWarning) as e: #RuntimeError, Warning, TypeError, RuntimeWarning,
         error_txt.AppendText("Graph: " + str(e) + '\n')
 
 # function to get the x-regression values

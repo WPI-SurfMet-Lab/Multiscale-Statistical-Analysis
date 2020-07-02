@@ -613,7 +613,7 @@ class RegressionPlot(wx.Panel):
         wx.Panel.__init__(self, parent, size=wx.Size(640, 480), style=wx.SIMPLE_BORDER)
 
         self.tree_menu = tree
-        self.workbook = self.tree_menu.GetItemData(swb)
+        self.workbook = self.tree_menu.GetItemData(swb).get_wb()
         self.swb = swb
         self.cvf = cvf
         self.figure = Figure()
@@ -788,7 +788,7 @@ class RegressionPlot(wx.Panel):
         wb_data.__setitem__((cells[p_i][0] + 11, write_col), self.get_lineColor())
         wb_data.__setitem__((cells[p_i][0] + 12, write_col), '-')
         wb_data.__setitem__((cells[p_i][0] + 13, write_col), self.get_legendText())
-        self.get_tree_menu().SetItemData(self.get_swb(), self.get_wb())
+        #self.get_tree_menu().SetItemData(self.get_swb(), self.get_wb())
 
     # following functions perform same as above but for other curve types
     def proportional_fit_plot(self):
@@ -858,7 +858,7 @@ class RegressionPlot(wx.Panel):
         wb_data.__setitem__((cells[p_i][0] + 11, write_col), self.get_lineColor())
         wb_data.__setitem__((cells[p_i][0] + 12, write_col), '-')
         wb_data.__setitem__((cells[p_i][0] + 13, write_col), self.get_legendText())
-        self.get_tree_menu().SetItemData(self.get_swb(), self.get_wb())
+        #self.get_tree_menu().SetItemData(self.get_swb(), self.get_wb())
 
     def quadratic_fit_plot(self):
 
@@ -930,13 +930,13 @@ class RegressionPlot(wx.Panel):
         wb_data.__setitem__((cells[p_i][0] + 11, write_col), self.get_lineColor())
         wb_data.__setitem__((cells[p_i][0] + 12, write_col), '-')
         wb_data.__setitem__((cells[p_i][0] + 13, write_col), self.get_legendText())
-        self.get_tree_menu().SetItemData(self.get_swb(), self.get_wb())
+        #self.get_tree_menu().SetItemData(self.get_swb(), self.get_wb())
 
     def cubic_fit_plot(self):
 
         bestr2 = -1
         bestscale = -1
-        poptbest = None
+        poptbest = []
         pcovbest = None
         y = None
 
@@ -957,9 +957,10 @@ class RegressionPlot(wx.Panel):
                 bestr2 = r2
                 bestscale = self.get_x()[self.get_y().index(y_values)]
                 y = y_values
-                poptbest = popt
+                poptbest.append(popt)
                 pcovbest = pcov
         self.set_yr(np.array(y))
+        print(poptbest)
         self.set_curve(self.get_cvf().cubic_fit(np.array(self.get_x_plot()), *poptbest))
         self.set_popt('y = {}x^3 + {}x^2 + {}x + {}'.format(*np.round(poptbest, 3)))
 
@@ -999,7 +1000,7 @@ class RegressionPlot(wx.Panel):
         wb_data.__setitem__((cells[p_i][0] + 11, write_col), self.get_lineColor())
         wb_data.__setitem__((cells[p_i][0] + 12, write_col), '-')
         wb_data.__setitem__((cells[p_i][0] + 13, write_col), self.get_legendText())
-        self.get_tree_menu().SetItemData(self.get_swb(), self.get_wb())
+        #self.get_tree_menu().SetItemData(self.get_swb(), self.get_wb())
 
     def quartic_fit_plot(self):
 
@@ -1068,7 +1069,7 @@ class RegressionPlot(wx.Panel):
         wb_data.__setitem__((cells[p_i][0] + 11, write_col), self.get_lineColor())
         wb_data.__setitem__((cells[p_i][0] + 12, write_col), '-')
         wb_data.__setitem__((cells[p_i][0] + 13, write_col), self.get_legendText())
-        self.get_tree_menu().SetItemData(self.get_swb(), self.get_wb())
+        #self.get_tree_menu().SetItemData(self.get_swb(), self.get_wb())
 
     def quintic_fit_plot(self):
 
@@ -1136,7 +1137,7 @@ class RegressionPlot(wx.Panel):
         wb_data.__setitem__((cells[p_i][0] + 11, write_col), self.get_lineColor())
         wb_data.__setitem__((cells[p_i][0] + 12, write_col), '-')
         wb_data.__setitem__((cells[p_i][0] + 13, write_col), self.get_legendText())
-        self.get_tree_menu().SetItemData(self.get_swb(), self.get_wb())
+        #self.get_tree_menu().SetItemData(self.get_swb(), self.get_wb())
 
     def power_fit_plot(self):
 
@@ -1206,7 +1207,7 @@ class RegressionPlot(wx.Panel):
         wb_data.__setitem__((cells[p_i][0] + 11, write_col), self.get_lineColor())
         wb_data.__setitem__((cells[p_i][0] + 12, write_col), '-')
         wb_data.__setitem__((cells[p_i][0] + 13, write_col), self.get_legendText())
-        self.get_tree_menu().SetItemData(self.get_swb(), self.get_wb())
+        #self.get_tree_menu().SetItemData(self.get_swb(), self.get_wb())
 
     def inverse_fit_plot(self):
 
@@ -1275,7 +1276,7 @@ class RegressionPlot(wx.Panel):
         wb_data.__setitem__((cells[p_i][0] + 11, write_col), self.get_lineColor())
         wb_data.__setitem__((cells[p_i][0] + 12, write_col), '-')
         wb_data.__setitem__((cells[p_i][0] + 13, write_col), self.get_legendText())
-        self.get_tree_menu().SetItemData(self.get_swb(), self.get_wb())
+        #self.get_tree_menu().SetItemData(self.get_swb(), self.get_wb())
 
     def inverse_squared_fit_plot(self):
 
@@ -1345,7 +1346,7 @@ class RegressionPlot(wx.Panel):
         wb_data.__setitem__((cells[p_i][0] + 11, write_col), self.get_lineColor())
         wb_data.__setitem__((cells[p_i][0] + 12, write_col), '-')
         wb_data.__setitem__((cells[p_i][0] + 13, write_col), self.get_legendText())
-        self.get_tree_menu().SetItemData(self.get_swb(), self.get_wb())
+        #self.get_tree_menu().SetItemData(self.get_swb(), self.get_wb())
 
     def naturalexp_fit_plot(self):
 
@@ -1415,7 +1416,7 @@ class RegressionPlot(wx.Panel):
         wb_data.__setitem__((cells[p_i][0] + 11, write_col), self.get_lineColor())
         wb_data.__setitem__((cells[p_i][0] + 12, write_col), '-')
         wb_data.__setitem__((cells[p_i][0] + 13, write_col), self.get_legendText())
-        self.get_tree_menu().SetItemData(self.get_swb(), self.get_wb())
+        #self.get_tree_menu().SetItemData(self.get_swb(), self.get_wb())
 
     def loge_fit_plot(self):
 
@@ -1477,7 +1478,7 @@ class RegressionPlot(wx.Panel):
         wb_data.__setitem__((cells[p_i][0] + 11, write_col), self.get_lineColor())
         wb_data.__setitem__((cells[p_i][0] + 12, write_col), '-')
         wb_data.__setitem__((cells[p_i][0] + 13, write_col), self.get_legendText())
-        self.get_tree_menu().SetItemData(self.get_swb(), self.get_wb())
+        #self.get_tree_menu().SetItemData(self.get_swb(), self.get_wb())
 
     def log10_fit_plot(self):
 
@@ -1547,7 +1548,7 @@ class RegressionPlot(wx.Panel):
         wb_data.__setitem__((cells[p_i][0] + 11, write_col), self.get_lineColor())
         wb_data.__setitem__((cells[p_i][0] + 12, write_col), '-')
         wb_data.__setitem__((cells[p_i][0] + 13, write_col), self.get_legendText())
-        self.get_tree_menu().SetItemData(self.get_swb(), self.get_wb())
+        #self.get_tree_menu().SetItemData(self.get_swb(), self.get_wb())
 
     def inverseexp_fit_plot(self):
 
@@ -1618,7 +1619,7 @@ class RegressionPlot(wx.Panel):
         wb_data.__setitem__((cells[p_i][0] + 11, write_col), self.get_lineColor())
         wb_data.__setitem__((cells[p_i][0] + 12, write_col), '-')
         wb_data.__setitem__((cells[p_i][0] + 13, write_col), self.get_legendText())
-        self.get_tree_menu().SetItemData(self.get_swb(), self.get_wb())
+        #self.get_tree_menu().SetItemData(self.get_swb(), self.get_wb())
 
     def sin_fit_plot(self):
 
@@ -1688,7 +1689,7 @@ class RegressionPlot(wx.Panel):
         wb_data.__setitem__((cells[p_i][0] + 11, write_col), self.get_lineColor())
         wb_data.__setitem__((cells[p_i][0] + 12, write_col), '-')
         wb_data.__setitem__((cells[p_i][0] + 13, write_col), self.get_legendText())
-        self.get_tree_menu().SetItemData(self.get_swb(), self.get_wb())
+        #self.get_tree_menu().SetItemData(self.get_swb(), self.get_wb())
 
     def cos_fit_plot(self):
 
@@ -1758,7 +1759,7 @@ class RegressionPlot(wx.Panel):
         wb_data.__setitem__((cells[p_i][0] + 11, write_col), self.get_lineColor())
         wb_data.__setitem__((cells[p_i][0] + 12, write_col), '-')
         wb_data.__setitem__((cells[p_i][0] + 13, write_col), self.get_legendText())
-        self.get_tree_menu().SetItemData(self.get_swb(), self.get_wb())
+        #self.get_tree_menu().SetItemData(self.get_swb(), self.get_wb())
 
     def gaussian_fit_plot(self):
 
@@ -1828,7 +1829,7 @@ class RegressionPlot(wx.Panel):
         wb_data.__setitem__((cells[p_i][0] + 11, write_col), self.get_lineColor())
         wb_data.__setitem__((cells[p_i][0] + 12, write_col), '-')
         wb_data.__setitem__((cells[p_i][0] + 13, write_col), self.get_legendText())
-        self.get_tree_menu().SetItemData(self.get_swb(), self.get_wb())
+        #self.get_tree_menu().SetItemData(self.get_swb(), self.get_wb())
 
     def get_axes(self): return self.axes
     def get_x(self): return self.x
