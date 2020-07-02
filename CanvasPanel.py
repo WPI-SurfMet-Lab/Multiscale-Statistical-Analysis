@@ -4,7 +4,7 @@ import wx
 from matplotlib import use
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wx import NavigationToolbar2Wx as NavigationToolbar
-from matplotlib.figure import Figure
+from matplotlib.pyplot import figure, yscale
 from scipy.optimize import OptimizeWarning
 from GraphDialogs import SymbolDialog
 from GraphDialogs import LegendDialog
@@ -25,7 +25,7 @@ class R2byScalePlot(wx.Panel):
         self.root = root
         self.parent = parent
         self.cvf = cvf
-        self.figure = Figure()
+        self.figure = figure()
         # defines the plot using subplot function
         self.axes = self.get_fig().add_subplot(111)
 
@@ -616,7 +616,7 @@ class RegressionPlot(wx.Panel):
         self.workbook = self.tree_menu.GetItemData(swb).get_wb()
         self.swb = swb
         self.cvf = cvf
-        self.figure = Figure()
+        self.figure = figure()
         # defines the plot
         self.axes = self.get_fig().add_subplot(111)
 
@@ -1891,7 +1891,7 @@ class SclbyAreaPlot(wx.Panel):
     def __init__(self, parent, x, y, data):
         # gets the Panel properties
         wx.Panel.__init__(self, parent, size=wx.Size(640, 530), style=wx.SIMPLE_BORDER)
-        self.figure = Figure()
+        self.figure = figure()
         # defines the plot not entirely sure what the numbers in add_subplot mean
         self.axes = self.get_fig().add_subplot(111)
         self.canvas = FigureCanvas(self, -1, self.get_fig())
@@ -2022,6 +2022,9 @@ class SclbyAreaPlot(wx.Panel):
         # self.get_axes().locator_params(axis='x', nbins=8)
 
         for yvals in self.get_y():
+            # Prevent negative input into log10
+            if np.any(yvals < 0) :
+                raise Exception("Y-values cannot be negative because of log scale.")
             # scatter log of complexity values
             scatterList.append(self.get_axes().scatter(self.get_x(), np.log10(yvals), marker="o", s=8))
 
@@ -2070,7 +2073,7 @@ class RegressionSelectPlot(wx.Panel):
 
         self.cvf = cvf
         self.scale = scale
-        self.figure = Figure()
+        self.figure = figure()
         # defines the plot not entirely sure what the numbers in add_subplot mean
         self.axes = self.get_fig().add_subplot(111)
 
@@ -2917,7 +2920,7 @@ class HHPlot(wx.Panel):
         # gets the Panel properties
         wx.Panel.__init__(self, parent, size=wx.Size(640, 480), style=wx.SIMPLE_BORDER)
 
-        self.figure = Figure()
+        self.figure = figure()
         # defines the plot not entirely sure what the numbers in add_subplot mean
         self.axes = self.get_fig().add_subplot(111)
         self.canvas = FigureCanvas(self, -1, self.get_fig())
