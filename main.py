@@ -81,7 +81,7 @@ def OnRegression(event):
                 try:
                     gdlg4.get_graph().cubic_fit_plot()
                     tree_menu.AppendItem(selectedID, "Cubic Regression", data=gdlg4)
-                except (ZeroDivisionError, OptimizeWarning) as e: #RuntimeError, Exception, Warning, TypeError, RuntimeWarning,
+                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
                     error_txt.AppendText("Cubic: " + str(e) + '\n')
 
             if rsdlg.quart1check.IsChecked():
@@ -353,7 +353,7 @@ def OnRegression(event):
                     error_txt.AppendText("Gaussian R^2: " + str(e) + '\n')
         # Refresh tree menu to show newly created graphs
         tree_menu.Refresh()
-    except (ZeroDivisionError, OptimizeWarning) as e: #RuntimeError, Warning, TypeError, RuntimeWarning,
+    except (ZeroDivisionError, RuntimeError, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
         error_txt.AppendText("Graph: " + str(e) + '\n')
 
 # function to get the x-regression values
@@ -468,6 +468,18 @@ def OnSelection(event):
     else:
         selected.CenterOnScreen()
         selected.Show()
+
+# function to rename selected graphs/workbooks
+def OnRename(event):
+    selectedID = tree_menu.GetSelection()
+    selected = tree_menu.GetItemData(selectedID)
+    newName = event.GetLabel()
+
+    if isinstance(selected, PlotData):
+        error_txt.AppendText("Wb: Renaming `" + selected.get_wb().get_name() + "` to `" + newName + "`\n")
+        selected.get_wb().set_name(newName)
+    else:
+        pass
 
 # function to display dialog about the software
 def OnAbout(event):
@@ -735,6 +747,7 @@ root = tree_menu.AddRoot("graphs-root")
 tree_sizer.Add(tree_menu, 1, wx.EXPAND)
 left_panel.SetSizer(tree_sizer)
 frame.Bind(wx.EVT_TREE_ITEM_ACTIVATED, OnSelection, tree_menu)
+frame.Bind(wx.EVT_TREE_END_LABEL_EDIT, OnRename, tree_menu)
 
 main_sizer.Clear()
 main_sizer.Layout()
