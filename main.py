@@ -526,30 +526,37 @@ def OnAbout(event):
 # function to open the data files
 def OnOpen(event):
     frame.EnableCloseButton(False)
-    #     # create the open file dialog, if a file exists the user is able to open it will probably change it so
-    #     # only the MountainsMap data file format can be opened
-    openFileDialog = wx.FileDialog(frame, "Open",  # wildcard="CSV UTF-8 (Comma delimited) (*.csv)|*.csv" ,# \ "
-                                   # "TXT (*.txt)|*.txt",
-                                   style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST | wx.FD_MULTIPLE)
-    openFileDialog.CenterOnScreen()
-    # shows the dialog on screen
-    result = openFileDialog.ShowModal()
-    # only opens the file if 'open' in dialog is pressed otherwise if 'cancel' in dialog is pressed closes dialog
-    if result == wx.ID_OK:
-        # gets the file path
-        filepath = openFileDialog.GetPaths()
-        data = tree_menu.GetItemData(getPlotDataID())
+    output = False
+    try:
+        #     # create the open file dialog, if a file exists the user is able to open it will probably change it so
+        #     # only the MountainsMap data file format can be opened
+        openFileDialog = wx.FileDialog(frame, "Open",  # wildcard="CSV UTF-8 (Comma delimited) (*.csv)|*.csv" ,# \ "
+                                       # "TXT (*.txt)|*.txt",
+                                       style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST | wx.FD_MULTIPLE)
+        openFileDialog.CenterOnScreen()
+        # shows the dialog on screen
+        result = openFileDialog.ShowModal()
+        # only opens the file if 'open' in dialog is pressed otherwise if 'cancel' in dialog is pressed closes dialog
+        if result == wx.ID_OK:
+            # gets the file path
+            filepath = openFileDialog.GetPaths()
+            data = tree_menu.GetItemData(getPlotDataID())
 
-        # opens the file and reads it
-        if filepath[0][len(filepath[0]) - 3:len(filepath[0])] == 'csv':
-            data.open_file(filepath)
-        if filepath[0][len(filepath[0]) - 3:len(filepath[0])] == 'txt':
-            data.open_file2(filepath)
+            # opens the file and reads it
+            if filepath[0][len(filepath[0]) - 3:len(filepath[0])] == 'csv':
+                data.open_file(filepath)
+            if filepath[0][len(filepath[0]) - 3:len(filepath[0])] == 'txt':
+                data.open_file2(filepath)
+            frame.EnableCloseButton(True)
+            output = True
+        elif result == wx.ID_CANCEL:
+            frame.EnableCloseButton(True)
+            output = False
+    except (Exception) as e:
+        raise e
+    finally:
         frame.EnableCloseButton(True)
-        return True
-    elif result == wx.ID_CANCEL:
-        frame.EnableCloseButton(True)
-        return False
+        return output
 
 def OnNewWB(event):
 
@@ -582,32 +589,60 @@ def getPlotDataID() :
     return selectedID
 
 def OnSave(event):
-    selectedID = getPlotDataID()
-    selectedWorkbook = tree_menu.GetItemData(selectedID).get_wb()
+    frame.EnableCloseButton(False)
+    output = False
+    try:
+        selectedID = getPlotDataID()
+        selectedWorkbook = tree_menu.GetItemData(selectedID).get_wb()
 
-    saveFileDialog = wx.FileDialog(frame, "Save", selectedWorkbook.name, "xlsx (*.xlsx)|*.xlsx", wx.FD_SAVE)
-    saveFileDialog.CenterOnScreen()
-    # shows the dialog on screen when pushes button
-    result = saveFileDialog.ShowModal()
-    # only saves the file if 'save' in dialog is pressed otherwise if 'cancel' in dialog is pressed closes dialog
-    if result == wx.ID_OK:
-        # gets the file path
-        filepath = saveFileDialog.GetPath()
+        saveFileDialog = wx.FileDialog(frame, "Save", selectedWorkbook.name, "xlsx (*.xlsx)|*.xlsx", style=wx.FD_SAVE)
+        saveFileDialog.CenterOnScreen()
+        # shows the dialog on screen when pushes button
+        result = saveFileDialog.ShowModal()
+        # only saves the file if 'save' in dialog is pressed otherwise if 'cancel' in dialog is pressed closes dialog
+        if result == wx.ID_OK:
+            # gets the file path
+            filepath = saveFileDialog.GetPath()
 
-        cells = selectedWorkbook.get_data().keys()
-        values = selectedWorkbook.get_data().values()
+            cells = selectedWorkbook.get_data().keys()
+            values = selectedWorkbook.get_data().values()
 
-        file = openpyxl.Workbook()
-        sheet = file.worksheets[0]
+            file = openpyxl.Workbook()
+            sheet = file.worksheets[0]
 
-        for item in zip(cells, values):
+            for item in zip(cells, values):
 
-            sheet.cell(row=item[0][0] + 1, column=item[0][1] + 1).value = str(item[1])
+                sheet.cell(row=item[0][0] + 1, column=item[0][1] + 1).value = str(item[1])
 
-        file.save(filepath)
-        return True
-    elif result == wx.ID_CANCEL:
-        return False
+            file.save(filepath)
+            output = True
+        elif result == wx.ID_CANCEL:
+            output = False
+    except e:
+        raise e
+    finally:
+        frame.EnableCloseButton(True)
+        return output
+
+# function to handle window maximization
+def onMaxmizeRestore(event):
+    global resized
+    global frame
+    global width, height
+
+    # Shrinks the window at initial resizing
+    if frame.IsMaximized() :
+        pass
+    else:
+        if not resized:
+            screen = wx.DisplaySize()
+            width = screen[0]
+            height = screen[1]
+            frame.SetSize(0.0, 0.0, width/1.5, height/1.5, sizeFlags=wx.SIZE_AUTO)
+            frame.CenterOnScreen()
+            resized = True
+        else:
+            pass
 
 # function to exit the software
 def OnExit(event):
@@ -628,6 +663,7 @@ def OnExit(event):
         return False
 
 app = wx.App(redirect=False)
+resized = False
 
 # sets the size of the window to be the size of the users computer screen can be set to integers instead
 screen = wx.DisplaySize()
@@ -635,9 +671,12 @@ width = screen[0]
 height = screen[1]
 
 frame = wx.Frame(None, title='Multiscale Analysis')
-frame.SetSize(0.0, 0.0, width, height)
+frame.SetSize(0.0, 0.0, width, height, sizeFlags=wx.SIZE_AUTO)
 frame.SetBackgroundColour('#ffffff')
 frame.EnableCloseButton(enable=True)
+frame.Bind(wx.EVT_CLOSE, OnExit)
+frame.Bind(wx.EVT_SIZE, onMaxmizeRestore)
+
 # this is a bunch of GUI stuff
 # general curve fit object which has all of the regression curve functions
 cvf = CurveFit()
