@@ -4,13 +4,10 @@ import wx.grid
 
 class Workbook(wx.grid.GridTableBase):
 
-    def __init__(self, data, tag, rows, columns):
+    def __init__(self, data:dict, name:str, rows:int, columns:int):
         wx.grid.GridTableBase.__init__(self)
         self.data = data
-        # {(0, 0): "yeet",
-        #  (1, 1): "two",
-        #  (2, 2): "yes"}
-        self.tag = tag
+        self.name = name
         self.rows = rows
         self.columns = columns
         self.IsSaved = False
@@ -34,8 +31,8 @@ class Workbook(wx.grid.GridTableBase):
     def SetValue(self, row, col, value):
         self.data[(row, col)] = value
 
-    def get_tag(self): return self.tag
-    def set_tag(self, tag): self.tag = tag
+    def get_name(self): return self.name
+    def set_name(self, name): self.name = name
     def get_data(self): return self.data
     def set_data(self, data): self.data = data
     def get_rows(self): return self.rows

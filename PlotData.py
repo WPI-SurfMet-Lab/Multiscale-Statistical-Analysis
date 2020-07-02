@@ -1,13 +1,15 @@
 
-import main
+#import main
+from Workbook import Workbook
 import os
 import wx
 import csv
 import numpy as np
 import pyautogui
-import subprocess
-import re.sub
+from re import sub
 import winreg
+from wx import TextCtrl, TreeCtrl
+from wx.grid import Grid
 
 
 # Class PlotData:
@@ -17,10 +19,10 @@ import winreg
 
 class PlotData:
 
-    def __init__(self, error_txt, tree_menu, wbs,  grid):
+    def __init__(self, error_text:TextCtrl, grid:Grid, wb:Workbook):
 
         # the error text object which allows for errors to be logged in the main window.
-        self.error_text = error_txt
+        self.error_text = error_text
         # saves a list of the scales from the data files. It is important that the data files that are opened at the same time
         # all have the same scales
         self.results_scale = []
@@ -40,9 +42,8 @@ class PlotData:
         self.complexity = []
 
         self.strings = []
-        self.wbs = wbs
         self.grid = grid
-        self.tree_menu = tree_menu
+        self.wb = wb
 
     # function to open .csv files from Sfrax
     # takes in a list of file paths for the files the user opens
@@ -162,32 +163,40 @@ class PlotData:
             # complexity data
             complexList = []
 
+            # Defines if the data values have been found, so float warnings can be ignored
+            dataFound = False
+
             # open the file
             with open(file) as openfile:
-
+                # Line number
+                lineNum = 0
                 # variable which contains a list of all of the lines in the text file
                 lines = openfile.readlines()
                 # iterate over each line in the text file
                 for line in lines:
-
+                    lineNum += 1 # Increase line counter
                     try:
                         # process text in file each line becomes a list of words and numbers
                         line = line.split("\t")
                         # the first value in the list is always either scale value or text
                         # if it is text a value error will be thrown here and is skipped
                         # otherwise check if the scale value is in the list of scales
-                        if not self.get_results_scale().__contains__(np.round_(np.sqrt(2*float(line[0])), 4)):
+                        scaleVal = np.sqrt(2*float(line[0]))
+                        if not np.round_(scaleVal, 4) in self.get_results_scale():
                             # if not add the value to the list of scales
-                            self.get_results_scale().append(np.round_(np.sqrt(2*float(line[0])), 4))
-
+                            self.get_results_scale().append(np.round_(scaleVal, 4))
+                            
                         # second value in the line is always relative area add to temp list
                         tempList.append(np.round_(float(line[1]), 4))
                         # third value in the line is always complexity add to temp list
                         complexList.append(np.round_(float(line[2]), 4))
+                        # With the float conversions being successful, data has been found
+                        dataFound = True
                     # throw and log errors
                     except ValueError as e:
                         s.append(line)
-                        self.get_error_text().AppendText("Open: " + str(e) + '\n')
+                        if dataFound :
+                            self.get_error_text().AppendText("Open (" + openfile.name + ":" + str(lineNum) + "): " + str(e) + '\n')
                 # append temp lists to complexity and relative area lists
                 self.get_relative_area().append(tempList)
                 self.get_complexity().append(complexList)
@@ -205,8 +214,6 @@ class PlotData:
             self.get_regress_sets().append(list(y_values))
 
         # add data to workbook hopefully ----------------------------------------------------
-        newWB = self.get_tree().GetItemData(self.get_wbs()[len(self.get_wbs()) - 1])
-
         [print(x) for x in s]
 
         start = 5
@@ -249,9 +256,9 @@ class PlotData:
         add_data.__setitem__((start + len(self.get_results_scale()) + 18, 0), "line_symbol")
         add_data.__setitem__((start + len(self.get_results_scale()) + 19, 0), "legend_text")
 
-        newWB.set_data(add_data)
-        self.get_grid().SetTable(newWB)
-        # self.get_grid().AutoSizeColumns()
+        self.wb.set_data(add_data)
+        self.get_grid().SetTable(self.wb)
+        self.get_grid().AutoSizeColumns()
         self.get_grid().Refresh()
 
         self.get_error_text().AppendText("Done." + '\n')
@@ -279,7 +286,7 @@ class PlotData:
 
         for surf_file_path in file_paths :
             # Generate name for results file to be used
-            re.sub()
+            sub()
             # Write external command file for MountainsMap
             cmd_file = open(cmd_path, "w")
             cmd_contents = [
@@ -315,8 +322,8 @@ class PlotData:
     def get_error_text(self): return self.error_text
     def get_complexity(self): return self.complexity
     def set_complexity(self, comp): self.complexity = comp
-    def get_wbs(self): return self.wbs
     def get_grid(self): return self.grid
-    def get_tree(self): return self.tree_menu
+    def get_wb(self): return self.wb
+    def set_wb(self, wb): self.wb = wb
     def get_strings(self): return self.strings
     def set_strings(self, string): self.strings = string

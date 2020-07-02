@@ -46,6 +46,11 @@ class FtestDialog(wx.Dialog):
         self.selectedAlpha = ''
         self.Bind(wx.EVT_TEXT, self.OnAlphaSelect, self.alpha_select)
 
+        self.outlier_txt = wx.StaticText(self.panel, wx.ID_ANY, 'Max F-Val: ', pos=(320, 340))
+        self.outlier_select = wx.TextCtrl(self.panel, wx.ID_ANY, '', pos=(380, 337), size=(50, 20))
+        self.selectedOutlier = ''
+        self.Bind(wx.EVT_TEXT, self.OnOutlierSelect, self.outlier_select)
+
         self.range_txt = wx.StaticText(self.panel, wx.ID_ANY, 'Scale: ', pos=(480, 340))
 
         self.range_choices = list(map(str, self.get_data().get_results_scale()))
@@ -60,11 +65,6 @@ class FtestDialog(wx.Dialog):
         self.results_box = wx.StaticBox(self.panel, wx.ID_ANY, 'Results', pos=(20, 375), size=(780, 200))
         self.results_txt = wx.TextCtrl(self.results_box, pos=(15,20), size=(750, 170), style=wx.TE_READONLY | wx.TE_MULTILINE)
         self.results_txt.SetBackgroundColour('#f0f0f0')
-
-        self.outlier_txt = wx.StaticText(self.panel, wx.ID_ANY, 'Max F-Val: ', pos=(320, 340))
-        self.outlier_select = wx.TextCtrl(self.panel, wx.ID_ANY, '', pos=(380, 337), size=(50, 20))
-        self.selectedOutlier = ''
-        self.Bind(wx.EVT_TEXT, self.OnOutlierSelect, self.outlier_select)
 
         self.helpbutton = wx.Button(self.panel, wx.ID_HELP, pos=(20, 600))
         self.okbutton = wx.Button(self.panel, wx.ID_OK, "OK", pos=(630, 600))
