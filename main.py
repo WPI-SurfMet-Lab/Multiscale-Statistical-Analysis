@@ -353,7 +353,7 @@ def OnRegression(event):
                     error_txt.AppendText("Gaussian R^2: " + str(e) + '\n')
         # Refresh tree menu to show newly created graphs
         tree_menu.Refresh()
-    except (OptimizeWarning) as e: #RuntimeError, Warning, TypeError, RuntimeWarning,
+    except (ZeroDivisionError, OptimizeWarning) as e: #RuntimeError, Warning, TypeError, RuntimeWarning,
         error_txt.AppendText("Graph: " + str(e) + '\n')
 
 # function to get the x-regression values
