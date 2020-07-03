@@ -6,7 +6,6 @@ import openpyxl
 
 from Workbook import Workbook
 from scipy.optimize import OptimizeWarning
-from CurveFit import CurveFit
 from Dialogs import RegressionDialog
 from Dialogs import GraphSelectDialog
 from Dialogs import R2byScaleDialog
@@ -42,7 +41,7 @@ def OnRegression(event):
     warnings.simplefilter("error", OptimizeWarning)
     try:
         rsdlg = GraphSelectDialog(frame, data.get_results_scale(), data.get_x_regress(), data.get_regress_sets(),
-                                  error_txt, cvf)
+                                  error_txt)
         rsdlg.CenterOnScreen()
         resid = rsdlg.ShowModal()
 
@@ -101,10 +100,10 @@ def OnRegression(event):
                     try:
                         # Generate either R^2 or Regression dialog depending on selection
                         if isR2:
-                            gdlg = R2byScaleDialog(frame, title, data, error_txt, cvf, tree_menu, selectedID, id)
+                            gdlg = R2byScaleDialog(frame, title, data, error_txt, tree_menu, selectedID, id)
                         else:
                             gdlg = RegressionDialog(frame, title, data.get_results_scale(), data.get_x_regress(),
-                                                        data.get_regress_sets(), cvf, selectedID, tree_menu)
+                                                        data.get_regress_sets(), selectedID, tree_menu)
                         fit_func(gdlg.get_graph())
                         tree_menu.AppendItem(selectedID, menu_label, data=gdlg)
                         break
@@ -437,8 +436,6 @@ frame.Bind(wx.EVT_CLOSE, OnExit)
 frame.Bind(wx.EVT_SIZE, onMaxmizeRestore)
 
 # this is a bunch of GUI stuff
-# general curve fit object which has all of the regression curve functions
-cvf = CurveFit()
 # create the menu bar and populate it
 filemenu = wx.Menu()
 openitem = wx.MenuItem(parentMenu=filemenu, id=wx.ID_OPEN, text="Open")

@@ -1,6 +1,7 @@
 import warnings
 import numpy as np
 import wx
+import CurveFit
 from matplotlib import use
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wx import NavigationToolbar2Wx as NavigationToolbar
@@ -18,7 +19,7 @@ use('WXAgg')
 # Class for the R^2 by scale plots to generate the graphs
 class R2byScalePlot(wx.Panel):
 
-    def __init__(self, parent, data, error_txt, cvf, tree_menu, root, id):
+    def __init__(self, parent, data, error_txt, tree_menu, root, id):
         # gets the Panel properties
         wx.Panel.__init__(self, parent, size=wx.Size(640, 480), style=wx.SIMPLE_BORDER)
         # id corresponding to regression curve type
@@ -26,7 +27,6 @@ class R2byScalePlot(wx.Panel):
         # to attach the graph in left hand column
         self.root = root
         self.parent = parent
-        self.cvf = cvf
         self.figure = figure()
         # defines the plot using subplot function
         self.axes = self.get_fig().add_subplot(111)
@@ -106,97 +106,97 @@ class R2byScalePlot(wx.Panel):
                         if self.id == 0:
                             dialog = RegressionSelectDialog(self.get_parent(), "Proportional Regression Plot",
                                                             data.get_results_scale(),
-                                                            xregress, yregress, self.get_cvf(), index)
+                                                            xregress, yregress, index)
                             dialog.get_graph().proportional_fit_plot()
                             tree_menu.AppendItem(self.get_root(), "Proportional Regression at " + str(scale), data=dialog)
                         if self.id == 1:
                             dialog = RegressionSelectDialog(self.get_parent(), "Linear Regression Plot",
                                                             data.get_results_scale(),
-                                                            xregress, yregress, self.get_cvf(), index)
+                                                            xregress, yregress, index)
                             dialog.get_graph().linear_fit_plot()
                             tree_menu.AppendItem(self.get_root(), "Linear Regression at " + str(scale), data=dialog)
                         if self.id == 2:
                             dialog = RegressionSelectDialog(self.get_parent(), "Quadratic Regression Plot",
                                                             data.get_results_scale(),
-                                                            xregress, yregress, self.get_cvf(), index)
+                                                            xregress, yregress, index)
                             dialog.get_graph().quadratic_fit_plot()
                             tree_menu.AppendItem(self.get_root(), "Quadratic Regression at " + str(scale), data=dialog)
                         if self.id == 3:
                             dialog = RegressionSelectDialog(self.get_parent(), "Cubic Regression Plot",
                                                             data.get_results_scale(),
-                                                            xregress, yregress, self.get_cvf(), index)
+                                                            xregress, yregress, index)
                             dialog.get_graph().cubic_fit_plot()
                             tree_menu.AppendItem(self.get_root(), "Cubic Regression at " + str(scale), data=dialog)
                         if self.id == 4:
                             dialog = RegressionSelectDialog(self.get_parent(), "Quartic Regression Plot",
                                                             data.get_results_scale(),
-                                                            xregress, yregress, self.get_cvf(), index)
+                                                            xregress, yregress, index)
                             dialog.get_graph().quartic_fit_plot()
                             tree_menu.AppendItem(self.get_root(), "Quartic Regression at " + str(scale), data=dialog)
                         if self.id == 5:
                             dialog = RegressionSelectDialog(self.get_parent(), "Quintic Regression Plot",
                                                             data.get_results_scale(),
-                                                            xregress, yregress, self.get_cvf(), index)
+                                                            xregress, yregress, index)
                             dialog.get_graph().quintic_fit_plot()
                             tree_menu.AppendItem(self.get_root(), "Quintic Regression at " + str(scale), data=dialog)
                         if self.id == 6:
                             dialog = RegressionSelectDialog(self.get_parent(), "Power Regression Plot",
                                                             data.get_results_scale(),
-                                                            xregress, yregress, self.get_cvf(), index)
+                                                            xregress, yregress, index)
                             dialog.get_graph().power_fit_plot()
                             tree_menu.AppendItem(self.get_root(), "Power Regression at " + str(scale), data=dialog)
                         if self.id == 7:
                             dialog = RegressionSelectDialog(self.get_parent(), "Inverse Regression Plot",
                                                             data.get_results_scale(),
-                                                            xregress, yregress, self.get_cvf(), index)
+                                                            xregress, yregress, index)
                             dialog.get_graph().inverse_fit_plot()
                             tree_menu.AppendItem(self.get_root(), "Inverse Regression at " + str(scale), data=dialog)
                         if self.id == 8:
                             dialog = RegressionSelectDialog(self.get_parent(), "Inverse Squared Regression Plot",
                                                             data.get_results_scale(),
-                                                            xregress, yregress, self.get_cvf(), index)
+                                                            xregress, yregress, index)
                             dialog.get_graph().inverse_squared_fit_plot()
                             tree_menu.AppendItem(self.get_root(), "Inverse Squared Regression at " + str(scale), data=dialog)
                         if self.id == 9:
                             dialog = RegressionSelectDialog(self.get_parent(), "Natural Exponent Regression Plot",
                                                             data.get_results_scale(),
-                                                            xregress, yregress, self.get_cvf(), index)
+                                                            xregress, yregress, index)
                             dialog.get_graph().naturalexp_fit_plot()
                             tree_menu.AppendItem(self.get_root(), "Natural Exponent Regression at " + str(scale), data=dialog)
                         if self.id == 10:
                             dialog = RegressionSelectDialog(self.get_parent(), "Natural Log Regression Plot",
                                                             data.get_results_scale(),
-                                                            xregress, yregress, self.get_cvf(), index)
+                                                            xregress, yregress, index)
                             dialog.get_graph().loge_fit_plot()
                             tree_menu.AppendItem(self.get_root(), "Natural Log Regression at " + str(scale), data=dialog)
                         if self.id == 11:
                             dialog = RegressionSelectDialog(self.get_parent(), "Log10 Regression Plot",
                                                             data.get_results_scale(),
-                                                            xregress, yregress, self.get_cvf(), index)
+                                                            xregress, yregress, index)
                             dialog.get_graph().log10_fit_plot()
                             tree_menu.AppendItem(self.get_root(), "Log10 Regression at " + str(scale), data=dialog)
                         if self.id == 12:
                             dialog = RegressionSelectDialog(self.get_parent(), "Inverse Exponent Regression Plot",
                                                             data.get_results_scale(),
-                                                            xregress, yregress, self.get_cvf(), index)
+                                                            xregress, yregress, index)
                             dialog.get_graph().inverseexp_fit_plot()
                             tree_menu.AppendItem(self.get_root(), "Inverse Exponent Regression at " + str(scale), data=dialog)
                         if self.id == 13:
                             dialog = RegressionSelectDialog(self.get_parent(), "Sin Regression Plot",
                                                             data.get_results_scale(),
-                                                            xregress, yregress, self.get_cvf(), index)
+                                                            xregress, yregress, index)
                             dialog.get_graph().sin_fit_plot()
                             tree_menu.AppendItem(self.get_root(), "Sin Regression at " + str(scale), data=dialog)
                         if self.id == 14:
                             dialog = RegressionSelectDialog(self.get_parent(), "Cos Regression Plot",
                                                             data.get_results_scale(),
-                                                            xregress, yregress, self.get_cvf(), index)
+                                                            xregress, yregress, index)
                             dialog.get_graph().cos_fit_plot()
                             tree_menu.AppendItem(self.get_root(), "Cos Regression at " + str(scale), data=dialog)
                         if self.id == 15:
                             dialog = RegressionSelectDialog(self.get_parent(), "Gaussian Regression Plot",
                                                             data.get_results_scale(),
-                                                            xregress, yregress, self.get_cvf(), index)
+                                                            xregress, yregress, index)
                             dialog.get_graph().gaussian_fit_plot()
                             tree_menu.AppendItem(self.get_root(), "Gaussian Regression at " + str(scale), data=dialog)
 
@@ -239,9 +239,9 @@ class R2byScalePlot(wx.Panel):
         for y_values in self.get_y():
             try:
                 # regress against the x-values get linear equation coefficients
-                popt, pcov = self.get_cvf().linear_data(np.array(self.get_xr()), np.array(y_values))
+                popt, pcov = CurveFit.linear_data(np.array(self.get_xr()), np.array(y_values))
                 # calculate R^2 values
-                r2 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().linear_fit(np.array(self.get_xr()), *popt))
+                r2 = CurveFit.r_squared(np.array(y_values), CurveFit.linear_fit(np.array(self.get_xr()), *popt))
             except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
                 self.get_error_txt().AppendText("Linear R^2: " + str(e) + '\n')
                 # if error R^2 value is set to 0. error is likely due to not being able to find the functional correlation
@@ -262,8 +262,8 @@ class R2byScalePlot(wx.Panel):
         warnings.simplefilter('error', OptimizeWarning)
         for y_values in self.get_y():
             try:
-                popt, pcov = self.get_cvf().prop_data(np.array(self.get_xr()), np.array(y_values))
-                r2 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().prop_fit(np.array(self.get_xr()), *popt))
+                popt, pcov = CurveFit.prop_data(np.array(self.get_xr()), np.array(y_values))
+                r2 = CurveFit.r_squared(np.array(y_values), CurveFit.prop_fit(np.array(self.get_xr()), *popt))
             except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
                 self.get_error_txt().AppendText("Proportional R^2: " + str(e) + '\n')
                 r2 = 0
@@ -283,8 +283,8 @@ class R2byScalePlot(wx.Panel):
         for y_values in self.get_y():
 
             try:
-                popt, pcov = self.get_cvf().quad_data(np.array(self.get_xr()), np.array(y_values))
-                r2 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().quad_fit(np.array(self.get_xr()), *popt))
+                popt, pcov = CurveFit.quad_data(np.array(self.get_xr()), np.array(y_values))
+                r2 = CurveFit.r_squared(np.array(y_values), CurveFit.quad_fit(np.array(self.get_xr()), *popt))
             except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
                 self.get_error_txt().AppendText("Quadratic R^2: " + str(e) + '\n')
                 r2 = 0
@@ -304,8 +304,8 @@ class R2byScalePlot(wx.Panel):
         for y_values in self.get_y():
 
             try:
-                popt, pcov = self.get_cvf().cubic_data(np.array(self.get_xr()), np.array(y_values))
-                r2 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().cubic_fit(np.array(self.get_xr()), *popt))
+                popt, pcov = CurveFit.cubic_data(np.array(self.get_xr()), np.array(y_values))
+                r2 = CurveFit.r_squared(np.array(y_values), CurveFit.cubic_fit(np.array(self.get_xr()), *popt))
             except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
                 self.get_error_txt().AppendText("Cubic R^2: " + str(e) + '\n')
                 r2 = 0
@@ -325,8 +325,8 @@ class R2byScalePlot(wx.Panel):
         for y_values in self.get_y():
 
             try:
-                popt, pcov = self.get_cvf().quartic_data(np.array(self.get_xr()), np.array(y_values))
-                r2 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().quartic_fit(np.array(self.get_xr()), *popt))
+                popt, pcov = CurveFit.quartic_data(np.array(self.get_xr()), np.array(y_values))
+                r2 = CurveFit.r_squared(np.array(y_values), CurveFit.quartic_fit(np.array(self.get_xr()), *popt))
             except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
                 self.get_error_txt().AppendText("Quartic R^2: " + str(e) + '\n')
                 r2 = 0
@@ -346,8 +346,8 @@ class R2byScalePlot(wx.Panel):
         for y_values in self.get_y():
 
             try:
-                popt, pcov = self.get_cvf().quintic_data(np.array(self.get_xr()), np.array(y_values))
-                r2 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().quintic_fit(np.array(self.get_xr()), *popt))
+                popt, pcov = CurveFit.quintic_data(np.array(self.get_xr()), np.array(y_values))
+                r2 = CurveFit.r_squared(np.array(y_values), CurveFit.quintic_fit(np.array(self.get_xr()), *popt))
             except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
                 self.get_error_txt().AppendText("Quintic R^2: " + str(e) + '\n')
                 r2 = 0
@@ -367,8 +367,8 @@ class R2byScalePlot(wx.Panel):
         for y_values in self.get_y():
 
             try:
-                popt, pcov = self.get_cvf().power_data(np.array(self.get_xr()), np.array(y_values))
-                r2 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().power_fit(np.array(self.get_xr()), *popt))
+                popt, pcov = CurveFit.power_data(np.array(self.get_xr()), np.array(y_values))
+                r2 = CurveFit.r_squared(np.array(y_values), CurveFit.power_fit(np.array(self.get_xr()), *popt))
             except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
                 self.get_error_txt().AppendText("Power R^2: " + str(e) + '\n')
                 r2 = 0
@@ -388,8 +388,8 @@ class R2byScalePlot(wx.Panel):
         for y_values in self.get_y():
 
             try:
-                popt, pcov = self.get_cvf().inverse_data(np.array(self.get_xr()), np.array(y_values))
-                r2 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().inverse_fit(np.array(self.get_xr()), *popt))
+                popt, pcov = CurveFit.inverse_data(np.array(self.get_xr()), np.array(y_values))
+                r2 = CurveFit.r_squared(np.array(y_values), CurveFit.inverse_fit(np.array(self.get_xr()), *popt))
             except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
                 self.get_error_txt().AppendText("Inverse R^2: " + str(e) + '\n')
                 r2 = 0
@@ -409,8 +409,8 @@ class R2byScalePlot(wx.Panel):
         for y_values in self.get_y():
 
             try:
-                popt, pcov = self.get_cvf().insq_data(np.array(self.get_xr()), np.array(y_values))
-                r2 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().insq_fit(np.array(self.get_xr()), *popt))
+                popt, pcov = CurveFit.insq_data(np.array(self.get_xr()), np.array(y_values))
+                r2 = CurveFit.r_squared(np.array(y_values), CurveFit.insq_fit(np.array(self.get_xr()), *popt))
             except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
                 self.get_error_txt().AppendText("Inverse Square R^2: " + str(e) + '\n')
                 r2 = 0
@@ -429,8 +429,8 @@ class R2byScalePlot(wx.Panel):
         warnings.simplefilter('error', OptimizeWarning)
         for y_values in self.get_y():
             try:
-                popt, pcov = self.get_cvf().nexp_data(np.array(self.get_xr()), np.array(y_values))
-                r2 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().nexp_fit(np.array(self.get_xr()), *popt))
+                popt, pcov = CurveFit.nexp_data(np.array(self.get_xr()), np.array(y_values))
+                r2 = CurveFit.r_squared(np.array(y_values), CurveFit.nexp_fit(np.array(self.get_xr()), *popt))
             except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
                 self.get_error_txt().AppendText("Natural Exponent R^2: " + str(e) + '\n')
                 r2 = 0
@@ -450,8 +450,8 @@ class R2byScalePlot(wx.Panel):
         for y_values in self.get_y():
 
             try:
-                popt, pcov = self.get_cvf().ln_data(np.array(self.get_xr()), np.array(y_values))
-                r2 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().ln_fit(np.array(self.get_xr()), *popt))
+                popt, pcov = CurveFit.ln_data(np.array(self.get_xr()), np.array(y_values))
+                r2 = CurveFit.r_squared(np.array(y_values), CurveFit.ln_fit(np.array(self.get_xr()), *popt))
             except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
                 self.get_error_txt().AppendText("Natural Log R^2: " + str(e) + '\n')
                 r2 = 0
@@ -470,8 +470,8 @@ class R2byScalePlot(wx.Panel):
         for y_values in self.get_y():
 
             try:
-                popt, pcov = self.get_cvf().b10log_data(np.array(self.get_xr()), np.array(y_values))
-                r2 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().b10log_fit(np.array(self.get_xr()), *popt))
+                popt, pcov = CurveFit.b10log_data(np.array(self.get_xr()), np.array(y_values))
+                r2 = CurveFit.r_squared(np.array(y_values), CurveFit.b10log_fit(np.array(self.get_xr()), *popt))
             except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
                 self.get_error_txt().AppendText("Log10 R^2: " + str(e) + '\n')
                 r2 = 0
@@ -490,8 +490,8 @@ class R2byScalePlot(wx.Panel):
         for y_values in self.get_y():
 
             try:
-                popt, pcov = self.get_cvf().invexp_data(np.array(self.get_xr()), np.array(y_values))
-                r2 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().invexp_fit(np.array(self.get_xr()), *popt))
+                popt, pcov = CurveFit.invexp_data(np.array(self.get_xr()), np.array(y_values))
+                r2 = CurveFit.r_squared(np.array(y_values), CurveFit.invexp_fit(np.array(self.get_xr()), *popt))
             except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
                 self.get_error_txt().AppendText("Inverse Exponent R^2: " + str(e) + '\n')
                 r2 = 0
@@ -510,8 +510,8 @@ class R2byScalePlot(wx.Panel):
         for y_values in self.get_y():
 
             try:
-                popt, pcov = self.get_cvf().sine_data(np.array(self.get_xr()), np.array(y_values))
-                r2 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().sine_fit(np.array(self.get_xr()), *popt))
+                popt, pcov = CurveFit.sine_data(np.array(self.get_xr()), np.array(y_values))
+                r2 = CurveFit.r_squared(np.array(y_values), CurveFit.sine_fit(np.array(self.get_xr()), *popt))
             except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
                 self.get_error_txt().AppendText("Sine R^2: " + str(e) + '\n')
                 r2 = 0
@@ -530,8 +530,8 @@ class R2byScalePlot(wx.Panel):
         for y_values in self.get_y():
 
             try:
-                popt, pcov = self.get_cvf().cosine_data(np.array(self.get_xr()), np.array(y_values))
-                r2 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().cosine_fit(np.array(self.get_xr()), *popt))
+                popt, pcov = CurveFit.cosine_data(np.array(self.get_xr()), np.array(y_values))
+                r2 = CurveFit.r_squared(np.array(y_values), CurveFit.cosine_fit(np.array(self.get_xr()), *popt))
             except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
                 self.get_error_txt().AppendText("Cosine R^2: " + str(e) + '\n')
                 r2 = 0
@@ -549,8 +549,8 @@ class R2byScalePlot(wx.Panel):
         warnings.simplefilter('error', OptimizeWarning)
         for y_values in self.get_y():
             try:
-                popt, pcov = self.get_cvf().gauss_data(np.array(self.get_xr()), np.array(y_values))
-                r2 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().gauss_fit(np.array(self.get_xr()), *popt))
+                popt, pcov = CurveFit.gauss_data(np.array(self.get_xr()), np.array(y_values))
+                r2 = CurveFit.r_squared(np.array(y_values), CurveFit.gauss_fit(np.array(self.get_xr()), *popt))
             except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
                 self.get_error_txt().AppendText("Gaussian R^2: " + str(e) + '\n')
                 r2 = 0
@@ -584,7 +584,6 @@ class R2byScalePlot(wx.Panel):
     def get_xr(self): return self.xr
     def get_y_plot(self): return self.y_plot
     def get_error_txt(self): return self.error_txt
-    def get_cvf(self): return self.cvf
     def get_scatter_plot(self): return self.scatter_plot
     def set_scatter_plot(self, scatter): self.scatter_plot = scatter
     def get_annot(self): return self.annot
@@ -610,14 +609,13 @@ class R2byScalePlot(wx.Panel):
 # x-axis is regression parameter
 class RegressionPlot(wx.Panel):
 
-    def __init__(self, parent, x, xr, y, cvf, swb, tree):
+    def __init__(self, parent, x, xr, y, swb, tree):
         # gets the Panel properties
         wx.Panel.__init__(self, parent, size=wx.Size(640, 480), style=wx.SIMPLE_BORDER)
 
         self.tree_menu = tree
         self.workbook = self.tree_menu.GetItemData(swb).get_wb()
         self.swb = swb
-        self.cvf = cvf
         self.figure = figure()
         # defines the plot
         self.axes = self.get_fig().add_subplot(111)
@@ -733,7 +731,7 @@ class RegressionPlot(wx.Panel):
             try:
                 popt, pcov = data_func(np.array(self.get_xr()), np.array(y_values))
                 fit_func(self.get_x_plot(), *popt)
-                r2 = self.get_cvf().r_squared(np.array(y_values), fit_func(self.get_xr(), *popt))
+                r2 = CurveFit.r_squared(np.array(y_values), fit_func(self.get_xr(), *popt))
             except (RuntimeError, Exception, Warning, TypeError) as e:
                 #logging.error(traceback.format_exc())
                 if not __debug__:
@@ -777,52 +775,52 @@ class RegressionPlot(wx.Panel):
                 break
 
     def linear_fit_plot(self):
-        self.plot_fit(self.get_cvf().linear_data, self.get_cvf().linear_fit, 'y = {}x + {}')
+        self.plot_fit(CurveFit.linear_data, CurveFit.linear_fit, 'y = {}x + {}')
 
     def proportional_fit_plot(self):
-        self.plot_fit(self.get_cvf().prop_data, self.get_cvf().prop_fit, 'y = {}x')
+        self.plot_fit(CurveFit.prop_data, CurveFit.prop_fit, 'y = {}x')
 
     def quadratic_fit_plot(self):
-        self.plot_fit(self.get_cvf().quad_data, self.get_cvf().quad_fit, 'y = {}x^2 + {}x + {}')
+        self.plot_fit(CurveFit.quad_data, CurveFit.quad_fit, 'y = {}x^2 + {}x + {}')
 
     def cubic_fit_plot(self):
-        self.plot_fit(self.get_cvf().cubic_data, self.get_cvf().cubic_fit, 'y = {}x^3 + {}x^2 + {}x + {}')
+        self.plot_fit(CurveFit.cubic_data, CurveFit.cubic_fit, 'y = {}x^3 + {}x^2 + {}x + {}')
 
     def quartic_fit_plot(self):
-        self.plot_fit(self.get_cvf().quartic_data, self.get_cvf().quartic_fit, 'y = {}x^4 + {}x^3 + {}x^2 + {}x + {}')
+        self.plot_fit(CurveFit.quartic_data, CurveFit.quartic_fit, 'y = {}x^4 + {}x^3 + {}x^2 + {}x + {}')
 
     def quintic_fit_plot(self):
-        self.plot_fit(self.get_cvf().quintic_data, self.get_cvf().quintic_fit, 'y = {}x^5 + {}x^4 + {]x^3 + {}x^2 + {}x + {}')
+        self.plot_fit(CurveFit.quintic_data, CurveFit.quintic_fit, 'y = {}x^5 + {}x^4 + {]x^3 + {}x^2 + {}x + {}')
 
     def power_fit_plot(self):
-        self.plot_fit(self.get_cvf().power_data, self.get_cvf().power_fit, 'y = {}x^{}')
+        self.plot_fit(CurveFit.power_data, CurveFit.power_fit, 'y = {}x^{}')
 
     def inverse_fit_plot(self):
-        self.plot_fit(self.get_cvf().inverse_data, self.get_cvf().inverse_fit, 'y = {}/x')
+        self.plot_fit(CurveFit.inverse_data, CurveFit.inverse_fit, 'y = {}/x')
 
     def inverse_squared_fit_plot(self):
-        self.plot_fit(self.get_cvf().insq_data, self.get_cvf().insq_fit, 'y = {}/x^2')
+        self.plot_fit(CurveFit.insq_data, CurveFit.insq_fit, 'y = {}/x^2')
 
     def naturalexp_fit_plot(self):
-        self.plot_fit(self.get_cvf().nexp_data, self.get_cvf().nexp_fit, 'y = {}*exp(-1*{}x) + {}')
+        self.plot_fit(CurveFit.nexp_data, CurveFit.nexp_fit, 'y = {}*exp(-1*{}x) + {}')
 
     def loge_fit_plot(self):
-        self.plot_fit(self.get_cvf().ln_data, self.get_cvf().ln_fit, 'y = {}ln({}x)')
+        self.plot_fit(CurveFit.ln_data, CurveFit.ln_fit, 'y = {}ln({}x)')
 
     def log10_fit_plot(self):
-        self.plot_fit(self.get_cvf().b10log_data, self.get_cvf().b10log_fit, 'y = {}log10({}x)')
+        self.plot_fit(CurveFit.b10log_data, CurveFit.b10log_fit, 'y = {}log10({}x)')
 
     def inverseexp_fit_plot(self):
-        self.plot_fit(self.get_cvf().invexp_data, self.get_cvf().invexp_fit, 'y = {}(1 - exp(-1*{}x)) + {}')
+        self.plot_fit(CurveFit.invexp_data, CurveFit.invexp_fit, 'y = {}(1 - exp(-1*{}x)) + {}')
 
     def sin_fit_plot(self):
-        self.plot_fit(self.get_cvf().sine_data, self.get_cvf().sine_fit, 'y = {}sin({}x + {}) + {}')
+        self.plot_fit(CurveFit.sine_data, CurveFit.sine_fit, 'y = {}sin({}x + {}) + {}')
 
     def cos_fit_plot(self):
-        self.plot_fit(self.get_cvf().cosine_data, self.get_cvf().cosine_fit, 'y = {}cos({}x + {}) + {}')
+        self.plot_fit(CurveFit.cosine_data, CurveFit.cosine_fit, 'y = {}cos({}x + {}) + {}')
 
     def gaussian_fit_plot(self):
-        self.plot_fit(self.get_cvf().gauss_data, self.get_cvf().gauss_fit, 'y = {}*exp(-1*((x-{})^2)/({}^2)) + {}')
+        self.plot_fit(CurveFit.gauss_data, CurveFit.gauss_fit, 'y = {}*exp(-1*((x-{})^2)/({}^2)) + {}')
 
     def get_axes(self): return self.axes
     def get_x(self): return self.x
@@ -1058,13 +1056,12 @@ class SclbyAreaPlot(wx.Panel):
 # Class to produce the regression plots when selecting the R^2 values on the R^2 by scale plot
 class RegressionSelectPlot(wx.Panel):
 
-    def __init__(self, parent, x, xr, y, cvf, scale):
+    def __init__(self, parent, x, xr, y, scale):
         # gets the Panel properties
         wx.Panel.__init__(self, parent, size=wx.Size(640, 480), style=wx.SIMPLE_BORDER)
 
         self.popt = ''
 
-        self.cvf = cvf
         self.scale = scale
         self.figure = figure()
         # defines the plot not entirely sure what the numbers in add_subplot mean
@@ -1168,325 +1165,325 @@ class RegressionSelectPlot(wx.Panel):
     # the R2byScalePlot class
     def linear_fit_plot(self):
 
-        popt, pcov = self.get_cvf().linear_data(np.array(self.get_xr()), np.array(self.get_yr()))
-        self.get_cvf().linear_fit(self.get_x_plot(), *popt)
+        popt, pcov = CurveFit.linear_data(np.array(self.get_xr()), np.array(self.get_yr()))
+        CurveFit.linear_fit(self.get_x_plot(), *popt)
 
         self.set_popt('y = {}x + {}'.format(*np.round(popt, 3)))
 
         # calculate R^2 value
-        r2 = self.get_cvf().r_squared(np.array(self.get_yr()), self.get_cvf().linear_fit(self.get_xr(), *popt))
+        r2 = CurveFit.r_squared(np.array(self.get_yr()), CurveFit.linear_fit(self.get_xr(), *popt))
 
-        self.set_curve(self.get_cvf().linear_fit(np.array(self.get_x_plot()), *popt))
+        self.set_curve(CurveFit.linear_fit(np.array(self.get_x_plot()), *popt))
         # scatter plot
         self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_xr()), self.get_yr(), s=self.get_dataSymbolSize(),
                                                       marker=self.get_dataSymbol(),
                                                       color=self.get_dataColor()))
         # linear fit line
-        self.get_axes().plot(self.get_x_plot(), self.get_cvf().linear_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
+        self.get_axes().plot(self.get_x_plot(), CurveFit.linear_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
         self.get_canvas().draw()
         self.set_best_r_squared(r2)
         self.set_best_scale(self.get_scale())
         self.set_line_annot_pos((int((min(self.get_xr()) + max(self.get_xr()))/2),
-                                 self.get_cvf().linear_fit(int((min(self.get_xr()) + max(self.get_xr()))/2), *popt)))
+                                 CurveFit.linear_fit(int((min(self.get_xr()) + max(self.get_xr()))/2), *popt)))
     # following functions same as linear fit plot with respective curve types
     def proportional_fit_plot(self):
 
-        popt, pcov = self.get_cvf().prop_data(np.array(self.get_xr()), np.array(self.get_yr()))
-        self.get_cvf().prop_fit(self.get_x_plot(), *popt)
-        r2 = self.get_cvf().r_squared(np.array(self.get_yr()), self.get_cvf().prop_fit(self.get_xr(), *popt))
+        popt, pcov = CurveFit.prop_data(np.array(self.get_xr()), np.array(self.get_yr()))
+        CurveFit.prop_fit(self.get_x_plot(), *popt)
+        r2 = CurveFit.r_squared(np.array(self.get_yr()), CurveFit.prop_fit(self.get_xr(), *popt))
 
         self.set_popt('y = {}x'.format(*np.round(popt, 3)))
 
         self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_xr()), self.get_yr(), s=self.get_dataSymbolSize(),
                                                       marker=self.get_dataSymbol(),
                                                       color=self.get_dataColor()))
-        self.get_axes().plot(self.get_x_plot(), self.get_cvf().prop_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
+        self.get_axes().plot(self.get_x_plot(), CurveFit.prop_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
         self.get_canvas().draw()
         self.set_best_r_squared(r2)
         self.set_best_scale(self.get_scale())
-        self.set_curve(self.get_cvf().prop_fit(np.array(self.get_x_plot()), *popt))
+        self.set_curve(CurveFit.prop_fit(np.array(self.get_x_plot()), *popt))
         self.set_line_annot_pos((int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                 self.get_cvf().prop_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
+                                 CurveFit.prop_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
                                                            *popt)))
 
     def quadratic_fit_plot(self):
 
-        popt, pcov = self.get_cvf().quad_data(np.array(self.get_xr()), np.array(self.get_yr()))
-        self.get_cvf().quad_fit(self.get_x_plot(), *popt)
-        r2 = self.get_cvf().r_squared(np.array(self.get_yr()), self.get_cvf().quad_fit(self.get_xr(), *popt))
+        popt, pcov = CurveFit.quad_data(np.array(self.get_xr()), np.array(self.get_yr()))
+        CurveFit.quad_fit(self.get_x_plot(), *popt)
+        r2 = CurveFit.r_squared(np.array(self.get_yr()), CurveFit.quad_fit(self.get_xr(), *popt))
 
         self.set_popt('y = {}x^2 + {}x + {}'.format(*np.round(popt, 3)))
 
-        self.set_curve(self.get_cvf().quad_fit(np.array(self.get_x_plot()), *popt))
+        self.set_curve(CurveFit.quad_fit(np.array(self.get_x_plot()), *popt))
         self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_xr()), np.array(self.get_yr()), s=self.get_dataSymbolSize(),
                                                       marker=self.get_dataSymbol(),
                                                       color=self.get_dataColor()))
-        self.get_axes().plot(self.get_x_plot(), self.get_cvf().quad_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
+        self.get_axes().plot(self.get_x_plot(), CurveFit.quad_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
         self.get_canvas().draw()
         self.set_best_r_squared(r2)
         self.set_best_scale(self.get_scale())
         self.set_line_annot_pos((int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                 self.get_cvf().quad_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
+                                 CurveFit.quad_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
                                                            *popt)))
 
     def cubic_fit_plot(self):
 
-        popt, pcov = self.get_cvf().cubic_data(np.array(self.get_xr()), np.array(self.get_yr()))
-        self.get_cvf().cubic_fit(self.get_x_plot(), *popt)
-        r2 = self.get_cvf().r_squared(np.array(self.get_yr()), self.get_cvf().cubic_fit(self.get_xr(), *popt))
+        popt, pcov = CurveFit.cubic_data(np.array(self.get_xr()), np.array(self.get_yr()))
+        CurveFit.cubic_fit(self.get_x_plot(), *popt)
+        r2 = CurveFit.r_squared(np.array(self.get_yr()), CurveFit.cubic_fit(self.get_xr(), *popt))
 
         self.set_popt('y = {}x^3 + {}x^2 + {}x + {}'.format(*np.round(popt, 3)))
 
-        self.set_curve(self.get_cvf().cubic_fit(np.array(self.get_x_plot()), *popt))
+        self.set_curve(CurveFit.cubic_fit(np.array(self.get_x_plot()), *popt))
         self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_xr()), np.array(self.get_yr()), s=self.get_dataSymbolSize(),
                                                       marker=self.get_dataSymbol(),
                                                       color=self.get_dataColor()))
-        self.get_axes().plot(self.get_x_plot(), self.get_cvf().cubic_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
+        self.get_axes().plot(self.get_x_plot(), CurveFit.cubic_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
         self.get_canvas().draw()
         self.set_best_r_squared(r2)
         self.set_best_scale(self.get_scale())
         self.set_line_annot_pos((int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                 self.get_cvf().cubic_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
+                                 CurveFit.cubic_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
                                                          *popt)))
 
     def quartic_fit_plot(self):
 
-        popt, pcov = self.get_cvf().quartic_data(np.array(self.get_xr()), np.array(self.get_yr()))
-        self.get_cvf().quartic_fit(self.get_x_plot(), *popt)
-        r2 = self.get_cvf().r_squared(np.array(self.get_yr()), self.get_cvf().quartic_fit(self.get_xr(), *popt))
+        popt, pcov = CurveFit.quartic_data(np.array(self.get_xr()), np.array(self.get_yr()))
+        CurveFit.quartic_fit(self.get_x_plot(), *popt)
+        r2 = CurveFit.r_squared(np.array(self.get_yr()), CurveFit.quartic_fit(self.get_xr(), *popt))
 
         self.set_popt('y = {}x^4 + {}x^3 + {}x^2 + {}x + {}'.format(*np.round(popt, 3)))
 
-        self.set_curve(self.get_cvf().quartic_fit(np.array(self.get_x_plot()), *popt))
+        self.set_curve(CurveFit.quartic_fit(np.array(self.get_x_plot()), *popt))
         self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_xr()), np.array(self.get_yr()), s=self.get_dataSymbolSize(),
                                                       marker=self.get_dataSymbol(),
                                                       color=self.get_dataColor()))
-        self.get_axes().plot(self.get_x_plot(), self.get_cvf().quartic_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
+        self.get_axes().plot(self.get_x_plot(), CurveFit.quartic_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
         self.get_canvas().draw()
         self.set_best_r_squared(r2)
         self.set_best_scale(self.get_scale())
         self.set_line_annot_pos((int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                 self.get_cvf().quartic_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
+                                 CurveFit.quartic_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
                                                          *popt)))
 
     def quintic_fit_plot(self):
 
-        popt, pcov = self.get_cvf().quintic_data(np.array(self.get_xr()), np.array(self.get_yr()))
-        self.get_cvf().quintic_fit(self.get_x_plot(), *popt)
-        r2 = self.get_cvf().r_squared(np.array(self.get_yr()), self.get_cvf().quintic_fit(self.get_xr(), *popt))
+        popt, pcov = CurveFit.quintic_data(np.array(self.get_xr()), np.array(self.get_yr()))
+        CurveFit.quintic_fit(self.get_x_plot(), *popt)
+        r2 = CurveFit.r_squared(np.array(self.get_yr()), CurveFit.quintic_fit(self.get_xr(), *popt))
 
         self.set_popt('y = {}x^5 + {}x^4 + {]x^3 + {}x^2 + {}x + {}'.format(*np.round(popt, 3)))
 
-        self.set_curve(self.get_cvf().quintic_fit(np.array(self.get_x_plot()), *popt))
+        self.set_curve(CurveFit.quintic_fit(np.array(self.get_x_plot()), *popt))
         self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_xr()), np.array(self.get_yr()), s=self.get_dataSymbolSize(),
                                                       marker=self.get_dataSymbol(),
                                                       color=self.get_dataColor()))
-        self.get_axes().plot(self.get_x_plot(), self.get_cvf().quintic_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
+        self.get_axes().plot(self.get_x_plot(), CurveFit.quintic_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
         self.get_canvas().draw()
         self.set_best_r_squared(r2)
         self.set_best_scale(self.get_scale())
         self.set_line_annot_pos((int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                 self.get_cvf().quintic_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
+                                 CurveFit.quintic_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
                                                          *popt)))
 
     def power_fit_plot(self):
 
-        popt, pcov = self.get_cvf().power_data(np.array(self.get_xr()), np.array(self.get_yr()))
-        self.get_cvf().power_fit(self.get_x_plot(), *popt)
-        r2 = self.get_cvf().r_squared(np.array(self.get_yr()), self.get_cvf().power_fit(self.get_xr(), *popt))
+        popt, pcov = CurveFit.power_data(np.array(self.get_xr()), np.array(self.get_yr()))
+        CurveFit.power_fit(self.get_x_plot(), *popt)
+        r2 = CurveFit.r_squared(np.array(self.get_yr()), CurveFit.power_fit(self.get_xr(), *popt))
 
         self.set_popt('y = {}x^{}'.format(*np.round(popt, 3)))
 
-        self.set_curve(self.get_cvf().power_fit(np.array(self.get_x_plot()), *popt))
+        self.set_curve(CurveFit.power_fit(np.array(self.get_x_plot()), *popt))
         self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_xr()), np.array(self.get_yr()), s=self.get_dataSymbolSize(),
                                                       marker=self.get_dataSymbol(),
                                                       color=self.get_dataColor()))
-        self.get_axes().plot(self.get_x_plot(), self.get_cvf().power_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
+        self.get_axes().plot(self.get_x_plot(), CurveFit.power_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
         self.get_canvas().draw()
         self.set_best_r_squared(r2)
         self.set_best_scale(self.get_scale())
         self.set_line_annot_pos((int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                 self.get_cvf().power_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
+                                 CurveFit.power_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
                                                          *popt)))
 
     def inverse_fit_plot(self):
 
-        popt, pcov = self.get_cvf().inverse_data(np.array(self.get_xr()), np.array(self.get_yr()))
-        self.get_cvf().inverse_fit(self.get_x_plot(), *popt)
-        r2 = self.get_cvf().r_squared(np.array(self.get_yr()), self.get_cvf().inverse_fit(self.get_xr(), *popt))
+        popt, pcov = CurveFit.inverse_data(np.array(self.get_xr()), np.array(self.get_yr()))
+        CurveFit.inverse_fit(self.get_x_plot(), *popt)
+        r2 = CurveFit.r_squared(np.array(self.get_yr()), CurveFit.inverse_fit(self.get_xr(), *popt))
 
         self.set_popt('y = {}/x'.format(*np.round(popt, 3)))
 
-        self.set_curve(self.get_cvf().inverse_fit(np.array(self.get_x_plot()), *popt))
+        self.set_curve(CurveFit.inverse_fit(np.array(self.get_x_plot()), *popt))
         self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_xr()), np.array(self.get_yr()), s=self.get_dataSymbolSize(),
                                                       marker=self.get_dataSymbol(),
                                                       color=self.get_dataColor()))
-        self.get_axes().plot(self.get_x_plot(), self.get_cvf().inverse_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
+        self.get_axes().plot(self.get_x_plot(), CurveFit.inverse_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
         self.get_canvas().draw()
         self.set_best_r_squared(r2)
         self.set_best_scale(self.get_scale())
         self.set_line_annot_pos((int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                 self.get_cvf().inverse_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
+                                 CurveFit.inverse_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
                                                          *popt)))
 
     def inverse_squared_fit_plot(self):
 
-        popt, pcov = self.get_cvf().insq_data(np.array(self.get_xr()), np.array(self.get_yr()))
-        self.get_cvf().insq_fit(self.get_x_plot(), *popt)
-        r2 = self.get_cvf().r_squared(np.array(self.get_yr()), self.get_cvf().insq_fit(self.get_xr(), *popt))
+        popt, pcov = CurveFit.insq_data(np.array(self.get_xr()), np.array(self.get_yr()))
+        CurveFit.insq_fit(self.get_x_plot(), *popt)
+        r2 = CurveFit.r_squared(np.array(self.get_yr()), CurveFit.insq_fit(self.get_xr(), *popt))
 
         self.set_popt('y = {}/x^2'.format(*np.round(popt, 3)))
 
-        self.set_curve(self.get_cvf().insq_fit(np.array(self.get_x_plot()), *popt))
+        self.set_curve(CurveFit.insq_fit(np.array(self.get_x_plot()), *popt))
         self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_xr()), np.array(self.get_yr()), s=self.get_dataSymbolSize(),
                                                       marker=self.get_dataSymbol(),
                                                       color=self.get_dataColor()))
-        self.get_axes().plot(self.get_x_plot(), self.get_cvf().insq_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
+        self.get_axes().plot(self.get_x_plot(), CurveFit.insq_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
         self.get_canvas().draw()
         self.set_best_r_squared(r2)
         self.set_best_scale(self.get_scale())
         self.set_line_annot_pos((int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                 self.get_cvf().insq_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
+                                 CurveFit.insq_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
                                                          *popt)))
 
     def naturalexp_fit_plot(self):
 
-        popt, pcov = self.get_cvf().nexp_data(np.array(self.get_xr()), np.array(self.get_yr()))
-        self.get_cvf().nexp_fit(self.get_x_plot(), *popt)
-        r2 = self.get_cvf().r_squared(np.array(self.get_yr()), self.get_cvf().nexp_fit(self.get_xr(), *popt))
+        popt, pcov = CurveFit.nexp_data(np.array(self.get_xr()), np.array(self.get_yr()))
+        CurveFit.nexp_fit(self.get_x_plot(), *popt)
+        r2 = CurveFit.r_squared(np.array(self.get_yr()), CurveFit.nexp_fit(self.get_xr(), *popt))
 
         self.set_popt('y = {}*exp(-1*{}x) + {}'.format(*np.round(popt, 3)))
 
-        self.set_curve(self.get_cvf().nexp_fit(np.array(self.get_x_plot()), *popt))
+        self.set_curve(CurveFit.nexp_fit(np.array(self.get_x_plot()), *popt))
         self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_xr()), np.array(self.get_yr()), s=self.get_dataSymbolSize(),
                                                       marker=self.get_dataSymbol(),
                                                       color=self.get_dataColor()))
-        self.get_axes().plot(self.get_x_plot(), self.get_cvf().nexp_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
+        self.get_axes().plot(self.get_x_plot(), CurveFit.nexp_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
         self.get_canvas().draw()
         self.set_best_r_squared(r2)
         self.set_best_scale(self.get_scale())
         self.set_line_annot_pos((int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                 self.get_cvf().nexp_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
+                                 CurveFit.nexp_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
                                                          *popt)))
 
     def loge_fit_plot(self):
 
-        popt, pcov = self.get_cvf().ln_data(np.array(self.get_xr()), np.array(self.get_yr()))
-        self.get_cvf().ln_fit(self.get_x_plot(), *popt)
-        r2 = self.get_cvf().r_squared(np.array(self.get_yr()), self.get_cvf().ln_fit(self.get_xr(), *popt))
+        popt, pcov = CurveFit.ln_data(np.array(self.get_xr()), np.array(self.get_yr()))
+        CurveFit.ln_fit(self.get_x_plot(), *popt)
+        r2 = CurveFit.r_squared(np.array(self.get_yr()), CurveFit.ln_fit(self.get_xr(), *popt))
 
         self.set_popt('y = {}ln({}x)'.format(*np.round(popt, 3)))
 
-        self.set_curve(self.get_cvf().ln_fit(np.array(self.get_x_plot()), *popt))
+        self.set_curve(CurveFit.ln_fit(np.array(self.get_x_plot()), *popt))
         self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_xr()), np.array(self.get_yr()), s=self.get_dataSymbolSize(),
                                                       marker=self.get_dataSymbol(),
                                                       color=self.get_dataColor()))
-        self.get_axes().plot(self.get_x_plot(), self.get_cvf().ln_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
+        self.get_axes().plot(self.get_x_plot(), CurveFit.ln_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
         self.get_canvas().draw()
         self.set_best_r_squared(r2)
         self.set_best_scale(self.get_scale())
         self.set_line_annot_pos((int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                 self.get_cvf().ln_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
+                                 CurveFit.ln_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
                                                          *popt)))
 
     def log10_fit_plot(self):
 
-        popt, pcov = self.get_cvf().b10log_data(np.array(self.get_xr()), np.array(self.get_yr()))
-        self.get_cvf().b10log_fit(self.get_x_plot(), *popt)
-        r2 = self.get_cvf().r_squared(np.array(self.get_yr()), self.get_cvf().b10log_fit(self.get_xr(), *popt))
+        popt, pcov = CurveFit.b10log_data(np.array(self.get_xr()), np.array(self.get_yr()))
+        CurveFit.b10log_fit(self.get_x_plot(), *popt)
+        r2 = CurveFit.r_squared(np.array(self.get_yr()), CurveFit.b10log_fit(self.get_xr(), *popt))
 
         self.set_popt('y = {}log10({}x)'.format(*np.round(popt, 3)))
 
-        self.set_curve(self.get_cvf().b10log_fit(np.array(self.get_x_plot()), *popt))
+        self.set_curve(CurveFit.b10log_fit(np.array(self.get_x_plot()), *popt))
         self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_xr()), np.array(self.get_yr()), s=self.get_dataSymbolSize(),
                                                       marker=self.get_dataSymbol(),
                                                       color=self.get_dataColor()))
-        self.get_axes().plot(self.get_x_plot(), self.get_cvf().b10log_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
+        self.get_axes().plot(self.get_x_plot(), CurveFit.b10log_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
         self.get_canvas().draw()
         self.set_best_r_squared(r2)
         self.set_best_scale(self.get_scale())
         self.set_line_annot_pos((int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                 self.get_cvf().blog10_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
+                                 CurveFit.blog10_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
                                                          *popt)))
 
     def inverseexp_fit_plot(self):
 
-        popt, pcov = self.get_cvf().invexp_data(np.array(self.get_xr()), np.array(self.get_yr()))
-        self.get_cvf().invexp_fit(self.get_x_plot(), *popt)
-        r2 = self.get_cvf().r_squared(np.array(self.get_yr()), self.get_cvf().invexp_fit(self.get_xr(), *popt))
+        popt, pcov = CurveFit.invexp_data(np.array(self.get_xr()), np.array(self.get_yr()))
+        CurveFit.invexp_fit(self.get_x_plot(), *popt)
+        r2 = CurveFit.r_squared(np.array(self.get_yr()), CurveFit.invexp_fit(self.get_xr(), *popt))
 
         self.set_popt('y = {}(1 - exp(-1*{}x)) + {}'.format(*np.round(popt, 3)))
 
-        self.set_curve(self.get_cvf().invexp_fit(np.array(self.get_x_plot()), *popt))
+        self.set_curve(CurveFit.invexp_fit(np.array(self.get_x_plot()), *popt))
         self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_xr()), np.array(self.get_yr()), s=self.get_dataSymbolSize(),
                                                       marker=self.get_dataSymbol(),
                                                       color=self.get_dataColor()))
-        self.get_axes().plot(self.get_x_plot(), self.get_cvf().invexp_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
+        self.get_axes().plot(self.get_x_plot(), CurveFit.invexp_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
         self.get_canvas().draw()
         self.set_best_r_squared(r2)
         self.set_best_scale(self.get_scale())
         self.set_line_annot_pos((int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                 self.get_cvf().invexp_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
+                                 CurveFit.invexp_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
                                                          *popt)))
 
     def sin_fit_plot(self):
 
-        popt, pcov = self.get_cvf().sine_data(np.array(self.get_xr()), np.array(self.get_yr()))
-        self.get_cvf().sine_fit(self.get_x_plot(), *popt)
-        r2 = self.get_cvf().r_squared(np.array(self.get_yr()), self.get_cvf().sine_fit(self.get_xr(), *popt))
+        popt, pcov = CurveFit.sine_data(np.array(self.get_xr()), np.array(self.get_yr()))
+        CurveFit.sine_fit(self.get_x_plot(), *popt)
+        r2 = CurveFit.r_squared(np.array(self.get_yr()), CurveFit.sine_fit(self.get_xr(), *popt))
 
         self.set_popt('y = {}sin({}x + {}) + {}'.format(*np.round(popt, 3)))
 
-        self.set_curve(self.get_cvf().sine_fit(np.array(self.get_x_plot()), *popt))
+        self.set_curve(CurveFit.sine_fit(np.array(self.get_x_plot()), *popt))
         self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_xr()), np.array(self.get_yr()), s=self.get_dataSymbolSize(),
                                                       marker=self.get_dataSymbol(),
                                                       color=self.get_dataColor()))
-        self.get_axes().plot(self.get_x_plot(), self.get_cvf().sine_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
+        self.get_axes().plot(self.get_x_plot(), CurveFit.sine_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
         self.get_canvas().draw()
         self.set_best_r_squared(r2)
         self.set_best_scale(self.get_scale())
         self.set_line_annot_pos((int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                 self.get_cvf().sine_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
+                                 CurveFit.sine_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
                                                          *popt)))
 
     def cos_fit_plot(self):
 
-        popt, pcov = self.get_cvf().cosine_data(np.array(self.get_xr()), np.array(self.get_yr()))
-        self.get_cvf().cosine_fit(self.get_x_plot(), *popt)
-        r2 = self.get_cvf().r_squared(np.array(self.get_yr()), self.get_cvf().cosine_fit(self.get_xr(), *popt))
+        popt, pcov = CurveFit.cosine_data(np.array(self.get_xr()), np.array(self.get_yr()))
+        CurveFit.cosine_fit(self.get_x_plot(), *popt)
+        r2 = CurveFit.r_squared(np.array(self.get_yr()), CurveFit.cosine_fit(self.get_xr(), *popt))
 
         self.set_popt('y = {}cos({}x + {}) + {}'.format(*np.round(popt, 3)))
 
-        self.set_curve(self.get_cvf().cosine_fit(np.array(self.get_x_plot()), *popt))
+        self.set_curve(CurveFit.cosine_fit(np.array(self.get_x_plot()), *popt))
         self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_xr()), np.array(self.get_yr()), s=self.get_dataSymbolSize(),
                                                       marker=self.get_dataSymbol(),
                                                       color=self.get_dataColor()))
-        self.get_axes().plot(self.get_x_plot(), self.get_cvf().cosine_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
+        self.get_axes().plot(self.get_x_plot(), CurveFit.cosine_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
         self.get_canvas().draw()
         self.set_best_r_squared(r2)
         self.set_best_scale(self.get_scale())
         self.set_line_annot_pos((int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                 self.get_cvf().cosine_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
+                                 CurveFit.cosine_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
                                                          *popt)))
 
     def gaussian_fit_plot(self):
 
-        popt, pcov = self.get_cvf().gauss_data(np.array(self.get_xr()), np.array(self.get_yr()))
-        self.get_cvf().gauss_fit(self.get_x_plot(), *popt)
-        r2 = self.get_cvf().r_squared(np.array(self.get_yr()), self.get_cvf().gauss_fit(self.get_xr(), *popt))
+        popt, pcov = CurveFit.gauss_data(np.array(self.get_xr()), np.array(self.get_yr()))
+        CurveFit.gauss_fit(self.get_x_plot(), *popt)
+        r2 = CurveFit.r_squared(np.array(self.get_yr()), CurveFit.gauss_fit(self.get_xr(), *popt))
 
         self.set_popt('y = {}*exp(-1*((x-{})^2)/({}^2)) + {}'.format(*np.round(popt, 3)))
 
-        self.set_curve(self.get_cvf().gauss_fit(np.array(self.get_x_plot()), *popt))
+        self.set_curve(CurveFit.gauss_fit(np.array(self.get_x_plot()), *popt))
         self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_xr()), np.array(self.get_yr()), s=self.get_dataSymbolSize(),
                                                       marker=self.get_dataSymbol(),
                                                       color=self.get_dataColor()))
-        self.get_axes().plot(self.get_x_plot(), self.get_cvf().gauss_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
+        self.get_axes().plot(self.get_x_plot(), CurveFit.gauss_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
         self.get_canvas().draw()
         self.set_best_r_squared(r2)
         self.set_best_scale(self.get_scale())
         self.set_line_annot_pos((int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                 self.get_cvf().gauss_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
+                                 CurveFit.gauss_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
                                                          *popt)))
 
     def get_axes(self): return self.axes
@@ -1516,7 +1513,6 @@ class RegressionSelectPlot(wx.Panel):
     def get_yr(self): return self.yr
     def get_curve(self): return self.curve
     def set_curve(self, curve): self.curve = curve
-    def get_cvf(self): return self.cvf
     def get_scatter_plot(self): return self.scatter_plot
     def set_scatter_plot(self, scatter): self.scatter_plot = scatter
     def get_annot(self): return self.annot
@@ -1547,10 +1543,10 @@ class RegressionSelectPlot(wx.Panel):
 # Dialog for the Regression select plot which contains the graph and menu for graph options
 class RegressionSelectDialog(wx.Frame):
 
-    def __init__(self, parent, title, x, xr, y, cvf, scale):
+    def __init__(self, parent, title, x, xr, y, scale):
         # wx.Dialog.__init__(self, parent, wx.ID_ANY, "Graph", size=(640, 480))
         wx.Frame.__init__(self, parent, title=title, size=(640, 530), style=wx.DEFAULT_FRAME_STYLE | wx.STAY_ON_TOP)
-        self.graph = RegressionSelectPlot(self, x, xr, y, cvf, scale)
+        self.graph = RegressionSelectPlot(self, x, xr, y, scale)
         # ------------------- Regression stuff -----------------------
 
         self.data_scale = x
