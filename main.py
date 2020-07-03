@@ -14,6 +14,8 @@ from Dialogs import SclbyAreaDialog
 from Dialogs import XRValuesDialog
 from Dialogs import HHPlotDialog
 from PlotData import PlotData
+from CanvasPanel import RegressionPlot as RP
+from CanvasPanel import R2byScalePlot as R2
 from StatsTestsUI import FtestDialog
 from StatsTestsUI import TtestDialog
 from StatsTestsUI import ANOVAtestDialog
@@ -45,320 +47,80 @@ def OnRegression(event):
 
     warnings.simplefilter("error", OptimizeWarning)
     try:
-
         rsdlg = GraphSelectDialog(frame, data.get_results_scale(), data.get_x_regress(), data.get_regress_sets(),
                                   error_txt, cvf)
         rsdlg.CenterOnScreen()
         resid = rsdlg.ShowModal()
 
         if resid == wx.ID_OK:
+            # Contains list of regression/R^2 dialog properties, checked value functions, and graph generators
+            # Tuple Layout
+            #   [0] - IsChecked property retrival function
+            #   [1] - Dialog title
+            #   [2] - Fit plot function to generate regression
+            #   [3] - Tree menu item label
+            #   [4] - Error dialog label
+            #   [5] - Boolean is true if the dialog is for an R^2 dialog
+            regressR2Dialogs = \
+                (
+                (rsdlg.prop1check.IsChecked,"Proportional",RP.proportional_fit_plot,"Proportional Regression","Proportional: ", False),
+                (rsdlg.lin1check.IsChecked,"Linear",RP.linear_fit_plot,"Linear Regression","Linear: ", False),
+                (rsdlg.quad1check.IsChecked,"Quadratic",RP.quadratic_fit_plot,"Quadratic Regression","Quadratic: ", False),
+                (rsdlg.cubic1check.IsChecked,"Cubic",RP.cubic_fit_plot,"Cubic Regression","Cubic: ", False),
+                (rsdlg.quart1check.IsChecked,"Quartic",RP.quartic_fit_plot,"Quartic Regression","Quartic: ", False),
+                (rsdlg.quint1check.IsChecked,"Quintic",RP.quintic_fit_plot,"Quintic Regression","Quintic: ", False),
+                (rsdlg.pow1check.IsChecked,"Power",RP.power_fit_plot,"Power Regression","Power: ", False),
+                (rsdlg.inverse1check.IsChecked,"Inverse",RP.inverse_fit_plot,"Inverse Regression","Inverse: ", False),
+                (rsdlg.insq1check.IsChecked,"Inverse Square",RP.inverse_squared_fit_plot,"Inverse Square Regression","Inverse Square: ", False),
+                (rsdlg.nexp1check.IsChecked,"Natural Exponent",RP.naturalexp_fit_plot,"Natural Exponent Regression","Natural Exponent: ", False),
+                (rsdlg.Ln1check.IsChecked,"Natural Log",RP.loge_fit_plot,"Natural Log Regression","Natural Log: ", False),
+                (rsdlg.b10log1check.IsChecked,"Base-10 Log",RP.log10_fit_plot,"Base-10 Log Regression","Log10: ", False),
+                (rsdlg.invexp1check.IsChecked,"Inverse Exponent",RP.inverseexp_fit_plot,"Inverse Exponent Regression","Inverse Exponent: ", False),
+                (rsdlg.sin1check.IsChecked,"Sine",RP.sin_fit_plot,"Sine Regression","Sine: ", False),
+                (rsdlg.cos1check.IsChecked,"Cosine",RP.cos_fit_plot,"Cosine Regression","Cosine: ", False),
+                (rsdlg.gauss1check.IsChecked,"Gaussian",RP.gaussian_fit_plot,"Gaussian Regression","Gaussian: ", False),
+                (rsdlg.prop2check.IsChecked,"R^2 by Scale for Proportional Regression",R2.proportional_plot,"Proportional R^2 - Scale","Proportional R^2: ", True),
+                (rsdlg.lin2check.IsChecked,"R^2 by Scale for Linear Regression",R2.linear_plot,"Linear R^2 - Scale","Linear R^2: ", True),
+                (rsdlg.quad2check.IsChecked,"R^2 by Scale for Quadratic Regression",R2.quadratic_plot,"Quadratic R^2 - Scale","Quadratic R^2: ", True),
+                (rsdlg.cubic2check.IsChecked,"R^2 by Scale for Cubic Regression",R2.cubic_plot,"Cubic R^2 - Scale","Cubic R^2: ", True),
+                (rsdlg.quart2check.IsChecked,"R^2 by Scale for Quartic Regression",R2.quartic_plot,"Quartic R^2 - Scale","Quartic R^2: ", True),
+                (rsdlg.quint2check.IsChecked,"R^2 by Scale for Quintic Regression",R2.quintic_plot,"Quintic R^2 - Scale","Quintic R^2: ", True),
+                (rsdlg.pow2check.IsChecked,"R^2 by Scale for Power Regression",R2.power_plot,"Power R^2 - Scale","Power R^2: ", True),
+                (rsdlg.inverse2check.IsChecked,"R^2 by Scale for Inverse Regression",R2.inverse_plot,"Inverse R^2 - Scale","Inverse R^2: ", True),
+                (rsdlg.insq2check.IsChecked,"R^2 by Scale for Inverse Squared Regression",R2.inverse_squared_plot,"Inverse Square R^2 - Scale","Inverse Squared R^2: ", True),
+                (rsdlg.nexp2check.IsChecked,"R^2 by Scale for Natural Exponent Regression",R2.natural_exp_plot,"Natural Exponent R^2 - Scale","Natural Exponent R^2: ", True),
+                (rsdlg.Ln2check.IsChecked,"R^2 by Scale for Natural Log Regression",R2.loge_plot,"Natural Log R^2 - Scale","Natural Log R^2: ", True),
+                (rsdlg.b10log2check.IsChecked,"R^2 by Scale for Log Regression",R2.log10_plot,"Base-10 R^2 - Scale","Log10 R^2: ", True),
+                (rsdlg.invexp2check.IsChecked,"R^2 by Scale for Inverse Exponent Regression",R2.inverse_exp_plot,"Inverse Exponent R^2 - Scale","Inverse Exponent R^2: ", True),
+                (rsdlg.sin2check.IsChecked,"R^2 by Scale for Sine Regression",R2.sin_plot,"Sine R^2 - Scale","Sine R^2: ", True),
+                (rsdlg.cos2check.IsChecked,"R^2 by Scale for Cosine Regression",R2.cos_plot,"Cosine R^2 - Scale","Cosine R^2: ", True),
+                (rsdlg.gauss2check.IsChecked,"R^2 by Scale for Gaussian Regression",R2.gaussian_plot,"Gaussian R^2 - Scale","Gaussian R^2: ", True)
+                )
 
-            if rsdlg.prop1check.IsChecked():
-                try:
-                    gdlg1 = RegressionDialog(frame, "Proportional", data.get_results_scale(), data.get_x_regress(),
-                                             data.get_regress_sets(), cvf, selectedID, tree_menu)
-                    gdlg1.get_graph().proportional_fit_plot()
-                    tree_menu.AppendItem(selectedID, "Proportional Regression", data=gdlg1)
-                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
-                    error_txt.AppendText("Proportional: " + str(e) + '\n')
+            # Run through all given dialogs to find if the given option has been selected
+            # If it has been selected, generate the corresponding graph dialog, and graph
+            id = 0
+            for dialog in regressR2Dialogs:
+                checked_func, title, fit_func, menu_label, error_label, isR2 = dialog
+                # Continue if this plot fit option been selected
+                if checked_func():
+                    try:
+                        # Generate either R^2 or Regression dialog depending on selection
+                        if isR2:
+                            gdlg = R2byScaleDialog(frame, title, data, error_txt, cvf, tree_menu, selectedID, id)
+                        else:
+                            gdlg = RegressionDialog(frame, title, data.get_results_scale(), data.get_x_regress(),
+                                                        data.get_regress_sets(), cvf, selectedID, tree_menu)
+                        fit_func(gdlg.get_graph())
+                        tree_menu.AppendItem(selectedID, menu_label, data=gdlg)
+                        break
+                    except (ZeroDivisionError, OptimizeWarning) as e: #RuntimeError, Exception, Warning, TypeError, RuntimeWarning,
+                        error_txt.AppendText(error_label + str(e) + '\n')
+                # Don't increase ID if current dialog is not an R^2 dialog
+                id += 1 if isR2 else 0
 
-            if rsdlg.lin1check.IsChecked():
-
-                try:
-                    gdlg2 = RegressionDialog(frame, "Linear", data.get_results_scale(), data.get_x_regress(),
-                                             data.get_regress_sets(), cvf, selectedID, tree_menu)
-                    gdlg2.get_graph().linear_fit_plot()
-                    tree_menu.AppendItem(selectedID, "Linear Regression", data=gdlg2)
-                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, OptimizeWarning, RuntimeWarning, ValueError) as e:
-                    error_txt.AppendText("Linear: " + str(e) + '\n')
-
-            if rsdlg.quad1check.IsChecked():
-                gdlg3 = RegressionDialog(frame, "Quadratic", data.get_results_scale(), data.get_x_regress(),
-                                         data.get_regress_sets(), cvf, selectedID, tree_menu)
-                try:
-                    gdlg3.get_graph().quadratic_fit_plot()
-                    tree_menu.AppendItem(selectedID, "Quadratic Regression", data=gdlg3)
-                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
-                    error_txt.AppendText("Quadratic: " + str(e) + '\n')
-
-            if rsdlg.cubic1check.IsChecked():
-                gdlg4 = RegressionDialog(frame, "Cubic", data.get_results_scale(), data.get_x_regress(),
-                                         data.get_regress_sets(), cvf, selectedID, tree_menu)
-                try:
-                    gdlg4.get_graph().cubic_fit_plot()
-                    tree_menu.AppendItem(selectedID, "Cubic Regression", data=gdlg4)
-                except (ZeroDivisionError, OptimizeWarning) as e: #RuntimeError, Exception, Warning, TypeError, RuntimeWarning,
-                    error_txt.AppendText("Cubic: " + str(e) + '\n')
-
-            if rsdlg.quart1check.IsChecked():
-                gdlg5 = RegressionDialog(frame, "Quartic", data.get_results_scale(), data.get_x_regress(),
-                                         data.get_regress_sets(), cvf, selectedID, tree_menu)
-                try:
-                    gdlg5.get_graph().quartic_fit_plot()
-                    tree_menu.AppendItem(selectedID, "Quartic Regression", data=gdlg5)
-                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
-                    error_txt.AppendText("Quartic: " + str(e) + '\n')
-
-            if rsdlg.quint1check.IsChecked():
-                gdlg6 = RegressionDialog(frame, "Quintic", data.get_results_scale(), data.get_x_regress(),
-                                         data.get_regress_sets(), cvf, selectedID, tree_menu)
-                try:
-                    gdlg6.get_graph().quintic_fit_plot()
-                    tree_menu.AppendItem(selectedID, "Quintic Regression", data=gdlg6)
-                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
-                    error_txt.AppendText("Quintic: " + str(e) + '\n')
-
-            if rsdlg.pow1check.IsChecked():
-                gdlg7 = RegressionDialog(frame, "Power", data.get_results_scale(), data.get_x_regress(),
-                                         data.get_regress_sets(), cvf, selectedID, tree_menu)
-                try:
-                    gdlg7.get_graph().power_fit_plot()
-                    tree_menu.AppendItem(selectedID, "Power Regression", data=gdlg7)
-                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
-                    error_txt.AppendText("Power: " + str(e) + '\n')
-
-            if rsdlg.inverse1check.IsChecked():
-                gdlg8 = RegressionDialog(frame, "Inverse", data.get_results_scale(), data.get_x_regress(),
-                                         data.get_regress_sets(), cvf, selectedID, tree_menu)
-                try:
-                    gdlg8.get_graph().inverse_fit_plot()
-                    tree_menu.AppendItem(selectedID, "Inverse Regression", data=gdlg8)
-                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
-                    error_txt.AppendText("Inverse: " + str(e) + '\n')
-
-            if rsdlg.insq1check.IsChecked():
-                gdlg9 = RegressionDialog(frame, "Inverse Square", data.get_results_scale(), data.get_x_regress(),
-                                         data.get_regress_sets(), cvf, selectedID, tree_menu)
-                try:
-                    gdlg9.get_graph().inverse_squared_fit_plot()
-                    tree_menu.AppendItem(selectedID, "Inverse Square Regression", data=gdlg9)
-                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
-                    error_txt.AppendText("Inverse Square: " + str(e) + '\n')
-
-            if rsdlg.nexp1check.IsChecked():
-                gdlg10 = RegressionDialog(frame, "Natural Exponent", data.get_results_scale(), data.get_x_regress(),
-                                          data.get_regress_sets(), cvf, selectedID, tree_menu)
-                try:
-                    gdlg10.get_graph().naturalexp_fit_plot()
-                    tree_menu.AppendItem(selectedID, "Natural Exponent Regression", data=gdlg10)
-                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
-                    error_txt.AppendText("Natural Exponent: " + str(e) + '\n')
-
-            if rsdlg.Ln1check.IsChecked():
-                gdlg11 = RegressionDialog(frame, "Natural Log", data.get_results_scale(), data.get_x_regress(),
-                                          data.get_regress_sets(), cvf, selectedID, tree_menu)
-                try:
-                    gdlg11.get_graph().loge_fit_plot()
-                    tree_menu.AppendItem(selectedID, "Natural Log Regression", data=gdlg11)
-                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
-                    error_txt.AppendText("Natural Log: " + str(e) + '\n')
-
-            if rsdlg.b10log1check.IsChecked():
-                gdlg12 = RegressionDialog(frame, "Base-10 Log", data.get_results_scale(), data.get_x_regress(),
-                                          data.get_regress_sets(), cvf, selectedID, tree_menu)
-                try:
-                    gdlg12.get_graph().log10_fit_plot()
-                    tree_menu.AppendItem(selectedID, "Base-10 Log Regression", data=gdlg12)
-                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
-                    error_txt.AppendText("Log10: " + str(e) + '\n')
-
-            if rsdlg.invexp1check.IsChecked():
-                gdlg13 = RegressionDialog(frame, "Inverse Exponent", data.get_results_scale(), data.get_x_regress(),
-                                          data.get_regress_sets(), cvf, selectedID, tree_menu)
-                try:
-                    gdlg13.get_graph().inverseexp_fit_plot()
-                    tree_menu.AppendItem(selectedID, "Inverse Exponent Regression", data=gdlg13)
-                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
-                    error_txt.AppendText("Inverse Exponent: " + str(e) + '\n')
-
-            if rsdlg.sin1check.IsChecked():
-                gdlg14 = RegressionDialog(frame, "Sine", data.get_results_scale(), data.get_x_regress(),
-                                          data.get_regress_sets(), cvf, selectedID, tree_menu)
-                try:
-                    gdlg14.get_graph().sin_fit_plot()
-                    tree_menu.AppendItem(selectedID, "Sine Regression", data=gdlg14)
-                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
-                    error_txt.AppendText("Sine: " + str(e) + '\n')
-
-            if rsdlg.cos1check.IsChecked():
-                gdlg15 = RegressionDialog(frame, "Cosine", data.get_results_scale(), data.get_x_regress(),
-                                          data.get_regress_sets(), cvf, selectedID, tree_menu)
-                try:
-                    gdlg15.get_graph().cos_fit_plot()
-                    tree_menu.AppendItem(selectedID, "Cosine Regression", data=gdlg15)
-                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
-                    error_txt.AppendText("Cosine: " + str(e) + '\n')
-
-            if rsdlg.gauss1check.IsChecked():
-                gdlg16 = RegressionDialog(frame, "Gaussian", data.get_results_scale(), data.get_x_regress(),
-                                          data.get_regress_sets(), cvf, selectedID, tree_menu)
-                try:
-                    gdlg16.get_graph().gaussian_fit_plot()
-                    tree_menu.AppendItem(selectedID, "Gaussian Regression", data=gdlg16)
-                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
-                    error_txt.AppendText("Gaussian: " + str(e) + '\n')
-
-            if rsdlg.prop2check.IsChecked():
-
-                gdlg = R2byScaleDialog(frame, "R^2 by Scale for Proportional Regression", data, error_txt, cvf,
-                                       tree_menu, selectedID, 0)
-                try:
-                    gdlg.get_graph().proportional_plot()
-                    tree_menu.AppendItem(selectedID, "Proportional R^2 - Scale", data=gdlg)
-                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
-                    error_txt.AppendText("Proportional R^2: " + str(e) + '\n')
-
-            if rsdlg.lin2check.IsChecked():
-
-                gdlg = R2byScaleDialog(frame, "R^2 by Scale for Linear Regression", data, error_txt, cvf, tree_menu,
-                                       selectedID, 1)
-                try:
-                    gdlg.get_graph().linear_plot()
-                    tree_menu.AppendItem(selectedID, "Linear R^2 - Scale", data=gdlg)
-                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
-                    error_txt.AppendText("Linear R^2: " + str(e) + '\n')
-
-            if rsdlg.quad2check.IsChecked():
-
-                gdlg = R2byScaleDialog(frame, "R^2 by Scale for Quadratic Regression", data, error_txt, cvf, tree_menu,
-                                       selectedID, 2)
-                try:
-                    gdlg.get_graph().quadratic_plot()
-                    tree_menu.AppendItem(selectedID, "Quadratic R^2 - Scale", data=gdlg)
-                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
-                    error_txt.AppendText("Quadratic R^2: " + str(e) + '\n')
-
-            if rsdlg.cubic2check.IsChecked():
-
-                gdlg = R2byScaleDialog(frame, "R^2 by Scale for Cubic Regression", data, error_txt, cvf, tree_menu,
-                                       selectedID, 3)
-                try:
-                    gdlg.get_graph().cubic_plot()
-                    tree_menu.AppendItem(selectedID, "Cubic R^2 - Scale", data=gdlg)
-                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
-                    error_txt.AppendText("Cubic R^2: " + str(e) + '\n')
-
-            if rsdlg.quart2check.IsChecked():
-
-                gdlg = R2byScaleDialog(frame, "R^2 by Scale for Quartic Regression", data, error_txt, cvf, tree_menu,
-                                       selectedID, 4)
-                try:
-                    gdlg.get_graph().quartic_plot()
-                    tree_menu.AppendItem(selectedID, "Quartic R^2 - Scale", data=gdlg)
-                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
-                    error_txt.AppendText("Quartic R^2: " + str(e) + '\n')
-
-            if rsdlg.quint2check.IsChecked():
-
-                gdlg = R2byScaleDialog(frame, "R^2 by Scale for Quintic Regression", data, error_txt, cvf, tree_menu,
-                                       selectedID, 5)
-                try:
-                    gdlg.get_graph().quintic_plot()
-                    tree_menu.AppendItem(selectedID, "Quintic R^2 - Scale", data=gdlg)
-                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
-                    error_txt.AppendText("Quintic R^2: " + str(e) + '\n')
-
-            if rsdlg.pow2check.IsChecked():
-
-                gdlg = R2byScaleDialog(frame, "R^2 by Scale for Power Regression", data, error_txt, cvf, tree_menu,
-                                       selectedID, 6)
-                try:
-                    gdlg.get_graph().power_plot()
-                    tree_menu.AppendItem(selectedID, "Power R^2 - Scale", data=gdlg)
-                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
-                    error_txt.AppendText("Power R^2: " + str(e) + '\n')
-
-            if rsdlg.inverse2check.IsChecked():
-
-                gdlg = R2byScaleDialog(frame, "R^2 by Scale for Inverse Regression", data, error_txt, cvf, tree_menu,
-                                       selectedID, 7)
-                try:
-                    gdlg.get_graph().inverse_plot()
-                    tree_menu.AppendItem(selectedID, "Inverse R^2 - Scale", data=gdlg)
-                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
-                    error_txt.AppendText("Inverse R^2: " + str(e) + '\n')
-
-            if rsdlg.insq2check.IsChecked():
-
-                gdlg = R2byScaleDialog(frame, "R^2 by Scale for Inverse Squared Regression", data, error_txt, cvf,
-                                       tree_menu, selectedID, 8)
-                try:
-                    gdlg.get_graph().inverse_squared_plot()
-                    tree_menu.AppendItem(selectedID, "Inverse Square R^2 - Scale", data=gdlg)
-                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
-                    error_txt.AppendText("Inverse Squared R^2: " + str(e) + '\n')
-
-            if rsdlg.nexp2check.IsChecked():
-
-                gdlg = R2byScaleDialog(frame, "R^2 by Scale for Natural Exponent Regression", data, error_txt, cvf,
-                                       tree_menu, selectedID, 9)
-                try:
-                    gdlg.get_graph().natural_exp_plot()
-                    tree_menu.AppendItem(selectedID, "Natural Exponent R^2 - Scale", data=gdlg)
-                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
-                    error_txt.AppendText("Natural Exponent R^2: " + str(e) + '\n')
-
-            if rsdlg.Ln2check.IsChecked():
-
-                gdlg = R2byScaleDialog(frame, "R^2 by Scale for Natural Log Regression", data, error_txt, cvf,
-                                       tree_menu, selectedID, 10)
-                try:
-                    gdlg.get_graph().loge_plot()
-                    tree_menu.AppendItem(selectedID, "Natural Log R^2 - Scale", data=gdlg)
-                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
-                    error_txt.AppendText("Natural Log R^2: " + str(e) + '\n')
-
-            if rsdlg.b10log2check.IsChecked():
-
-                gdlg = R2byScaleDialog(frame, "R^2 by Scale for Log Regression", data, error_txt, cvf, tree_menu,
-                                       selectedID, 11)
-                try:
-                    gdlg.get_graph().log10_plot()
-                    tree_menu.AppendItem(selectedID, "Base-10 R^2 - Scale", data=gdlg)
-                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
-                    error_txt.AppendText("Log10 R^2: " + str(e) + '\n')
-
-            if rsdlg.invexp2check.IsChecked():
-
-                gdlg = R2byScaleDialog(frame, "R^2 by Scale for Inverse Exponent Regression", data, error_txt, cvf,
-                                       tree_menu, selectedID, 12)
-                try:
-                    gdlg.get_graph().inverse_exp_plot()
-                    tree_menu.AppendItem(selectedID, "Inverse Exponent R^2 - Scale", data=gdlg)
-                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
-                    error_txt.AppendText("Inverse Exponent R^2: " + str(e) + '\n')
-
-            if rsdlg.sin2check.IsChecked():
-
-                gdlg = R2byScaleDialog(frame, "R^2 by Scale for Sine Regression", data, error_txt, cvf, tree_menu,
-                                       selectedID, 13)
-                try:
-                    gdlg.get_graph().sin_plot()
-                    tree_menu.AppendItem(selectedID, "Sine R^2 - Scale", data=gdlg)
-                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
-                    error_txt.AppendText("Sine R^2: " + str(e) + '\n')
-
-            if rsdlg.cos2check.IsChecked():
-
-                gdlg = R2byScaleDialog(frame, "R^2 by Scale for Cosine Regression", data, error_txt, cvf, tree_menu,
-                                       selectedID, 14)
-                try:
-                    gdlg.get_graph().cos_plot()
-                    tree_menu.AppendItem(selectedID, "Cosine R^2 - Scale", data=gdlg)
-                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
-                    error_txt.AppendText("Cosine R^2: " + str(e) + '\n')
-
-            if rsdlg.gauss2check.IsChecked():
-
-                gdlg = R2byScaleDialog(frame, "R^2 by Scale for Gaussian Regression", data, error_txt, cvf, tree_menu,
-                                       selectedID, 15)
-                try:
-                    gdlg.get_graph().gaussian_plot()
-                    tree_menu.AppendItem(selectedID, "Gaussian R^2 - Scale", data=gdlg)
-                except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
-                    error_txt.AppendText("Gaussian R^2: " + str(e) + '\n')
-        # Refresh tree menu to show newly created graphs
-        tree_menu.Refresh()
+            # Refresh tree menu to show newly created graphs
+            tree_menu.Refresh()
     except (ZeroDivisionError, OptimizeWarning) as e: #RuntimeError, Warning, TypeError, RuntimeWarning,
         error_txt.AppendText("Graph: " + str(e) + '\n')
 
@@ -475,6 +237,18 @@ def OnSelection(event):
         selected.CenterOnScreen()
         selected.Show()
 
+# function to rename selected graphs/workbooks
+def OnRename(event):
+    selectedID = tree_menu.GetSelection()
+    selected = tree_menu.GetItemData(selectedID)
+    newName = event.GetLabel()
+
+    if isinstance(selected, PlotData):
+        error_txt.AppendText("Wb: Renaming `" + selected.get_wb().get_name() + "` to `" + newName + "`\n")
+        selected.get_wb().set_name(newName)
+    else:
+        pass
+
 # function to display dialog about the software
 def OnAbout(event):
     version = 'v' + __version__
@@ -482,7 +256,7 @@ def OnAbout(event):
                   'regression and discrimination analysis using results from Surfract\n' \
                   'and MountainsMap. Developed in collaboration with Christopher A.\n' \
                   'Brown, Ph.D., PE, and the WPI Surface Metrology Lab. Contact\n' \
-                  'mespofford@wpi.edu for details. You can support the development of this.\n' \
+                  'mespofford@wpi.edu for details. You can support the development of this\n' \
                   'software by donating below.\n'
 
     # Reconfigure author strings to use newline seperate and not comma seperation
@@ -520,35 +294,39 @@ def OnAbout(event):
 # function to open the data files
 def OnOpen(event):
     frame.EnableCloseButton(False)
-    #     # create the open file dialog, if a file exists the user is able to open it will probably change it so
-    #     # only the MountainsMap data file format can be opened
-    openFileDialog = wx.FileDialog(frame, "Open",
-                                   wildcard=
-                                   "MountainsMap Surface Files (*.sur)|*.sur|"    
-                                   "Comma Seperated Values - UTF-8 (*.csv)|*.csv|"
-                                   "Text File (*.txt)|*.txt",
-                                   style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST | wx.FD_MULTIPLE)
-    openFileDialog.CenterOnScreen()
-    # shows the dialog on screen
-    result = openFileDialog.ShowModal()
-    # only opens the file if 'open' in dialog is pressed otherwise if 'cancel' in dialog is pressed closes dialog
-    if result == wx.ID_OK:
-        # gets the file path
-        filepath = openFileDialog.GetPaths()
-        data = tree_menu.GetItemData(getPlotDataID())
+    output = False
+    try:
+        # create the open file dialog
+        openFileDialog = wx.FileDialog(frame, "Open",
+                                       wildcard=
+                                       "MountainsMap Surface Files (*.sur)|*.sur|"    
+                                       "Comma Seperated Values - UTF-8 (*.csv)|*.csv|"
+                                       "Text File (*.txt)|*.txt",
+                                       style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST | wx.FD_MULTIPLE)
+        openFileDialog.CenterOnScreen()
+        # shows the dialog on screen
+        result = openFileDialog.ShowModal()
+        # only opens the file if 'open' in dialog is pressed otherwise if 'cancel' in dialog is pressed closes dialog
+        if result == wx.ID_OK:
+            # gets the file path
+            filepath = openFileDialog.GetPaths()
+            data = tree_menu.GetItemData(getPlotDataID())
 
-        # opens the file and reads it
-        if filepath[0][len(filepath[0]) - 3:len(filepath[0])] == 'csv':
-            data.open_file(filepath)
-        if filepath[0][len(filepath[0]) - 3:len(filepath[0])] == 'txt':
-            data.open_file2(filepath)
-        if filepath[0][len(filepath[0]) - 3:len(filepath[0])] == 'sur':
-            data.open_sur(filepath)
+            # opens the file and reads it
+            if filepath[0][len(filepath[0]) - 3:len(filepath[0])] == 'csv':
+                data.open_file(filepath)
+            if filepath[0][len(filepath[0]) - 3:len(filepath[0])] == 'txt':
+                data.open_file2(filepath)
+            if filepath[0][len(filepath[0]) - 3:len(filepath[0])] == 'sur':
+                data.open_sur(filepath)
+            output = True
+        elif result == wx.ID_CANCEL:
+            output = False
+    except (Exception) as e:
+        raise e
+    finally:
         frame.EnableCloseButton(True)
-        return True
-    elif result == wx.ID_CANCEL:
-        frame.EnableCloseButton(True)
-        return False
+        return output
 
 def OnNewWB(event):
 
@@ -581,32 +359,60 @@ def getPlotDataID() :
     return selectedID
 
 def OnSave(event):
-    selectedID = getPlotDataID()
-    selectedWorkbook = tree_menu.GetItemData(selectedID).get_wb()
+    frame.EnableCloseButton(False)
+    output = False
+    try:
+        selectedID = getPlotDataID()
+        selectedWorkbook = tree_menu.GetItemData(selectedID).get_wb()
 
-    saveFileDialog = wx.FileDialog(frame, "Save", selectedWorkbook.name, "xlsx (*.xlsx)|*.xlsx", wx.FD_SAVE)
-    saveFileDialog.CenterOnScreen()
-    # shows the dialog on screen when pushes button
-    result = saveFileDialog.ShowModal()
-    # only saves the file if 'save' in dialog is pressed otherwise if 'cancel' in dialog is pressed closes dialog
-    if result == wx.ID_OK:
-        # gets the file path
-        filepath = saveFileDialog.GetPath()
+        saveFileDialog = wx.FileDialog(frame, "Save", selectedWorkbook.name, "xlsx (*.xlsx)|*.xlsx", style=wx.FD_SAVE)
+        saveFileDialog.CenterOnScreen()
+        # shows the dialog on screen when pushes button
+        result = saveFileDialog.ShowModal()
+        # only saves the file if 'save' in dialog is pressed otherwise if 'cancel' in dialog is pressed closes dialog
+        if result == wx.ID_OK:
+            # gets the file path
+            filepath = saveFileDialog.GetPath()
 
-        cells = selectedWorkbook.get_data().keys()
-        values = selectedWorkbook.get_data().values()
+            cells = selectedWorkbook.get_data().keys()
+            values = selectedWorkbook.get_data().values()
 
-        file = openpyxl.Workbook()
-        sheet = file.worksheets[0]
+            file = openpyxl.Workbook()
+            sheet = file.worksheets[0]
 
-        for item in zip(cells, values):
+            for item in zip(cells, values):
 
-            sheet.cell(row=item[0][0] + 1, column=item[0][1] + 1).value = str(item[1])
+                sheet.cell(row=item[0][0] + 1, column=item[0][1] + 1).value = str(item[1])
 
-        file.save(filepath)
-        return True
-    elif result == wx.ID_CANCEL:
-        return False
+            file.save(filepath)
+            output = True
+        elif result == wx.ID_CANCEL:
+            output = False
+    except e:
+        raise e
+    finally:
+        frame.EnableCloseButton(True)
+        return output
+
+# function to handle window maximization
+def onMaxmizeRestore(event):
+    global resized
+    global frame
+    global width, height
+
+    # Shrinks the window at initial resizing
+    if frame.IsMaximized() :
+        pass
+    else:
+        if not resized:
+            screen = wx.DisplaySize()
+            width = screen[0]
+            height = screen[1]
+            frame.SetSize(0, 0, int(width/1.5), int(height/1.5), sizeFlags=wx.SIZE_AUTO)
+            frame.CenterOnScreen()
+            resized = True
+        else:
+            pass
 
 # function to exit the software
 def OnExit(event):
@@ -626,8 +432,10 @@ def OnExit(event):
         exitdialog.Destroy()
         return False
 
+
 if __name__ == "__main__":
     app = wx.App(redirect=False)
+    resized = False
 
     # sets the size of the window to be the size of the users computer screen can be set to integers instead
     screen = wx.DisplaySize()
@@ -635,9 +443,12 @@ if __name__ == "__main__":
     height = screen[1]
 
     frame = wx.Frame(None, title='Multiscale Analysis')
-    frame.SetSize(0, 0, width, height)
+    frame.SetSize(0, 0, width, height, sizeFlags=wx.SIZE_AUTO)
     frame.SetBackgroundColour('#ffffff')
     frame.EnableCloseButton(enable=True)
+    frame.Bind(wx.EVT_CLOSE, OnExit)
+    frame.Bind(wx.EVT_SIZE, onMaxmizeRestore)
+    
     # this is a bunch of GUI stuff
     # general curve fit object which has all of the regression curve functions
     cvf = CurveFit()
@@ -742,11 +553,12 @@ if __name__ == "__main__":
     # tree which contains the graphs when created, names can be editted
     tree_sizer = wx.BoxSizer(wx.VERTICAL)
     tree_menu = wx.TreeCtrl(left_panel, style=wx.TR_HAS_BUTTONS | wx.TR_HIDE_ROOT | wx.TR_LINES_AT_ROOT | wx.TR_SINGLE |
-                                                wx.TR_FULL_ROW_HIGHLIGHT | wx.TR_EDIT_LABELS)
+                                              wx.TR_FULL_ROW_HIGHLIGHT | wx.TR_EDIT_LABELS)
     root = tree_menu.AddRoot("graphs-root")
     tree_sizer.Add(tree_menu, 1, wx.EXPAND)
     left_panel.SetSizer(tree_sizer)
     frame.Bind(wx.EVT_TREE_ITEM_ACTIVATED, OnSelection, tree_menu)
+    frame.Bind(wx.EVT_TREE_END_LABEL_EDIT, OnRename, tree_menu)
 
     main_sizer.Clear()
     main_sizer.Layout()

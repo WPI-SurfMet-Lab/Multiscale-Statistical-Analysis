@@ -4,7 +4,7 @@ import wx
 from matplotlib import use
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wx import NavigationToolbar2Wx as NavigationToolbar
-from matplotlib.figure import Figure
+from matplotlib.pyplot import figure, yscale
 from scipy.optimize import OptimizeWarning
 from GraphDialogs import SymbolDialog
 from GraphDialogs import LegendDialog
@@ -25,7 +25,7 @@ class R2byScalePlot(wx.Panel):
         self.root = root
         self.parent = parent
         self.cvf = cvf
-        self.figure = Figure()
+        self.figure = figure()
         # defines the plot using subplot function
         self.axes = self.get_fig().add_subplot(111)
 
@@ -616,7 +616,7 @@ class RegressionPlot(wx.Panel):
         self.workbook = self.tree_menu.GetItemData(swb).get_wb()
         self.swb = swb
         self.cvf = cvf
-        self.figure = Figure()
+        self.figure = figure()
         # defines the plot
         self.axes = self.get_fig().add_subplot(111)
 
@@ -805,11 +805,14 @@ class RegressionPlot(wx.Panel):
                 popt, pcov = self.get_cvf().prop_data(np.array(self.get_xr()), np.array(y_values))
                 self.get_cvf().prop_fit(self.get_x_plot(), *popt)
                 r2 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().prop_fit(self.get_xr(), *popt))
-            except (RuntimeError, Exception, Warning, TypeError):
+            except (RuntimeError, Exception, Warning, TypeError) as e:
                 # logging.error(traceback.format_exc())
-                r2 = 0
-                popt = 0
-                pcov = 0
+                if __debug__:
+                    r2 = 0
+                    popt = 0
+                    pcov = 0
+                else:
+                    raise e
 
             if r2 > bestr2:
 
@@ -875,11 +878,14 @@ class RegressionPlot(wx.Panel):
                 self.get_cvf().quad_fit(self.get_x_plot(), *popt)
                 r2 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().quad_fit(self.get_xr(), *popt))
 
-            except (RuntimeError, Exception, Warning, TypeError):
+            except (RuntimeError, Exception, Warning, TypeError) as e:
                 # logging.error(traceback.format_exc())
-                r2 = 0
-                popt = 0
-                pcov = 0
+                if __debug__:
+                    r2 = 0
+                    popt = 0
+                    pcov = 0
+                else:
+                    raise e
 
             if r2 > bestr2:
 
@@ -946,21 +952,23 @@ class RegressionPlot(wx.Panel):
                 popt, pcov = self.get_cvf().cubic_data(np.array(self.get_xr()), np.array(y_values))
                 self.get_cvf().cubic_fit(self.get_x_plot(), *popt)
                 r2 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().cubic_fit(self.get_xr(), *popt))
-            except (RuntimeError, Exception, Warning, TypeError):
+            except (RuntimeError, Exception, Warning, TypeError) as e:
                 # logging.error(traceback.format_exc())
-                r2 = 0
-                popt = 0
-                pcov = 0
+                if not __debug__:
+                    r2 = 0
+                    popt = 0
+                    pcov = 0
+                else:
+                    raise e
 
             if r2 > bestr2:
 
                 bestr2 = r2
                 bestscale = self.get_x()[self.get_y().index(y_values)]
                 y = y_values
-                poptbest.append(popt)
+                poptbest = popt
                 pcovbest = pcov
         self.set_yr(np.array(y))
-        print(poptbest)
         self.set_curve(self.get_cvf().cubic_fit(np.array(self.get_x_plot()), *poptbest))
         self.set_popt('y = {}x^3 + {}x^2 + {}x + {}'.format(*np.round(poptbest, 3)))
 
@@ -1016,11 +1024,14 @@ class RegressionPlot(wx.Panel):
                 popt, pcov = self.get_cvf().quartic_data(np.array(self.get_xr()), np.array(y_values))
                 self.get_cvf().quartic_fit(self.get_x_plot(), *popt)
                 r2 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().quartic_fit(self.get_xr(), *popt))
-            except (RuntimeError, Exception, Warning, TypeError):
+            except (RuntimeError, Exception, Warning, TypeError) as e:
                 # logging.error(traceback.format_exc())
-                r2 = 0
-                popt = 0
-                pcov = 0
+                if not __debug__:
+                    r2 = 0
+                    popt = 0
+                    pcov = 0
+                else:
+                    raise e
 
             if r2 > bestr2:
 
@@ -1084,11 +1095,14 @@ class RegressionPlot(wx.Panel):
                 popt, pcov = self.get_cvf().quintic_data(np.array(self.get_xr()), np.array(y_values))
                 self.get_cvf().quintic_fit(self.get_x_plot(), *popt)
                 r2 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().quintic_fit(self.get_xr(), *popt))
-            except (RuntimeError, Exception, Warning, TypeError):
+            except (RuntimeError, Exception, Warning, TypeError) as e:
                 # logging.error(traceback.format_exc())
-                r2 = 0
-                popt = 0
-                pcov = 0
+                if not __debug__:
+                    r2 = 0
+                    popt = 0
+                    pcov = 0
+                else:
+                    raise e
 
             if r2 > bestr2:
 
@@ -1153,11 +1167,14 @@ class RegressionPlot(wx.Panel):
                 popt, pcov = self.get_cvf().power_data(np.array(self.get_xr()), np.array(y_values))
                 self.get_cvf().power_fit(self.get_x_plot(), *popt)
                 r2 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().power_fit(self.get_xr(), *popt))
-            except (RuntimeError, Exception, Warning, TypeError):
+            except (RuntimeError, Exception, Warning, TypeError) as e:
                 # logging.error(traceback.format_exc())
-                r2 = 0
-                popt = 0
-                pcov = 0
+                if not __debug__:
+                    r2 = 0
+                    popt = 0
+                    pcov = 0
+                else:
+                    raise e
 
             if r2 > bestr2:
 
@@ -1222,11 +1239,14 @@ class RegressionPlot(wx.Panel):
                 popt, pcov = self.get_cvf().inverse_data(np.array(self.get_xr()), np.array(y_values))
                 self.get_cvf().inverse_fit(self.get_x_plot(), *popt)
                 r2 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().inverse_fit(self.get_xr(), *popt))
-            except (RuntimeError, Exception, Warning, TypeError):
+            except (RuntimeError, Exception, Warning, TypeError) as e:
                 # logging.error(traceback.format_exc())
-                r2 = 0
-                popt = 0
-                pcov = 0
+                if not __debug__:
+                    r2 = 0
+                    popt = 0
+                    pcov = 0
+                else:
+                    raise e
 
             if r2 > bestr2:
 
@@ -1292,11 +1312,14 @@ class RegressionPlot(wx.Panel):
                 popt, pcov = self.get_cvf().insq_data(np.array(self.get_xr()), np.array(y_values))
                 self.get_cvf().insq_fit(self.get_x_plot(), *popt)
                 r2 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().insq_fit(self.get_xr(), *popt))
-            except (RuntimeError, Exception, Warning, TypeError):
+            except (RuntimeError, Exception, Warning, TypeError) as e:
                 # logging.error(traceback.format_exc())
-                r2 = 0
-                popt = 0
-                pcov = 0
+                if not __debug__:
+                    r2 = 0
+                    popt = 0
+                    pcov = 0
+                else:
+                    raise e
 
             if r2 > bestr2:
 
@@ -1362,11 +1385,14 @@ class RegressionPlot(wx.Panel):
                 popt, pcov = self.get_cvf().nexp_data(np.array(self.get_xr()), np.array(y_values))
                 self.get_cvf().nexp_fit(self.get_x_plot(), *popt)
                 r2 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().nexp_fit(self.get_xr(), *popt))
-            except (RuntimeError, Exception, Warning, TypeError):
+            except (RuntimeError, Exception, Warning, TypeError) as e:
                 # logging.error(traceback.format_exc())
-                r2 = 0
-                popt = 0
-                pcov = 0
+                if not __debug__:
+                    r2 = 0
+                    popt = 0
+                    pcov = 0
+                else:
+                    raise e
 
             if r2 > bestr2:
 
@@ -1494,11 +1520,14 @@ class RegressionPlot(wx.Panel):
                 popt, pcov = self.get_cvf().b10log_data(np.array(self.get_xr()), np.array(y_values))
                 self.get_cvf().b10log_fit(self.get_x_plot(), *popt)
                 r2 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().b10log_fit(self.get_xr(), *popt))
-            except (RuntimeError, Exception, Warning, TypeError):
+            except (RuntimeError, Exception, Warning, TypeError) as e:
                 # logging.error(traceback.format_exc())
-                r2 = 0
-                popt = 0
-                pcov = 0
+                if not __debug__:
+                    r2 = 0
+                    popt = 0
+                    pcov = 0
+                else:
+                    raise e
 
             if r2 > bestr2:
 
@@ -1565,11 +1594,14 @@ class RegressionPlot(wx.Panel):
                 popt, pcov = self.get_cvf().invexp_data(np.array(self.get_xr()), np.array(y_values))
                 self.get_cvf().invexp_fit(self.get_x_plot(), *popt)
                 r2 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().invexp_fit(self.get_xr(), *popt))
-            except (RuntimeError, Exception, Warning, TypeError):
+            except (RuntimeError, Exception, Warning, TypeError) as e:
                 # logging.error(traceback.format_exc())
-                r2 = 0
-                popt = 0
-                pcov = 0
+                if not __debug__:
+                    r2 = 0
+                    popt = 0
+                    pcov = 0
+                else:
+                    raise e
 
             if r2 > bestr2:
 
@@ -1635,11 +1667,14 @@ class RegressionPlot(wx.Panel):
                 popt, pcov = self.get_cvf().sine_data(np.array(self.get_xr()), np.array(y_values))
                 self.get_cvf().sine_fit(self.get_x_plot(), *popt)
                 r2 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().sine_fit(self.get_xr(), *popt))
-            except (RuntimeError, Exception, Warning, TypeError):
+            except (RuntimeError, Exception, Warning, TypeError) as e:
                 # logging.error(traceback.format_exc())
-                r2 = 0
-                popt = 0
-                pcov = 0
+                if not __debug__:
+                    r2 = 0
+                    popt = 0
+                    pcov = 0
+                else:
+                    raise e
 
             if r2 > bestr2:
 
@@ -1705,11 +1740,14 @@ class RegressionPlot(wx.Panel):
                 popt, pcov = self.get_cvf().cosine_data(np.array(self.get_xr()), np.array(y_values))
                 self.get_cvf().cosine_fit(self.get_x_plot(), *popt)
                 r2 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().cosine_fit(self.get_xr(), *popt))
-            except (RuntimeError, Exception, Warning, TypeError):
+            except (RuntimeError, Exception, Warning, TypeError) as e:
                 # logging.error(traceback.format_exc())
-                r2 = 0
-                popt = 0
-                pcov = 0
+                if not __debug__:
+                    r2 = 0
+                    popt = 0
+                    pcov = 0
+                else:
+                    raise e
 
             if r2 > bestr2:
 
@@ -1775,11 +1813,14 @@ class RegressionPlot(wx.Panel):
                 popt, pcov = self.get_cvf().gauss_data(np.array(self.get_xr()), np.array(y_values))
                 self.get_cvf().gauss_fit(self.get_x_plot(), *popt)
                 r2 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().gauss_fit(self.get_xr(), *popt))
-            except (RuntimeError, Exception, Warning, TypeError):
+            except (RuntimeError, Exception, Warning, TypeError) as e:
                 # logging.error(traceback.format_exc())
-                r2 = 0
-                popt = 0
-                pcov = 0
+                if not __debug__:
+                    r2 = 0
+                    popt = 0
+                    pcov = 0
+                else:
+                    raise e
 
             if r2 > bestr2:
 
@@ -1891,7 +1932,7 @@ class SclbyAreaPlot(wx.Panel):
     def __init__(self, parent, x, y, data):
         # gets the Panel properties
         wx.Panel.__init__(self, parent, size=wx.Size(640, 530), style=wx.SIMPLE_BORDER)
-        self.figure = Figure()
+        self.figure = figure()
         # defines the plot not entirely sure what the numbers in add_subplot mean
         self.axes = self.get_fig().add_subplot(111)
         self.canvas = FigureCanvas(self, -1, self.get_fig())
@@ -2022,6 +2063,9 @@ class SclbyAreaPlot(wx.Panel):
         # self.get_axes().locator_params(axis='x', nbins=8)
 
         for yvals in self.get_y():
+            # Prevent negative input into log10
+            if np.any(yvals < 0) :
+                raise Exception("Y-values cannot be negative because of log scale.")
             # scatter log of complexity values
             scatterList.append(self.get_axes().scatter(self.get_x(), np.log10(yvals), marker="o", s=8))
 
@@ -2070,7 +2114,7 @@ class RegressionSelectPlot(wx.Panel):
 
         self.cvf = cvf
         self.scale = scale
-        self.figure = Figure()
+        self.figure = figure()
         # defines the plot not entirely sure what the numbers in add_subplot mean
         self.axes = self.get_fig().add_subplot(111)
 
@@ -2917,7 +2961,7 @@ class HHPlot(wx.Panel):
         # gets the Panel properties
         wx.Panel.__init__(self, parent, size=wx.Size(640, 480), style=wx.SIMPLE_BORDER)
 
-        self.figure = Figure()
+        self.figure = figure()
         # defines the plot not entirely sure what the numbers in add_subplot mean
         self.axes = self.get_fig().add_subplot(111)
         self.canvas = FigureCanvas(self, -1, self.get_fig())
