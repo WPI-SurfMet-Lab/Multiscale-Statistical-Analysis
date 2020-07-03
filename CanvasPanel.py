@@ -733,46 +733,36 @@ class RegressionPlot(wx.Panel):
                 fit_func(self.get_x_plot(), *popt)
                 r2 = CurveFit.r_squared(np.array(y_values), fit_func(self.get_xr(), *popt))
             except (RuntimeError, Exception, Warning, TypeError) as e:
-                #logging.error(traceback.format_exc())
-                if not __debug__:
+                if __debug__:
                     r2 = 0
                     popt = 0
                     pcov = 0
                 else:
                     raise e
-
             if r2 > bestr2:
-
                 bestr2 = r2
                 bestscale = self.get_x()[self.get_y().index(y_values)]
                 y = y_values
                 poptbest = popt
                 pcovbest = pcov
 
-        bestPlotFit = fit_func(np.array(self.get_x_plot()), *poptbest)
+        best_plot_fit = fit_func(np.array(self.get_x_plot()), *poptbest)
         self.set_yr(np.array(y))
-        self.set_curve(bestPlotFit)
-        self.set_popt(popt_str.format(*np.round(poptbest, 3)))
-
+        self.set_curve(best_plot_fit)
         self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_xr()), np.array(y),
                                                       s=self.get_dataSymbolSize(),
                                                       marker=self.get_dataSymbol(),
                                                       color=self.get_dataColor()))
-        self.get_axes().plot(self.get_x_plot(), bestPlotFit, '-', color=self.get_lineColor())
+        self.get_axes().plot(self.get_x_plot(), best_plot_fit, '-', color=self.get_lineColor())
         self.get_canvas().draw()
+
+        self.set_popt(popt_str.format(*np.round(poptbest, 3)))
+
         self.set_best_r_squared(bestr2)
         self.set_best_scale(bestscale)
         self.set_line_annot_pos((int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                 fit_func(int((min(self.get_xr()) + max(self.get_xr())) / 2), *poptbest)))
-
-        wb_data = self.get_wb().get_data()
-        p_i = list(wb_data.values()).index("plot_name")
-        cells = list(wb_data.keys())
-        write_col = 0
-        for i in range(1, 100):
-            if not (cells[p_i][0], i) in cells:
-                write_col = i
-                break
+                                 fit_func(int((min(self.get_xr()) + max(self.get_xr())) / 2),
+                                                           *poptbest)))
 
     def linear_fit_plot(self):
         self.plot_fit(CurveFit.linear_data, CurveFit.linear_fit, 'y = {}x + {}')
@@ -876,7 +866,7 @@ class RegressionPlot(wx.Panel):
     def get_popt(self): return self.popt
     def set_popt(self, popt): self.popt = popt
 # Class for the Scale by area plot as well as complexity by scale
-# Update: rename the class name
+# TODO: rename the class name
 class SclbyAreaPlot(wx.Panel):
 
     def __init__(self, parent, x, y, data):
