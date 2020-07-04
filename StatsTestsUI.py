@@ -353,14 +353,14 @@ class FtestDialog(wx.Dialog):
             self.get_res_list().append(['rejected', var1, var2, mean1, mean2, sd1, sd2, p_val, p_val,np.round_(p_val * 100, 3), f_val, p_r, f1, f2])
 
     def F_TwoTail(self, alpha, data, num_data):
-        F_Tail_helper(np.round_(stats.f.ppf(alpha / 2.0, len(data[0])-1, len(data[1])-1), 4),
+        self.F_Tail_helper(np.round_(stats.f.ppf(alpha / 2.0, len(data[0])-1, len(data[1])-1), 4),
                       np.round_(stats.f.ppf(1.0 - (alpha / 2.0), len(data[0])-1, len(data[1])-1), 4))
 
     def F_LeftTail(self, alpha, data, num_data):
-        F_Tail_helper(np.round_(stats.f.ppf(alpha, len(data[0])-1, len(data[1])-1), 4), '∞')
+        self.F_Tail_helper(np.round_(stats.f.ppf(alpha, len(data[0])-1, len(data[1])-1), 4), '∞')
 
     def F_RightTail(self, alpha, data, num_data):
-        F_Tail_helper(np.round_(stats.f.ppf(1 - alpha, len(data[0])-1, len(data[1])-1), 4), '-∞')
+        self.F_Tail_helper(np.round_(stats.f.ppf(1 - alpha, len(data[0])-1, len(data[1])-1), 4), '-∞')
 
     def get_panel(self): return self.panel
     def get_data(self): return self.data
