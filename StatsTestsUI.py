@@ -263,10 +263,8 @@ class FtestDialog(wx.Dialog):
                   self.get_data().get_results_scale().index(float(self.get_range_max()))+1]
 
         return f_data
-    # the following 3 functions are identical except for the calculations for the p-value and accepted range of values for the
-    # given confidence value. only the F_TwoTail function is commented
-    def F_TwoTail(self, alpha, data, num_data):
 
+    def F_Tail_helper(self, f1, f2):
         var = []
         mean = []
         f_val = 0
@@ -287,8 +285,6 @@ class FtestDialog(wx.Dialog):
         self.get_flist().append(f_val)
         # for two-tailed only assume σ1 = σ2
         # range for which of the f-value is in the H0 hypothesis is accepted
-        f2 = np.round_(stats.f.ppf(1.0 - (alpha / 2.0), len(data[0])-1, len(data[1])-1), 4)
-        f1 = np.round_(stats.f.ppf(alpha / 2.0, len(data[0])-1, len(data[1])-1), 4)
         # calculate p-value
         p_val = np.round_(2.0 * stats.f.sf(f_val, len(data[0])-1, len(data[1])-1), 4)
         # calculate confidence
@@ -303,6 +299,7 @@ class FtestDialog(wx.Dialog):
         sd1 = np.round_(np.sqrt(var1), 4)
         sd2 = np.round_(np.sqrt(var2), 4)
         # ACCEPTED CASE results
+        
         accepted = """
         1. Variance and mean
         Group 1                                 Group 2
@@ -355,176 +352,15 @@ class FtestDialog(wx.Dialog):
                 self.get_results_txt().AppendText(rejected)
             self.get_res_list().append(['rejected', var1, var2, mean1, mean2, sd1, sd2, p_val, p_val,np.round_(p_val * 100, 3), f_val, p_r, f1, f2])
 
+    def F_TwoTail(self, alpha, data, num_data):
+        F_Tail_helper(np.round_(stats.f.ppf(alpha / 2.0, len(data[0])-1, len(data[1])-1), 4),
+                      np.round_(stats.f.ppf(1.0 - (alpha / 2.0), len(data[0])-1, len(data[1])-1), 4))
+
     def F_LeftTail(self, alpha, data, num_data):
-
-        var = []
-        mean = []
-        f_val = 0
-
-        for data_set in data:
-            s = np.var(data_set)
-            m = np.mean(data_set)
-            var.append(s)
-            mean.append(m)
-
-        # if var[0] >= var[1]:
-
-        f_val = np.round_(var[0] / var[1], 4)
-        # else:
-        #
-        #     f_val = np.round_(var[1] / var[0], 4)
-
-        self.get_flist().append(f_val)
-        # for left-tailed only assume σ1 >= σ2
-        f1 = np.round_(stats.f.ppf(alpha, len(data[0])-1, len(data[1])-1), 4)
-        f2 = '∞'
-        p_val = np.round_(1 - stats.f.sf(f_val, len(data[0])-1, len(data[1])-1), 4)
-        p_r = np.round_((1 - alpha)*100, 4)
-        var1 = np.round_(var[0], 4)
-        var2 = np.round_(var[1], 4)
-        mean1 = np.round_(mean[0], 4)
-        mean2 = np.round_(mean[1], 4)
-        sd1 = np.round_(np.sqrt(var1), 4)
-        sd2 = np.round_(np.sqrt(var2), 4)
-
-        # ACCEPTED CASE
-        accepted = """
-                1. Variance and mean
-                Group 1                             Group 2
-                Variance: {}                        Variance: {}
-                Mean: {}                            Mean: {}
-                Standard Deviation: {}              Standard Deviation: {}
-
-                2. H0 hypothesis
-                Since p-value > α, H0 is accepted.
-                The sample standard deviation of the Group 1's population is considered to be equal to the sample
-                standard deviation of the Group 2's population. So the difference between the sample standard 
-                deviation of the Group 1 and Group 2 populations is not big enough to be statistically significant.
-
-                3. P-value
-                p-value equals {}. This means that if we would reject H0,
-                the chance of type I error (rejecting a correct H0) would be too high: {} ({}%)
-                The larger the p-value the more it supports H0
-
-                4. The statistics
-                The test statistic f equals {}, is in the {}% critical value accepted range: [{} : {}]
-                """.format(var1, var2, mean1, mean2, sd1, sd2, p_val, p_val, np.round_(p_val * 100, 3), f_val, p_r, f1, f2)
-        # REJECTED CASE
-        rejected = """
-                1. Variance and mean
-                Group 1                             Group 2
-                Variance: {}                        Variance: {}
-                Mean: {}                            Mean: {}
-                Standard Deviation: {}              Standard Deviation: {}
-
-                2. H0 hypothesis
-                Since p-value < α, H0 is rejected.
-                The sample standard deviation of the Group 1's population is considered to be less than the sample 
-                standard deviation of the Group 2's population.
-
-                3. P-value
-                p-value equals {}. This means that the chance of 
-                type1 error (rejecting a correct H0) is small: {} ({}%)
-                The smaller the p-value the more it supports H1
-
-                4. The statistics
-                The test statistic f equals {}, is not in the {}% critical value accepted range: [{} : {}]
-                """.format(var1, var2, mean1, mean2, sd1, sd2, p_val, p_val, np.round_(p_val * 100, 3), f_val, p_r, f1, f2)
-
-        if f1 < f_val < np.Infinity:
-            if num_data == 2:
-                self.get_results_txt().AppendText(accepted)
-            self.get_res_list().append(['accepted', var1, var2, mean1, mean2, sd1, sd2, p_val, p_val, np.round_(p_val * 100, 3), f_val, p_r, f1, f2])
-        else:
-            if num_data == 2:
-                self.get_results_txt().AppendText(rejected)
-            self.get_res_list().append(['rejected', var1, var2, mean1, mean2, sd1, sd2, p_val, p_val, np.round_(p_val * 100, 3), f_val, p_r, f1, f2])
+        F_Tail_helper(np.round_(stats.f.ppf(alpha, len(data[0])-1, len(data[1])-1), 4), '∞')
 
     def F_RightTail(self, alpha, data, num_data):
-
-        var = []
-        mean = []
-        f_val = 0
-
-        for data_set in data:
-            s = np.var(data_set)
-            m = np.mean(data_set)
-            var.append(s)
-            mean.append(m)
-
-        # if var[0] >= var[1]:
-
-        f_val = np.round_(var[0] / var[1], 4)
-        # else:
-        #
-        #     f_val = np.round_(var[1] / var[0], 4)
-
-        self.get_flist().append(f_val)
-        # for right-tailed only assume σ1 <= σ2
-        f1 = np.round_(stats.f.ppf(1 - alpha, len(data[0])-1, len(data[1])-1), 4)
-        f2 = '-∞'
-        p_val = np.round_(stats.f.sf(f_val, len(data[0])-1, len(data[1])-1), 4)
-        p_r = np.round_((1 - alpha)*100, 4)
-        var1 = np.round_(var[0], 4)
-        var2 = np.round_(var[1], 4)
-        mean1 = np.round_(mean[0], 4)
-        mean2 = np.round_(mean[1], 4)
-        sd1 = np.round_(np.sqrt(var1), 4)
-        sd2 = np.round_(np.sqrt(var2), 4)
-
-        # ACCEPTED CASE
-        accepted = """
-                        1. Variance and mean
-                        Group 1                             Group 2
-                        Variance: {}                        Variance: {}
-                        Mean: {}                            Mean: {}
-                        Standard Deviation: {}              Standard Deviation: {}
-
-                        2. H0 hypothesis
-                        Since p-value > α, H0 is accepted.
-                        The sample standard deviation of the Group 1's population is considered to be equal to the sample
-                        standard deviation of the Group 2's population. So the difference between the sample standard 
-                        deviation of the Group 1 and Group 2 populations is not big enough to be statistically significant.
-
-                        3. P-value
-                        p-value equals {}. This means that if we would reject H0,
-                        the chance of type I error (rejecting a correct H0) would be too high: {} ({}%)
-                        The larger the p-value the more it supports H0
-
-                        4. The statistics
-                        The test statistic f equals {}, is in the {}% critical value accepted range: [{} : {}]
-                        """.format(var1, var2, mean1, mean2, sd1, sd2, p_val, p_val, np.round_(p_val * 100, 3), f_val, p_r, f2, f1)
-        # REJECTED CASE
-        rejected = """
-                        1. Variance and mean
-                        Group 1                             Group 2
-                        Variance: {}                        Variance: {}
-                        Mean: {}                            Mean: {}
-                        Standard Deviation: {}              Standard Deviation: {}
-
-                        2. H0 hypothesis
-                        Since p-value < α, H0 is rejected.
-                        The sample standard deviation of the Group 1's population is considered to be less than the sample 
-                        standard deviation of the Group 2's population.
-
-                        3. P-value
-                        p-value equals {}. This means that the chance of 
-                        type1 error (rejecting a correct H0) is small: {} ({}%)
-                        The smaller the p-value the more it supports H1
-
-                        4. The statistics
-                        The test statistic f equals {}, is not in the {}% critical value accepted range: [ : {}]
-                        """.format(var1, var2, mean1, mean2, sd1, sd2, p_val, p_val, np.round_(p_val * 100, 3), f_val, p_r, f2, f1)
-
-
-        if -1*np.Infinity < f_val < f1:
-            if num_data == 2:
-                self.get_results_txt().AppendText(accepted)
-            self.get_res_list().append(['accepted', var1, var2, mean1, mean2, sd1, sd2, p_val, p_val, np.round_(p_val * 100, 3), f_val, p_r, f1, f2])
-        else:
-            if num_data == 2:
-                self.get_results_txt().AppendText(rejected)
-            self.get_res_list().append(['rejected', var1, var2, mean1, mean2, sd1, sd2, p_val, p_val, np.round_(p_val * 100, 3), f_val, p_r, f1, f2])
+        F_Tail_helper(np.round_(stats.f.ppf(1 - alpha, len(data[0])-1, len(data[1])-1), 4), '-∞')
 
     def get_panel(self): return self.panel
     def get_data(self): return self.data
