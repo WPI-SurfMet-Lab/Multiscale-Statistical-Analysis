@@ -235,21 +235,6 @@ class PlotData:
 
                 add_data.__setitem__((i, int(num)), self.get_complexity()[int(num / 2) - 1][i - (1 + start)])
 
-        add_data.__setitem__((start + len(self.get_results_scale()) + 6, 0), "plot_name")
-        add_data.__setitem__((start + len(self.get_results_scale()) + 7, 0), "plot_title")
-        add_data.__setitem__((start + len(self.get_results_scale()) + 8, 0), "plot_xlabel")
-        add_data.__setitem__((start + len(self.get_results_scale()) + 9, 0), "plot_ylabel")
-        add_data.__setitem__((start + len(self.get_results_scale()) + 10, 0), "x_scatter_vals")
-        add_data.__setitem__((start + len(self.get_results_scale()) + 11, 0), "y_scatter_vals")
-        add_data.__setitem__((start + len(self.get_results_scale()) + 12, 0), "data_color")
-        add_data.__setitem__((start + len(self.get_results_scale()) + 13, 0), "data_symbol")
-        add_data.__setitem__((start + len(self.get_results_scale()) + 14, 0), "symbol_size")
-        add_data.__setitem__((start + len(self.get_results_scale()) + 15, 0), "x_line_vals")
-        add_data.__setitem__((start + len(self.get_results_scale()) + 16, 0), "y_line_vals")
-        add_data.__setitem__((start + len(self.get_results_scale()) + 17, 0), "line_color")
-        add_data.__setitem__((start + len(self.get_results_scale()) + 18, 0), "line_symbol")
-        add_data.__setitem__((start + len(self.get_results_scale()) + 19, 0), "legend_text")
-
         self.wb.set_data(add_data)
         self.get_grid().SetTable(self.wb)
         self.get_grid().AutoSizeColumns()
