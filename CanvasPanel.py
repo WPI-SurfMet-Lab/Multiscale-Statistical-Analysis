@@ -822,330 +822,78 @@ class RegressionSelectPlot(wx.Panel):
         self.get_axes().set_ylabel(ylabel)
         # updates the regression plot's label
         self.get_canvas().draw()
+
     # function scatter the plot and perform the linear regression used in the pick_point function in
     # the R2byScalePlot class
-    def linear_fit_plot(self):
+    def fit_plot(self, data_func, fit_func, popt_str):
+        popt, pcov = data_func(np.array(self.get_xr()), np.array(self.get_yr()))
+        fit_func(self.get_x_plot(), *popt)
 
-        popt, pcov = CurveFit.linear_data(np.array(self.get_xr()), np.array(self.get_yr()))
-        CurveFit.linear_fit(self.get_x_plot(), *popt)
-
-        self.set_popt('y = {}x + {}'.format(*np.round(popt, 3)))
+        self.set_popt(popt_str.format(*np.round(popt, 3)))
 
         # calculate R^2 value
-        r2 = CurveFit.r_squared(np.array(self.get_yr()), CurveFit.linear_fit(self.get_xr(), *popt))
+        r2 = CurveFit.r_squared(np.array(self.get_yr()), fit_func(self.get_xr(), *popt))
 
-        self.set_curve(CurveFit.linear_fit(np.array(self.get_x_plot()), *popt))
+        self.set_curve(fit_func(np.array(self.get_x_plot()), *popt))
         # scatter plot
         self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_xr()), self.get_yr(), s=self.get_dataSymbolSize(),
                                                       marker=self.get_dataSymbol(),
                                                       color=self.get_dataColor()))
         # linear fit line
-        self.get_axes().plot(self.get_x_plot(), CurveFit.linear_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
+        self.get_axes().plot(self.get_x_plot(), fit_func(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
         self.get_canvas().draw()
         self.set_best_r_squared(r2)
         self.set_best_scale(self.get_scale())
         self.set_line_annot_pos((int((min(self.get_xr()) + max(self.get_xr()))/2),
-                                 CurveFit.linear_fit(int((min(self.get_xr()) + max(self.get_xr()))/2), *popt)))
-    # following functions same as linear fit plot with respective curve types
+                                 fit_func(int((min(self.get_xr()) + max(self.get_xr()))/2), *popt)))
+
+    def linear_fit_plot(self):
+        self.plot_fit(CurveFit.linear_data, CurveFit.linear_fit, 'y = {}x + {}')
+
     def proportional_fit_plot(self):
-
-        popt, pcov = CurveFit.prop_data(np.array(self.get_xr()), np.array(self.get_yr()))
-        CurveFit.prop_fit(self.get_x_plot(), *popt)
-        r2 = CurveFit.r_squared(np.array(self.get_yr()), CurveFit.prop_fit(self.get_xr(), *popt))
-
-        self.set_popt('y = {}x'.format(*np.round(popt, 3)))
-
-        self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_xr()), self.get_yr(), s=self.get_dataSymbolSize(),
-                                                      marker=self.get_dataSymbol(),
-                                                      color=self.get_dataColor()))
-        self.get_axes().plot(self.get_x_plot(), CurveFit.prop_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
-        self.get_canvas().draw()
-        self.set_best_r_squared(r2)
-        self.set_best_scale(self.get_scale())
-        self.set_curve(CurveFit.prop_fit(np.array(self.get_x_plot()), *popt))
-        self.set_line_annot_pos((int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                 CurveFit.prop_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                                           *popt)))
+        self.plot_fit(CurveFit.prop_data, CurveFit.prop_fit, 'y = {}x')
 
     def quadratic_fit_plot(self):
-
-        popt, pcov = CurveFit.quad_data(np.array(self.get_xr()), np.array(self.get_yr()))
-        CurveFit.quad_fit(self.get_x_plot(), *popt)
-        r2 = CurveFit.r_squared(np.array(self.get_yr()), CurveFit.quad_fit(self.get_xr(), *popt))
-
-        self.set_popt('y = {}x^2 + {}x + {}'.format(*np.round(popt, 3)))
-
-        self.set_curve(CurveFit.quad_fit(np.array(self.get_x_plot()), *popt))
-        self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_xr()), np.array(self.get_yr()), s=self.get_dataSymbolSize(),
-                                                      marker=self.get_dataSymbol(),
-                                                      color=self.get_dataColor()))
-        self.get_axes().plot(self.get_x_plot(), CurveFit.quad_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
-        self.get_canvas().draw()
-        self.set_best_r_squared(r2)
-        self.set_best_scale(self.get_scale())
-        self.set_line_annot_pos((int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                 CurveFit.quad_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                                           *popt)))
+        self.plot_fit(CurveFit.quad_data, CurveFit.quad_fit, 'y = {}x^2 + {}x + {}')
 
     def cubic_fit_plot(self):
-
-        popt, pcov = CurveFit.cubic_data(np.array(self.get_xr()), np.array(self.get_yr()))
-        CurveFit.cubic_fit(self.get_x_plot(), *popt)
-        r2 = CurveFit.r_squared(np.array(self.get_yr()), CurveFit.cubic_fit(self.get_xr(), *popt))
-
-        self.set_popt('y = {}x^3 + {}x^2 + {}x + {}'.format(*np.round(popt, 3)))
-
-        self.set_curve(CurveFit.cubic_fit(np.array(self.get_x_plot()), *popt))
-        self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_xr()), np.array(self.get_yr()), s=self.get_dataSymbolSize(),
-                                                      marker=self.get_dataSymbol(),
-                                                      color=self.get_dataColor()))
-        self.get_axes().plot(self.get_x_plot(), CurveFit.cubic_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
-        self.get_canvas().draw()
-        self.set_best_r_squared(r2)
-        self.set_best_scale(self.get_scale())
-        self.set_line_annot_pos((int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                 CurveFit.cubic_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                                         *popt)))
+        self.plot_fit(CurveFit.cubic_data, CurveFit.cubic_fit, 'y = {}x^3 + {}x^2 + {}x + {}')
 
     def quartic_fit_plot(self):
-
-        popt, pcov = CurveFit.quartic_data(np.array(self.get_xr()), np.array(self.get_yr()))
-        CurveFit.quartic_fit(self.get_x_plot(), *popt)
-        r2 = CurveFit.r_squared(np.array(self.get_yr()), CurveFit.quartic_fit(self.get_xr(), *popt))
-
-        self.set_popt('y = {}x^4 + {}x^3 + {}x^2 + {}x + {}'.format(*np.round(popt, 3)))
-
-        self.set_curve(CurveFit.quartic_fit(np.array(self.get_x_plot()), *popt))
-        self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_xr()), np.array(self.get_yr()), s=self.get_dataSymbolSize(),
-                                                      marker=self.get_dataSymbol(),
-                                                      color=self.get_dataColor()))
-        self.get_axes().plot(self.get_x_plot(), CurveFit.quartic_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
-        self.get_canvas().draw()
-        self.set_best_r_squared(r2)
-        self.set_best_scale(self.get_scale())
-        self.set_line_annot_pos((int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                 CurveFit.quartic_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                                         *popt)))
+        self.plot_fit(CurveFit.quartic_data, CurveFit.quartic_fit, 'y = {}x^4 + {}x^3 + {}x^2 + {}x + {}')
 
     def quintic_fit_plot(self):
-
-        popt, pcov = CurveFit.quintic_data(np.array(self.get_xr()), np.array(self.get_yr()))
-        CurveFit.quintic_fit(self.get_x_plot(), *popt)
-        r2 = CurveFit.r_squared(np.array(self.get_yr()), CurveFit.quintic_fit(self.get_xr(), *popt))
-
-        self.set_popt('y = {}x^5 + {}x^4 + {]x^3 + {}x^2 + {}x + {}'.format(*np.round(popt, 3)))
-
-        self.set_curve(CurveFit.quintic_fit(np.array(self.get_x_plot()), *popt))
-        self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_xr()), np.array(self.get_yr()), s=self.get_dataSymbolSize(),
-                                                      marker=self.get_dataSymbol(),
-                                                      color=self.get_dataColor()))
-        self.get_axes().plot(self.get_x_plot(), CurveFit.quintic_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
-        self.get_canvas().draw()
-        self.set_best_r_squared(r2)
-        self.set_best_scale(self.get_scale())
-        self.set_line_annot_pos((int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                 CurveFit.quintic_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                                         *popt)))
+        self.plot_fit(CurveFit.quintic_data, CurveFit.quintic_fit, 'y = {}x^5 + {}x^4 + {]x^3 + {}x^2 + {}x + {}')
 
     def power_fit_plot(self):
-
-        popt, pcov = CurveFit.power_data(np.array(self.get_xr()), np.array(self.get_yr()))
-        CurveFit.power_fit(self.get_x_plot(), *popt)
-        r2 = CurveFit.r_squared(np.array(self.get_yr()), CurveFit.power_fit(self.get_xr(), *popt))
-
-        self.set_popt('y = {}x^{}'.format(*np.round(popt, 3)))
-
-        self.set_curve(CurveFit.power_fit(np.array(self.get_x_plot()), *popt))
-        self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_xr()), np.array(self.get_yr()), s=self.get_dataSymbolSize(),
-                                                      marker=self.get_dataSymbol(),
-                                                      color=self.get_dataColor()))
-        self.get_axes().plot(self.get_x_plot(), CurveFit.power_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
-        self.get_canvas().draw()
-        self.set_best_r_squared(r2)
-        self.set_best_scale(self.get_scale())
-        self.set_line_annot_pos((int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                 CurveFit.power_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                                         *popt)))
+        self.plot_fit(CurveFit.power_data, CurveFit.power_fit, 'y = {}x^{}')
 
     def inverse_fit_plot(self):
-
-        popt, pcov = CurveFit.inverse_data(np.array(self.get_xr()), np.array(self.get_yr()))
-        CurveFit.inverse_fit(self.get_x_plot(), *popt)
-        r2 = CurveFit.r_squared(np.array(self.get_yr()), CurveFit.inverse_fit(self.get_xr(), *popt))
-
-        self.set_popt('y = {}/x'.format(*np.round(popt, 3)))
-
-        self.set_curve(CurveFit.inverse_fit(np.array(self.get_x_plot()), *popt))
-        self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_xr()), np.array(self.get_yr()), s=self.get_dataSymbolSize(),
-                                                      marker=self.get_dataSymbol(),
-                                                      color=self.get_dataColor()))
-        self.get_axes().plot(self.get_x_plot(), CurveFit.inverse_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
-        self.get_canvas().draw()
-        self.set_best_r_squared(r2)
-        self.set_best_scale(self.get_scale())
-        self.set_line_annot_pos((int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                 CurveFit.inverse_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                                         *popt)))
+        self.plot_fit(CurveFit.inverse_data, CurveFit.inverse_fit, 'y = {}/x')
 
     def inverse_squared_fit_plot(self):
-
-        popt, pcov = CurveFit.insq_data(np.array(self.get_xr()), np.array(self.get_yr()))
-        CurveFit.insq_fit(self.get_x_plot(), *popt)
-        r2 = CurveFit.r_squared(np.array(self.get_yr()), CurveFit.insq_fit(self.get_xr(), *popt))
-
-        self.set_popt('y = {}/x^2'.format(*np.round(popt, 3)))
-
-        self.set_curve(CurveFit.insq_fit(np.array(self.get_x_plot()), *popt))
-        self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_xr()), np.array(self.get_yr()), s=self.get_dataSymbolSize(),
-                                                      marker=self.get_dataSymbol(),
-                                                      color=self.get_dataColor()))
-        self.get_axes().plot(self.get_x_plot(), CurveFit.insq_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
-        self.get_canvas().draw()
-        self.set_best_r_squared(r2)
-        self.set_best_scale(self.get_scale())
-        self.set_line_annot_pos((int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                 CurveFit.insq_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                                         *popt)))
+        self.plot_fit(CurveFit.insq_data, CurveFit.insq_fit, 'y = {}/x^2')
 
     def naturalexp_fit_plot(self):
-
-        popt, pcov = CurveFit.nexp_data(np.array(self.get_xr()), np.array(self.get_yr()))
-        CurveFit.nexp_fit(self.get_x_plot(), *popt)
-        r2 = CurveFit.r_squared(np.array(self.get_yr()), CurveFit.nexp_fit(self.get_xr(), *popt))
-
-        self.set_popt('y = {}*exp(-1*{}x) + {}'.format(*np.round(popt, 3)))
-
-        self.set_curve(CurveFit.nexp_fit(np.array(self.get_x_plot()), *popt))
-        self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_xr()), np.array(self.get_yr()), s=self.get_dataSymbolSize(),
-                                                      marker=self.get_dataSymbol(),
-                                                      color=self.get_dataColor()))
-        self.get_axes().plot(self.get_x_plot(), CurveFit.nexp_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
-        self.get_canvas().draw()
-        self.set_best_r_squared(r2)
-        self.set_best_scale(self.get_scale())
-        self.set_line_annot_pos((int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                 CurveFit.nexp_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                                         *popt)))
+        self.plot_fit(CurveFit.nexp_data, CurveFit.nexp_fit, 'y = {}*exp(-1*{}x) + {}')
 
     def loge_fit_plot(self):
-
-        popt, pcov = CurveFit.ln_data(np.array(self.get_xr()), np.array(self.get_yr()))
-        CurveFit.ln_fit(self.get_x_plot(), *popt)
-        r2 = CurveFit.r_squared(np.array(self.get_yr()), CurveFit.ln_fit(self.get_xr(), *popt))
-
-        self.set_popt('y = {}ln({}x)'.format(*np.round(popt, 3)))
-
-        self.set_curve(CurveFit.ln_fit(np.array(self.get_x_plot()), *popt))
-        self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_xr()), np.array(self.get_yr()), s=self.get_dataSymbolSize(),
-                                                      marker=self.get_dataSymbol(),
-                                                      color=self.get_dataColor()))
-        self.get_axes().plot(self.get_x_plot(), CurveFit.ln_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
-        self.get_canvas().draw()
-        self.set_best_r_squared(r2)
-        self.set_best_scale(self.get_scale())
-        self.set_line_annot_pos((int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                 CurveFit.ln_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                                         *popt)))
+        self.plot_fit(CurveFit.ln_data, CurveFit.ln_fit, 'y = {}ln({}x)')
 
     def log10_fit_plot(self):
-
-        popt, pcov = CurveFit.b10log_data(np.array(self.get_xr()), np.array(self.get_yr()))
-        CurveFit.b10log_fit(self.get_x_plot(), *popt)
-        r2 = CurveFit.r_squared(np.array(self.get_yr()), CurveFit.b10log_fit(self.get_xr(), *popt))
-
-        self.set_popt('y = {}log10({}x)'.format(*np.round(popt, 3)))
-
-        self.set_curve(CurveFit.b10log_fit(np.array(self.get_x_plot()), *popt))
-        self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_xr()), np.array(self.get_yr()), s=self.get_dataSymbolSize(),
-                                                      marker=self.get_dataSymbol(),
-                                                      color=self.get_dataColor()))
-        self.get_axes().plot(self.get_x_plot(), CurveFit.b10log_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
-        self.get_canvas().draw()
-        self.set_best_r_squared(r2)
-        self.set_best_scale(self.get_scale())
-        self.set_line_annot_pos((int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                 CurveFit.blog10_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                                         *popt)))
+        self.plot_fit(CurveFit.b10log_data, CurveFit.b10log_fit, 'y = {}log10({}x)')
 
     def inverseexp_fit_plot(self):
-
-        popt, pcov = CurveFit.invexp_data(np.array(self.get_xr()), np.array(self.get_yr()))
-        CurveFit.invexp_fit(self.get_x_plot(), *popt)
-        r2 = CurveFit.r_squared(np.array(self.get_yr()), CurveFit.invexp_fit(self.get_xr(), *popt))
-
-        self.set_popt('y = {}(1 - exp(-1*{}x)) + {}'.format(*np.round(popt, 3)))
-
-        self.set_curve(CurveFit.invexp_fit(np.array(self.get_x_plot()), *popt))
-        self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_xr()), np.array(self.get_yr()), s=self.get_dataSymbolSize(),
-                                                      marker=self.get_dataSymbol(),
-                                                      color=self.get_dataColor()))
-        self.get_axes().plot(self.get_x_plot(), CurveFit.invexp_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
-        self.get_canvas().draw()
-        self.set_best_r_squared(r2)
-        self.set_best_scale(self.get_scale())
-        self.set_line_annot_pos((int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                 CurveFit.invexp_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                                         *popt)))
+        self.plot_fit(CurveFit.invexp_data, CurveFit.invexp_fit, 'y = {}(1 - exp(-1*{}x)) + {}')
 
     def sin_fit_plot(self):
-
-        popt, pcov = CurveFit.sine_data(np.array(self.get_xr()), np.array(self.get_yr()))
-        CurveFit.sine_fit(self.get_x_plot(), *popt)
-        r2 = CurveFit.r_squared(np.array(self.get_yr()), CurveFit.sine_fit(self.get_xr(), *popt))
-
-        self.set_popt('y = {}sin({}x + {}) + {}'.format(*np.round(popt, 3)))
-
-        self.set_curve(CurveFit.sine_fit(np.array(self.get_x_plot()), *popt))
-        self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_xr()), np.array(self.get_yr()), s=self.get_dataSymbolSize(),
-                                                      marker=self.get_dataSymbol(),
-                                                      color=self.get_dataColor()))
-        self.get_axes().plot(self.get_x_plot(), CurveFit.sine_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
-        self.get_canvas().draw()
-        self.set_best_r_squared(r2)
-        self.set_best_scale(self.get_scale())
-        self.set_line_annot_pos((int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                 CurveFit.sine_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                                         *popt)))
+        self.plot_fit(CurveFit.sine_data, CurveFit.sine_fit, 'y = {}sin({}x + {}) + {}')
 
     def cos_fit_plot(self):
-
-        popt, pcov = CurveFit.cosine_data(np.array(self.get_xr()), np.array(self.get_yr()))
-        CurveFit.cosine_fit(self.get_x_plot(), *popt)
-        r2 = CurveFit.r_squared(np.array(self.get_yr()), CurveFit.cosine_fit(self.get_xr(), *popt))
-
-        self.set_popt('y = {}cos({}x + {}) + {}'.format(*np.round(popt, 3)))
-
-        self.set_curve(CurveFit.cosine_fit(np.array(self.get_x_plot()), *popt))
-        self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_xr()), np.array(self.get_yr()), s=self.get_dataSymbolSize(),
-                                                      marker=self.get_dataSymbol(),
-                                                      color=self.get_dataColor()))
-        self.get_axes().plot(self.get_x_plot(), CurveFit.cosine_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
-        self.get_canvas().draw()
-        self.set_best_r_squared(r2)
-        self.set_best_scale(self.get_scale())
-        self.set_line_annot_pos((int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                 CurveFit.cosine_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                                         *popt)))
+        self.plot_fit(CurveFit.cosine_data, CurveFit.cosine_fit, 'y = {}cos({}x + {}) + {}')
 
     def gaussian_fit_plot(self):
-
-        popt, pcov = CurveFit.gauss_data(np.array(self.get_xr()), np.array(self.get_yr()))
-        CurveFit.gauss_fit(self.get_x_plot(), *popt)
-        r2 = CurveFit.r_squared(np.array(self.get_yr()), CurveFit.gauss_fit(self.get_xr(), *popt))
-
-        self.set_popt('y = {}*exp(-1*((x-{})^2)/({}^2)) + {}'.format(*np.round(popt, 3)))
-
-        self.set_curve(CurveFit.gauss_fit(np.array(self.get_x_plot()), *popt))
-        self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_xr()), np.array(self.get_yr()), s=self.get_dataSymbolSize(),
-                                                      marker=self.get_dataSymbol(),
-                                                      color=self.get_dataColor()))
-        self.get_axes().plot(self.get_x_plot(), CurveFit.gauss_fit(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
-        self.get_canvas().draw()
-        self.set_best_r_squared(r2)
-        self.set_best_scale(self.get_scale())
-        self.set_line_annot_pos((int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                 CurveFit.gauss_fit(int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                                         *popt)))
+        self.plot_fit(CurveFit.gauss_data, CurveFit.gauss_fit, 'y = {}*exp(-1*((x-{})^2)/({}^2)) + {}')
 
     def get_axes(self): return self.axes
     def get_x(self): return self.x
