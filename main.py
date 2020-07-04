@@ -108,14 +108,14 @@ def OnRegression(event):
                         fit_func(gdlg.get_graph())
                         tree_menu.AppendItem(selectedID, menu_label, data=gdlg)
                         break
-                    except (ZeroDivisionError, OptimizeWarning) as e: #RuntimeError, Exception, Warning, TypeError, RuntimeWarning,
+                    except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
                         error_txt.AppendText(error_label + str(e) + '\n')
                 # Don't increase ID if current dialog is not an R^2 dialog
                 id += 1 if isR2 else 0
 
             # Refresh tree menu to show newly created graphs
             tree_menu.Refresh()
-    except (ZeroDivisionError, OptimizeWarning) as e: #RuntimeError, Warning, TypeError, RuntimeWarning,
+    except (ZeroDivisionError, RuntimeError, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
         error_txt.AppendText("Graph: " + str(e) + '\n')
 
 # function to get the x-regression values
