@@ -263,7 +263,7 @@ class FtestDialog(wx.Dialog):
                   self.get_data().get_results_scale().index(float(self.get_range_max()))+1]
 
         return f_data
-    # the folling 3 functions are identical except for the calculations for the p-value and accepted range of values for the
+    # the following 3 functions are identical except for the calculations for the p-value and accepted range of values for the
     # given confidence value. only the F_TwoTail function is commented
     def F_TwoTail(self, alpha, data, num_data):
 

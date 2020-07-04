@@ -4,6 +4,7 @@ import wx.adv
 import wx.grid
 import openpyxl
 
+from aenum import IntEnum
 from Workbook import Workbook
 from scipy.optimize import OptimizeWarning
 from Dialogs import RegressionDialog
@@ -129,88 +130,82 @@ def OnData(event):
         datadialog.SaveString()
         data.set_x_regress(datadialog.get_xvals())
 
-# function to show F-test dialog
-def OnFtest(event):
+class DiscrimTests(IntEnum, start=0):
+    Ftest
+    Ttest
+    Anova
+
+def OnDiscrimTests(test_enum):
+    discrim_test_choices = \
+        {DiscrimTests.Ftest:(FtestDialog, "F-test:"),
+         DiscrimTests.Ttest:(TtestDialog, "T-test:"),
+         DiscrimTests.Anova:(ANOVAtestDialog, "Anova:")}
+    selected_test_func, test_str = discrim_test_choices[test_enum]
+
     selectedID = getPlotDataID()
     data = tree_menu.GetItemData(selectedID)
 
     try:
-        dlg = FtestDialog(frame, data, error_txt, tree_menu, selectedID)
+        dlg = selected_test_func(frame, data, error_txt, tree_menu, selectedID)
     except (ZeroDivisionError) as e:
-        error_txt.AppendText("F-test: " + str(e) + '\n')
+        error_txt.AppendText(test_str + " " + str(e) + '\n')
 
     dlg.CenterOnScreen()
     dlg.ShowModal()
     tree_menu.Refresh()
+
+# function to show F-test dialog
+def OnFtest(event):
+    OnDiscrimTests(DiscrimTests.Ftest)
 
 # current: paired two tails t-test, which one should I use or options...?
 # function to show T-test dialog
 def OnTtest(event):
-    selectedID = getPlotDataID()
-    data = tree_menu.GetItemData(selectedID)
-
-    try:
-        dlg = TtestDialog(frame, data, error_txt, tree_menu, selectedID)
-    except (ZeroDivisionError) as e:
-        error_txt.AppendText("T-test: " + str(e) + '\n')
-
-    dlg.CenterOnScreen()
-    dlg.ShowModal()
-    tree_menu.Refresh()
-    # dlg.PooledVarianceTTest()
+    OnDiscrimTests(DiscrimTests.Ttest)
 
 # function to show the ANOVA test dialog
 def OnANOVA(event):
+    OnDiscrimTests(DiscrimTests.Anova)
+
+class ScalePlots(IntEnum, start=0):
+    Area
+    Complexity
+
+def OnScalePlot(plot_enum):
     selectedID = getPlotDataID()
     data = tree_menu.GetItemData(selectedID)
 
-    try:
-        dlg = ANOVAtestDialog(frame, data, error_txt, tree_menu, selectedID)
-    except (ZeroDivisionError) as e:
-        error_txt.AppendText("Anova: " + str(e) + '\n')
+    plot_choices = \
+        {ScalePlots.Area:("Area-Scale Graph:", "Scale by Relative Area", data.get_relative_area, "Relative Area - Scale", None),
+         ScalePlots.Complexity:("Complexity-Scale Graph:", "Scale by Complexity", data.get_complexity, "Complexity - Scale", "Complexity")}
+    plot_str, title, scale_func, menu_text, y_label = plot_choices[plot_enum]
 
-    dlg.CenterOnScreen()
-    dlg.ShowModal()
-    tree_menu.Refresh()
+    if data is None :
+        error_txt.AppendText(plot_str + " No data given\n")
+
+    gdlg = SclbyAreaDialog(frame, title, data.get_results_scale(),
+                             scale_func(),
+                             data.get_legend_txt(), data)
+    if not y_label == None:
+        gdlg.get_graph().get_axes().set_ylabel(y_label)
+        print(y_label)
+
+    try:
+        gdlg.get_graph().draw_plot()
+        tree_menu.AppendItem(parent=selectedID, text=menu_text, data=gdlg)
+        tree_menu.Refresh()
+    except (RuntimeError, ZeroDivisionError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
+         error_txt.AppendText(plot_str + " " + str(e) + '\n')
 
 # function to create the scale area plot
 def OnAreaPlot(event):
-    selectedID = getPlotDataID()
-    data = tree_menu.GetItemData(selectedID)
-
-    if data is None :
-        error_txt.AppendText("Area-Scale Graph: No data given\n")
-
-    gdlg17 = SclbyAreaDialog(frame, "Scale by Relative Area", data.get_results_scale(),
-                             data.get_relative_area(),
-                             data.get_legend_txt(), data)
-    try:
-        gdlg17.get_graph().draw_plot()
-        tree_menu.AppendItem(parent=selectedID, text="Relative Area - Scale", data=gdlg17)
-        tree_menu.Refresh()
-    except (RuntimeError, ZeroDivisionError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
-         error_txt.AppendText("Area-Scale Graph: " + str(e) + '\n')
+    OnScalePlot(ScalePlots.Area)
 
 # function to create the scale complexity plot
 def OnComplexityPlot(event):
-    selectedID = getPlotDataID()
-    data = tree_menu.GetItemData(selectedID)
-
-    if data is None :
-        error_txt.AppendText("Area-Scale Graph: No data given\n")
-
-    gdlg18 = SclbyAreaDialog(frame, "Scale by Complexity", data.get_results_scale(), data.get_complexity(),
-                             data.get_legend_txt(), data)
-    gdlg18.get_graph().get_axes().set_ylabel("Complexity")
-    try:
-        gdlg18.get_graph().draw_complexity_plot()
-        tree_menu.AppendItem(selectedID, "Complexity - Scale", data=gdlg18)
-        tree_menu.Refresh()
-    except (RuntimeError, ZeroDivisionError, Exception, Warning, TypeError, OptimizeWarning, RuntimeWarning) as e:
-        error_txt.AppendText("Complexity-Scale Graph: " + str(e) + '\n')
+    OnScalePlot(ScalePlots.Complexity)
 
 def OnHHPlot(event):
-
     gdlg19 = HHPlotDialog(frame, 'Height-Height Plot')
     gdlg19.CenterOnScreen()
     resid = gdlg19.Show()
@@ -383,7 +378,7 @@ def OnSave(event):
         return output
 
 # function to handle window maximization
-def onMaxmizeRestore(event):
+def OnMaxmizeRestore(event):
     global resized
     global frame
     global width, height
@@ -433,7 +428,7 @@ frame.SetSize(0.0, 0.0, width, height, sizeFlags=wx.SIZE_AUTO)
 frame.SetBackgroundColour('#ffffff')
 frame.EnableCloseButton(enable=True)
 frame.Bind(wx.EVT_CLOSE, OnExit)
-frame.Bind(wx.EVT_SIZE, onMaxmizeRestore)
+frame.Bind(wx.EVT_SIZE, OnMaxmizeRestore)
 
 # this is a bunch of GUI stuff
 # create the menu bar and populate it
