@@ -103,102 +103,30 @@ class R2byScalePlot(wx.Panel):
                         yregress = self.get_data().get_regress_sets()[index]
                         # checks the given id to perform the correct regression using the data determined above
                         # this needs error exceptions still
-                        if self.id == 0:
-                            dialog = RegressionSelectDialog(self.get_parent(), "Proportional Regression Plot",
-                                                            data.get_results_scale(),
-                                                            xregress, yregress, index)
-                            dialog.get_graph().proportional_fit_plot()
-                            tree_menu.AppendItem(self.get_root(), "Proportional Regression at " + str(scale), data=dialog)
-                        if self.id == 1:
-                            dialog = RegressionSelectDialog(self.get_parent(), "Linear Regression Plot",
-                                                            data.get_results_scale(),
-                                                            xregress, yregress, index)
-                            dialog.get_graph().linear_fit_plot()
-                            tree_menu.AppendItem(self.get_root(), "Linear Regression at " + str(scale), data=dialog)
-                        if self.id == 2:
-                            dialog = RegressionSelectDialog(self.get_parent(), "Quadratic Regression Plot",
-                                                            data.get_results_scale(),
-                                                            xregress, yregress, index)
-                            dialog.get_graph().quadratic_fit_plot()
-                            tree_menu.AppendItem(self.get_root(), "Quadratic Regression at " + str(scale), data=dialog)
-                        if self.id == 3:
-                            dialog = RegressionSelectDialog(self.get_parent(), "Cubic Regression Plot",
-                                                            data.get_results_scale(),
-                                                            xregress, yregress, index)
-                            dialog.get_graph().cubic_fit_plot()
-                            tree_menu.AppendItem(self.get_root(), "Cubic Regression at " + str(scale), data=dialog)
-                        if self.id == 4:
-                            dialog = RegressionSelectDialog(self.get_parent(), "Quartic Regression Plot",
-                                                            data.get_results_scale(),
-                                                            xregress, yregress, index)
-                            dialog.get_graph().quartic_fit_plot()
-                            tree_menu.AppendItem(self.get_root(), "Quartic Regression at " + str(scale), data=dialog)
-                        if self.id == 5:
-                            dialog = RegressionSelectDialog(self.get_parent(), "Quintic Regression Plot",
-                                                            data.get_results_scale(),
-                                                            xregress, yregress, index)
-                            dialog.get_graph().quintic_fit_plot()
-                            tree_menu.AppendItem(self.get_root(), "Quintic Regression at " + str(scale), data=dialog)
-                        if self.id == 6:
-                            dialog = RegressionSelectDialog(self.get_parent(), "Power Regression Plot",
-                                                            data.get_results_scale(),
-                                                            xregress, yregress, index)
-                            dialog.get_graph().power_fit_plot()
-                            tree_menu.AppendItem(self.get_root(), "Power Regression at " + str(scale), data=dialog)
-                        if self.id == 7:
-                            dialog = RegressionSelectDialog(self.get_parent(), "Inverse Regression Plot",
-                                                            data.get_results_scale(),
-                                                            xregress, yregress, index)
-                            dialog.get_graph().inverse_fit_plot()
-                            tree_menu.AppendItem(self.get_root(), "Inverse Regression at " + str(scale), data=dialog)
-                        if self.id == 8:
-                            dialog = RegressionSelectDialog(self.get_parent(), "Inverse Squared Regression Plot",
-                                                            data.get_results_scale(),
-                                                            xregress, yregress, index)
-                            dialog.get_graph().inverse_squared_fit_plot()
-                            tree_menu.AppendItem(self.get_root(), "Inverse Squared Regression at " + str(scale), data=dialog)
-                        if self.id == 9:
-                            dialog = RegressionSelectDialog(self.get_parent(), "Natural Exponent Regression Plot",
-                                                            data.get_results_scale(),
-                                                            xregress, yregress, index)
-                            dialog.get_graph().naturalexp_fit_plot()
-                            tree_menu.AppendItem(self.get_root(), "Natural Exponent Regression at " + str(scale), data=dialog)
-                        if self.id == 10:
-                            dialog = RegressionSelectDialog(self.get_parent(), "Natural Log Regression Plot",
-                                                            data.get_results_scale(),
-                                                            xregress, yregress, index)
-                            dialog.get_graph().loge_fit_plot()
-                            tree_menu.AppendItem(self.get_root(), "Natural Log Regression at " + str(scale), data=dialog)
-                        if self.id == 11:
-                            dialog = RegressionSelectDialog(self.get_parent(), "Log10 Regression Plot",
-                                                            data.get_results_scale(),
-                                                            xregress, yregress, index)
-                            dialog.get_graph().log10_fit_plot()
-                            tree_menu.AppendItem(self.get_root(), "Log10 Regression at " + str(scale), data=dialog)
-                        if self.id == 12:
-                            dialog = RegressionSelectDialog(self.get_parent(), "Inverse Exponent Regression Plot",
-                                                            data.get_results_scale(),
-                                                            xregress, yregress, index)
-                            dialog.get_graph().inverseexp_fit_plot()
-                            tree_menu.AppendItem(self.get_root(), "Inverse Exponent Regression at " + str(scale), data=dialog)
-                        if self.id == 13:
-                            dialog = RegressionSelectDialog(self.get_parent(), "Sin Regression Plot",
-                                                            data.get_results_scale(),
-                                                            xregress, yregress, index)
-                            dialog.get_graph().sin_fit_plot()
-                            tree_menu.AppendItem(self.get_root(), "Sin Regression at " + str(scale), data=dialog)
-                        if self.id == 14:
-                            dialog = RegressionSelectDialog(self.get_parent(), "Cos Regression Plot",
-                                                            data.get_results_scale(),
-                                                            xregress, yregress, index)
-                            dialog.get_graph().cos_fit_plot()
-                            tree_menu.AppendItem(self.get_root(), "Cos Regression at " + str(scale), data=dialog)
-                        if self.id == 15:
-                            dialog = RegressionSelectDialog(self.get_parent(), "Gaussian Regression Plot",
-                                                            data.get_results_scale(),
-                                                            xregress, yregress, index)
-                            dialog.get_graph().gaussian_fit_plot()
-                            tree_menu.AppendItem(self.get_root(), "Gaussian Regression at " + str(scale), data=dialog)
+                        regression_choices = \
+                            {0:("Proportional Regression Plot", dialog.get_graph().proportional_fit_plot, "Proportional Regression at"),
+                             1:("Linear Regression Plot", dialog.get_graph().linear_fit_plot, "Linear Regression at"),
+                             2:("Quadratic Regression Plot", dialog.get_graph().quadratic_fit_plot, "Quadratic Regression at"),
+                             3:("Cubic Regression Plot", dialog.get_graph().cubic_fit_plot, "Cubic Regression at"),
+                             4:("Quartic Regression Plot", dialog.get_graph().quartic_fit_plot, "Quartic Regression at"),
+                             5:("Quintic Regression Plot", dialog.get_graph().quintic_fit_plot, "Quintic Regression at"),
+                             6:("Power Regression Plot", dialog.get_graph().power_fit_plot, "Power Regression at"),
+                             7:("Inverse Regression Plot", dialog.get_graph().inverse_fit_plot, "Inverse Regression at"),
+                             8:("Inverse Squared Regression Plot", dialog.get_graph().inverse_squared_fit_plot, "Inverse Squared Regression at"),
+                             9:("Natural Exponent Regression Plot", dialog.get_graph().naturalexp_fit_plot, "Natural Exponent Regression at"),
+                             10:("Natural Log Regression Plot", dialog.get_graph().loge_fit_plot, "Natural Log Regression at"),
+                             11:("Log10 Regression Plot", dialog.get_graph().log10_fit_plot, "Log10 Regression at"),
+                             12:("Inverse Exponent Regression Plot", dialog.get_graph().inverseexp_fit_plot, "Inverse Exponent Regression at"),
+                             13:("Sin Regression Plot", dialog.get_graph().sin_fit_plot, "Sin Regression at"),
+                             14:("Cos Regression Plot", dialog.get_graph().cos_fit_plot, "Cos Regression at"),
+                             15:("Gaussian Regression Plot", dialog.get_graph().gaussian_fit_plot, "Gaussian Regression at")}
+                        title, plot_func, menu_text = regression_choices[self.id]
+
+                        dialog = RegressionSelectDialog(self.get_parent(), title,
+                                                        data.get_results_scale(),
+                                                        xregress, yregress, index)
+                        plot_func()
+                        tree_menu.AppendItem(self.get_root(), menu_text + " " + str(scale), data=dialog)
 
         self.get_fig().canvas.mpl_connect("button_press_event", pick_point)
 
@@ -232,18 +160,19 @@ class R2byScalePlot(wx.Panel):
         self.get_axes().set_ylabel(ylabel)
         # updates the regression plot's label
         self.get_canvas().draw()
-    # uses the linear regression function to calculate R^2 values same as following functions but with respective curve type
-    def linear_plot(self):
+
+    # uses various regression functions to calculate R^2 values same as following functions but with respective curve type
+    def plot_fit(self, data_func, fit_func, error_str):
         warnings.simplefilter('error', OptimizeWarning)
         # iterate over all sets of y-values in regression
         for y_values in self.get_y():
             try:
                 # regress against the x-values get linear equation coefficients
-                popt, pcov = CurveFit.linear_data(np.array(self.get_xr()), np.array(y_values))
+                popt, pcov = data_func(np.array(self.get_xr()), np.array(y_values))
                 # calculate R^2 values
-                r2 = CurveFit.r_squared(np.array(y_values), CurveFit.linear_fit(np.array(self.get_xr()), *popt))
+                r2 = CurveFit.r_squared(np.array(y_values), fit_func(np.array(self.get_xr()), *popt))
             except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
-                self.get_error_txt().AppendText("Linear R^2: " + str(e) + '\n')
+                self.get_error_txt().AppendText(error_str + str(e) + '\n')
                 # if error R^2 value is set to 0. error is likely due to not being able to find the functional correlation
                 r2 = 0
             # append R^2 value to the y values to be plotted
@@ -257,312 +186,54 @@ class R2byScalePlot(wx.Panel):
         # set the scale axis to log
         self.get_axes().set_xscale('log')
         self.get_canvas().draw()
-    # following functions are same as linear_plot regression as described above but with respected curve types
+
+    def linear_plot(self):
+        self.plot_fit(CurveFit.linear_data, CurveFit.linear_fit, "Linear R^2: ")
+
     def proportional_plot(self):
-        warnings.simplefilter('error', OptimizeWarning)
-        for y_values in self.get_y():
-            try:
-                popt, pcov = CurveFit.prop_data(np.array(self.get_xr()), np.array(y_values))
-                r2 = CurveFit.r_squared(np.array(y_values), CurveFit.prop_fit(np.array(self.get_xr()), *popt))
-            except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
-                self.get_error_txt().AppendText("Proportional R^2: " + str(e) + '\n')
-                r2 = 0
-            self.y_plot.append(r2)
-
-        self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_x()), np.array(self.get_y_plot()),
-                                                      s=self.get_dataSymbolSize(),
-                                                      marker=self.get_dataSymbol(),
-                                                      color=self.get_dataColor()))
-        self.set_save_xr(np.array(self.get_xr()))
-
-        self.get_axes().set_xscale('log')
-        self.get_canvas().draw()
+        self.plot_fit(CurveFit.prop_data, CurveFit.prop_fit, "Proportional R^2: ")
 
     def quadratic_plot(self):
-        warnings.simplefilter('error', OptimizeWarning)
-        for y_values in self.get_y():
-
-            try:
-                popt, pcov = CurveFit.quad_data(np.array(self.get_xr()), np.array(y_values))
-                r2 = CurveFit.r_squared(np.array(y_values), CurveFit.quad_fit(np.array(self.get_xr()), *popt))
-            except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
-                self.get_error_txt().AppendText("Quadratic R^2: " + str(e) + '\n')
-                r2 = 0
-            self.y_plot.append(r2)
-
-        self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_x()), np.array(self.get_y_plot()),
-                                                      s=self.get_dataSymbolSize(),
-                                                      marker=self.get_dataSymbol(),
-                                                      color=self.get_dataColor()))
-        self.set_save_xr(np.array(self.get_xr()))
-
-        self.get_axes().set_xscale('log')
-        self.get_canvas().draw()
+        self.plot_fit(CurveFit.quad_data, CurveFit.quad_fit, "Quadratic R^2: ")
 
     def cubic_plot(self):
-        warnings.simplefilter('error', OptimizeWarning)
-        for y_values in self.get_y():
-
-            try:
-                popt, pcov = CurveFit.cubic_data(np.array(self.get_xr()), np.array(y_values))
-                r2 = CurveFit.r_squared(np.array(y_values), CurveFit.cubic_fit(np.array(self.get_xr()), *popt))
-            except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
-                self.get_error_txt().AppendText("Cubic R^2: " + str(e) + '\n')
-                r2 = 0
-            self.y_plot.append(r2)
-
-        self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_x()), np.array(self.get_y_plot()),
-                                                      s=self.get_dataSymbolSize(),
-                                                      marker=self.get_dataSymbol(),
-                                                      color=self.get_dataColor()))
-        self.set_save_xr(np.array(self.get_xr()))
-
-        self.get_axes().set_xscale('log')
-        self.get_canvas().draw()
+        self.plot_fit(CurveFit.cubic_data, CurveFit.cubic_fit, "Cubic R^2: ")
 
     def quartic_plot(self):
-        warnings.simplefilter('error', OptimizeWarning)
-        for y_values in self.get_y():
-
-            try:
-                popt, pcov = CurveFit.quartic_data(np.array(self.get_xr()), np.array(y_values))
-                r2 = CurveFit.r_squared(np.array(y_values), CurveFit.quartic_fit(np.array(self.get_xr()), *popt))
-            except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
-                self.get_error_txt().AppendText("Quartic R^2: " + str(e) + '\n')
-                r2 = 0
-            self.y_plot.append(r2)
-
-        self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_x()), np.array(self.get_y_plot()),
-                                                      s=self.get_dataSymbolSize(),
-                                                      marker=self.get_dataSymbol(),
-                                                      color=self.get_dataColor()))
-        self.set_save_xr(np.array(self.get_xr()))
-
-        self.get_axes().set_xscale('log')
-        self.get_canvas().draw()
+        self.plot_fit(CurveFit.quartic_data, CurveFit.quartic_fit, "Quartic R^2: ")
 
     def quintic_plot(self):
-        warnings.simplefilter('error', OptimizeWarning)
-        for y_values in self.get_y():
-
-            try:
-                popt, pcov = CurveFit.quintic_data(np.array(self.get_xr()), np.array(y_values))
-                r2 = CurveFit.r_squared(np.array(y_values), CurveFit.quintic_fit(np.array(self.get_xr()), *popt))
-            except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
-                self.get_error_txt().AppendText("Quintic R^2: " + str(e) + '\n')
-                r2 = 0
-            self.y_plot.append(r2)
-
-        self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_x()), np.array(self.get_y_plot()),
-                                                      s=self.get_dataSymbolSize(),
-                                                      marker=self.get_dataSymbol(),
-                                                      color=self.get_dataColor()))
-        self.set_save_xr(np.array(self.get_xr()))
-
-        self.get_axes().set_xscale('log')
-        self.get_canvas().draw()
+        self.plot_fit(CurveFit.quintic_data, CurveFit.quintic_fit, "Quintic R^2: ")
 
     def power_plot(self):
-        warnings.simplefilter('error', OptimizeWarning)
-        for y_values in self.get_y():
-
-            try:
-                popt, pcov = CurveFit.power_data(np.array(self.get_xr()), np.array(y_values))
-                r2 = CurveFit.r_squared(np.array(y_values), CurveFit.power_fit(np.array(self.get_xr()), *popt))
-            except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
-                self.get_error_txt().AppendText("Power R^2: " + str(e) + '\n')
-                r2 = 0
-            self.y_plot.append(r2)
-
-        self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_x()), np.array(self.get_y_plot()),
-                                                      s=self.get_dataSymbolSize(),
-                                                      marker=self.get_dataSymbol(),
-                                                      color=self.get_dataColor()))
-        self.set_save_xr(np.array(self.get_xr()))
-
-        self.get_axes().set_xscale('log')
-        self.get_canvas().draw()
+        self.plot_fit(CurveFit.power_data, CurveFit.power_fit, "Power R^2: ")
 
     def inverse_plot(self):
-        warnings.simplefilter('error', OptimizeWarning)
-        for y_values in self.get_y():
-
-            try:
-                popt, pcov = CurveFit.inverse_data(np.array(self.get_xr()), np.array(y_values))
-                r2 = CurveFit.r_squared(np.array(y_values), CurveFit.inverse_fit(np.array(self.get_xr()), *popt))
-            except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
-                self.get_error_txt().AppendText("Inverse R^2: " + str(e) + '\n')
-                r2 = 0
-            self.y_plot.append(r2)
-
-        self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_x()), np.array(self.get_y_plot()),
-                                                      s=self.get_dataSymbolSize(),
-                                                      marker=self.get_dataSymbol(),
-                                                      color=self.get_dataColor()))
-        self.set_save_xr(np.array(self.get_xr()))
-
-        self.get_axes().set_xscale('log')
-        self.get_canvas().draw()
+        self.plot_fit(CurveFit.inverse_data, CurveFit.inverse_fit, "Inverse R^2: ")
 
     def inverse_squared_plot(self):
-        warnings.simplefilter('error', OptimizeWarning)
-        for y_values in self.get_y():
-
-            try:
-                popt, pcov = CurveFit.insq_data(np.array(self.get_xr()), np.array(y_values))
-                r2 = CurveFit.r_squared(np.array(y_values), CurveFit.insq_fit(np.array(self.get_xr()), *popt))
-            except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
-                self.get_error_txt().AppendText("Inverse Square R^2: " + str(e) + '\n')
-                r2 = 0
-            self.y_plot.append(r2)
-
-        self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_x()), np.array(self.get_y_plot()),
-                                                      s=self.get_dataSymbolSize(),
-                                                      marker=self.get_dataSymbol(),
-                                                      color=self.get_dataColor()))
-        self.set_save_xr(np.array(self.get_xr()))
-
-        self.get_axes().set_xscale('log')
-        self.get_canvas().draw()
+        self.plot_fit(CurveFit.insq_data, CurveFit.insq_fit, "Inverse Square R^2: ")
 
     def natural_exp_plot(self):
-        warnings.simplefilter('error', OptimizeWarning)
-        for y_values in self.get_y():
-            try:
-                popt, pcov = CurveFit.nexp_data(np.array(self.get_xr()), np.array(y_values))
-                r2 = CurveFit.r_squared(np.array(y_values), CurveFit.nexp_fit(np.array(self.get_xr()), *popt))
-            except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
-                self.get_error_txt().AppendText("Natural Exponent R^2: " + str(e) + '\n')
-                r2 = 0
-            self.y_plot.append(r2)
-
-        self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_x()), np.array(self.get_y_plot()),
-                                                      s=self.get_dataSymbolSize(),
-                                                      marker=self.get_dataSymbol(),
-                                                      color=self.get_dataColor()))
-        self.set_save_xr(np.array(self.get_xr()))
-
-        self.get_axes().set_xscale('log')
-        self.get_canvas().draw()
+        self.plot_fit(CurveFit.nexp_data, CurveFit.nexp_fit, "Natural Exponent R^2: ")
 
     def loge_plot(self):
-        warnings.simplefilter('error', OptimizeWarning)
-        for y_values in self.get_y():
-
-            try:
-                popt, pcov = CurveFit.ln_data(np.array(self.get_xr()), np.array(y_values))
-                r2 = CurveFit.r_squared(np.array(y_values), CurveFit.ln_fit(np.array(self.get_xr()), *popt))
-            except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
-                self.get_error_txt().AppendText("Natural Log R^2: " + str(e) + '\n')
-                r2 = 0
-            self.y_plot.append(r2)
-
-        self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_x()), np.array(self.get_y_plot()),
-                                                      s=self.get_dataSymbolSize(),
-                                                      marker=self.get_dataSymbol(),
-                                                      color=self.get_dataColor()))
-        self.set_save_xr(np.array(self.get_xr()))
-        self.get_axes().set_xscale('log')
-        self.get_canvas().draw()
+        self.plot_fit(CurveFit.ln_data, CurveFit.ln_fit, "Natural Log R^2: ")
 
     def log10_plot(self):
-        warnings.simplefilter('error', OptimizeWarning)
-        for y_values in self.get_y():
-
-            try:
-                popt, pcov = CurveFit.b10log_data(np.array(self.get_xr()), np.array(y_values))
-                r2 = CurveFit.r_squared(np.array(y_values), CurveFit.b10log_fit(np.array(self.get_xr()), *popt))
-            except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
-                self.get_error_txt().AppendText("Log10 R^2: " + str(e) + '\n')
-                r2 = 0
-            self.y_plot.append(r2)
-
-        self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_x()), np.array(self.get_y_plot()),
-                                                      s=self.get_dataSymbolSize(),
-                                                      marker=self.get_dataSymbol(),
-                                                      color=self.get_dataColor()))
-        self.set_save_xr(np.array(self.get_xr()))
-        self.get_axes().set_xscale('log')
-        self.get_canvas().draw()
+        self.plot_fit(CurveFit.b10log_data, CurveFit.b10log_fit, "Log10 R^2: ")
 
     def inverse_exp_plot(self):
-        warnings.simplefilter('error', OptimizeWarning)
-        for y_values in self.get_y():
-
-            try:
-                popt, pcov = CurveFit.invexp_data(np.array(self.get_xr()), np.array(y_values))
-                r2 = CurveFit.r_squared(np.array(y_values), CurveFit.invexp_fit(np.array(self.get_xr()), *popt))
-            except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
-                self.get_error_txt().AppendText("Inverse Exponent R^2: " + str(e) + '\n')
-                r2 = 0
-            self.y_plot.append(r2)
-
-        self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_x()), np.array(self.get_y_plot()),
-                                                      s=self.get_dataSymbolSize(),
-                                                      marker=self.get_dataSymbol(),
-                                                      color=self.get_dataColor()))
-        self.set_save_xr(np.array(self.get_xr()))
-        self.get_axes().set_xscale('log')
-        self.get_canvas().draw()
+        self.plot_fit(CurveFit.invexp_data, CurveFit.invexp_fit, "Inverse Exponent R^2: ")
 
     def sin_plot(self):
-        warnings.simplefilter('error', OptimizeWarning)
-        for y_values in self.get_y():
-
-            try:
-                popt, pcov = CurveFit.sine_data(np.array(self.get_xr()), np.array(y_values))
-                r2 = CurveFit.r_squared(np.array(y_values), CurveFit.sine_fit(np.array(self.get_xr()), *popt))
-            except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
-                self.get_error_txt().AppendText("Sine R^2: " + str(e) + '\n')
-                r2 = 0
-            self.y_plot.append(r2)
-
-        self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_x()), np.array(self.get_y_plot()),
-                                                      s=self.get_dataSymbolSize(),
-                                                      marker=self.get_dataSymbol(),
-                                                      color=self.get_dataColor()))
-        self.set_save_xr(np.array(self.get_xr()))
-        self.get_axes().set_xscale('log')
-        self.get_canvas().draw()
+        self.plot_fit(CurveFit.sine_data, CurveFit.sine_fit, "Sine R^2: ")
 
     def cos_plot(self):
-        warnings.simplefilter('error', OptimizeWarning)
-        for y_values in self.get_y():
-
-            try:
-                popt, pcov = CurveFit.cosine_data(np.array(self.get_xr()), np.array(y_values))
-                r2 = CurveFit.r_squared(np.array(y_values), CurveFit.cosine_fit(np.array(self.get_xr()), *popt))
-            except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
-                self.get_error_txt().AppendText("Cosine R^2: " + str(e) + '\n')
-                r2 = 0
-            self.y_plot.append(r2)
-
-        self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_x()), np.array(self.get_y_plot()),
-                                                      s=self.get_dataSymbolSize(),
-                                                      marker=self.get_dataSymbol(),
-                                                      color=self.get_dataColor()))
-        self.set_save_xr(np.array(self.get_xr()))
-        self.get_axes().set_xscale('log')
-        self.get_canvas().draw()
+        self.plot_fit(CurveFit.cosine_data, CurveFit.cosine_fit, "Cosine R^2: ")
 
     def gaussian_plot(self):
-        warnings.simplefilter('error', OptimizeWarning)
-        for y_values in self.get_y():
-            try:
-                popt, pcov = CurveFit.gauss_data(np.array(self.get_xr()), np.array(y_values))
-                r2 = CurveFit.r_squared(np.array(y_values), CurveFit.gauss_fit(np.array(self.get_xr()), *popt))
-            except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
-                self.get_error_txt().AppendText("Gaussian R^2: " + str(e) + '\n')
-                r2 = 0
-            self.y_plot.append(r2)
-
-        self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_x()), np.array(self.get_y_plot()),
-                                                      s=self.get_dataSymbolSize(),
-                                                      marker=self.get_dataSymbol(),
-                                                      color=self.get_dataColor()))
-        self.set_save_xr(np.array(self.get_xr()))
-        self.get_axes().set_xscale('log')
-        self.get_canvas().draw()
+        self.plot_fit(CurveFit.gauss_data, CurveFit.gauss_fit, "Gaussian R^2: ")
 
     def get_axes(self): return self.axes
     def get_x(self): return self.x
