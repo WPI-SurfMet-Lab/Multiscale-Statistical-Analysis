@@ -1,15 +1,15 @@
 import warnings
 import numpy as np
 import wx
-import CurveFit
+import multi_stat_analysis.CurveFit
 from matplotlib import use
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wx import NavigationToolbar2Wx as NavigationToolbar
 from matplotlib.pyplot import figure, yscale
 from scipy.optimize import OptimizeWarning
-from GraphDialogs import SymbolDialog
-from GraphDialogs import LegendDialog
-from GraphDialogs import LabelDialog
+from multi_stat_analysis.GraphDialogs import SymbolDialog
+from multi_stat_analysis.GraphDialogs import LegendDialog
+from multi_stat_analysis.GraphDialogs import LabelDialog
 
 import logging
 import traceback

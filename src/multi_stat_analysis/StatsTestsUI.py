@@ -6,9 +6,9 @@ from matplotlib.backends.backend_wx import NavigationToolbar2Wx as NavigationToo
 from matplotlib.figure import Figure
 # from sympy import pretty_print as pp
 from scipy import stats
-from GraphDialogs import LabelDialog
-from GraphDialogs import SymbolDialog
-from GraphDialogs import LegendDialog
+from multi_stat_analysis.GraphDialogs import LabelDialog
+from multi_stat_analysis.GraphDialogs import SymbolDialog
+from multi_stat_analysis.GraphDialogs import LegendDialog
 
 # class for the dialog that performs the F-test
 class FtestDialog(wx.Dialog):
