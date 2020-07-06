@@ -3,16 +3,16 @@ import warnings
 
 import numpy as np
 import wx
-import CurveFit
+import multi_stat_analysis.CurveFit
 from wx.lib.scrolledpanel import ScrolledPanel
 from scipy.optimize import OptimizeWarning
-from CanvasPanel import R2byScalePlot
-from CanvasPanel import RegressionPlot
-from CanvasPanel import SclbyAreaPlot
-from CanvasPanel import HHPlot
-from GraphDialogs import SymbolDialog
-from GraphDialogs import LegendDialog
-from GraphDialogs import LabelDialog
+from multi_stat_analysis.CanvasPanel import R2byScalePlot
+from multi_stat_analysis.CanvasPanel import RegressionPlot
+from multi_stat_analysis.CanvasPanel import SclbyAreaPlot
+from multi_stat_analysis.CanvasPanel import HHPlot
+from multi_stat_analysis.GraphDialogs import SymbolDialog
+from multi_stat_analysis.GraphDialogs import LegendDialog
+from multi_stat_analysis.GraphDialogs import LabelDialog
 
 # Class for the dialog to select the curve fitting types and graphs
 # From the main menu under Analysis > Curve Fit
