@@ -4,11 +4,10 @@ import numpy as np
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wx import NavigationToolbar2Wx as NavigationToolbar
 from matplotlib.figure import Figure
-# from sympy import pretty_print as pp
 from scipy import stats
-from multi_stat_analysis.GraphDialogs import LabelDialog
-from multi_stat_analysis.GraphDialogs import SymbolDialog
-from multi_stat_analysis.GraphDialogs import LegendDialog
+from GraphDialogs import LabelDialog
+from GraphDialogs import SymbolDialog
+from GraphDialogs import LegendDialog
 
 # class for the dialog that performs the F-test
 class FtestDialog(wx.Dialog):
