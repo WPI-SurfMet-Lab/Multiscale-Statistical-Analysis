@@ -5,23 +5,23 @@ import wx.grid
 import openpyxl
 
 from aenum import IntEnum
-from multi_stat_analysis.Workbook import Workbook
+from Workbook import Workbook
 from scipy.optimize import OptimizeWarning
-from multi_stat_analysis.Dialogs import RegressionDialog
-from multi_stat_analysis.Dialogs import GraphSelectDialog
-from multi_stat_analysis.Dialogs import R2byScaleDialog
-from multi_stat_analysis.Dialogs import SclbyAreaDialog
-from multi_stat_analysis.Dialogs import XRValuesDialog
-from multi_stat_analysis.Dialogs import HHPlotDialog
-from multi_stat_analysis.PlotData import PlotData
-from multi_stat_analysis.CanvasPanel import RegressionPlot as RP
-from multi_stat_analysis.CanvasPanel import R2byScalePlot as R2
-from multi_stat_analysis.StatsTestsUI import FtestDialog
-from multi_stat_analysis.StatsTestsUI import TtestDialog
-from multi_stat_analysis.StatsTestsUI import ANOVAtestDialog
+from Dialogs import RegressionDialog
+from Dialogs import GraphSelectDialog
+from Dialogs import R2byScaleDialog
+from Dialogs import SclbyAreaDialog
+from Dialogs import XRValuesDialog
+from Dialogs import HHPlotDialog
+from PlotData import PlotData
+from CanvasPanel import RegressionPlot as RP
+from CanvasPanel import R2byScalePlot as R2
+from StatsTestsUI import FtestDialog
+from StatsTestsUI import TtestDialog
+from StatsTestsUI import ANOVAtestDialog
 
-import faulthandler
-faulthandler.enable()
+#import faulthandler
+#faulthandler.enable()
 
 __name__ = 'Multiscale Statisitcal Analysis'
 __version__ = '0.1.1'

@@ -1,7 +1,7 @@
 
 import csv
 import numpy as np
-from multi_stat_analysis.Workbook import Workbook
+from Workbook import Workbook
 from wx import TextCtrl, TreeCtrl
 from wx.grid import Grid
 
