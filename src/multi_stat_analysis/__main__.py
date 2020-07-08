@@ -6,7 +6,6 @@ import wx.adv
 import wx.grid
 import openpyxl
 
-from aenum import IntEnum
 from Workbook import Workbook
 from scipy.optimize import OptimizeWarning
 from Dialogs import RegressionDialog
@@ -136,20 +135,16 @@ def OnData(event):
         datadialog.SaveString()
         data.set_x_regress(datadialog.get_xvals())
 
-class DiscrimTests(IntEnum, start=0):
-    Ftest
-    Ttest
-    Anova
+class DiscrimTests:
+    """Contains list of discrimination test dialog properties
+    [0] - Function for creating the dialogs
+    [1] - Error dialog label"""
+    Ftest = (FtestDialog, "F-test:")
+    Ttest = (TtestDialog, "T-test:")
+    Anova = (ANOVAtestDialog, "Anova:")
 
-def OnDiscrimTests(test_enum):
-    # Contains list of discrimination test dialog properties
-    #   [0] - Function for creating the dialogs
-    #   [1] - Error dialog label
-    discrim_test_choices = \
-        {DiscrimTests.Ftest:(FtestDialog, "F-test:"),
-         DiscrimTests.Ttest:(TtestDialog, "T-test:"),
-         DiscrimTests.Anova:(ANOVAtestDialog, "Anova:")}
-    selected_test_func, test_str = discrim_test_choices[test_enum]
+def OnDiscrimTests(test_choice):
+    selected_test_func, test_str = test_choice
 
     selectedID = getPlotDataID()
     data = tree_menu.GetItemData(selectedID)
@@ -176,18 +171,20 @@ def OnTtest(event):
 def OnANOVA(event):
     OnDiscrimTests(DiscrimTests.Anova)
 
-class ScalePlots(IntEnum, start=0):
-    Area
-    Complexity
+class ScalePlots:
+    """Contains list of scale plot dialog properties
+    [0] - Error dialog label string
+    [1] - Dialog title string
+    [2] - Function for creating the dialogs
+    [3] - Tree menu label string
+    [4] - Graph y-axis label"""
+    Area = ("Area-Scale Graph:", "Scale by Relative Area", data.get_relative_area, "Relative Area - Scale", None),
+    Complexity = ("Complexity-Scale Graph:", "Scale by Complexity", data.get_complexity, "Complexity - Scale", "Complexity")
 
-def OnScalePlot(plot_enum):
+def OnScalePlot(plot_choice):
     selectedID = getPlotDataID()
     data = tree_menu.GetItemData(selectedID)
-
-    plot_choices = \
-        {ScalePlots.Area:("Area-Scale Graph:", "Scale by Relative Area", data.get_relative_area, "Relative Area - Scale", None),
-         ScalePlots.Complexity:("Complexity-Scale Graph:", "Scale by Complexity", data.get_complexity, "Complexity - Scale", "Complexity")}
-    plot_str, title, scale_func, menu_text, y_label = plot_choices[plot_enum]
+    plot_str, title, scale_func, menu_text, y_label = plot_choice
 
     if data is None :
         error_txt.AppendText(plot_str + " No data given\n")
