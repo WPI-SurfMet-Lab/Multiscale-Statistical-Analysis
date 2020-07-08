@@ -1,3 +1,4 @@
+[![PyPI version](https://badge.fury.io/py/multiscale-statistical-analysis.svg)](https://badge.fury.io/py/multiscale-statistical-analysis)
 # Multiscale-Statistical-Analysis
 ## About
 This is a standalone multiscale analysis software developed by [Nathaniel Rutkowski](https://github.com/nrutkowski1).

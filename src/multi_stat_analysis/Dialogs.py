@@ -3,6 +3,7 @@ import warnings
 
 import numpy as np
 import wx
+import CurveFit
 from wx.lib.scrolledpanel import ScrolledPanel
 from scipy.optimize import OptimizeWarning
 from CanvasPanel import R2byScalePlot
@@ -18,11 +19,10 @@ from GraphDialogs import LabelDialog
 # select Regression and R^2 by scale graphs, get best fitting curve
 class GraphSelectDialog(wx.Dialog):
     # this is all a bunch of UI stuff
-    def __init__(self, parent, scale_data, x_regress_vals, y_regress_vals, errtext, cvf):
+    def __init__(self, parent, scale_data, x_regress_vals, y_regress_vals, errtext):
         wx.Dialog.__init__(self, parent, wx.ID_ANY, "Curve Fit", size=(840, 680))
         self.panel = wx.Panel(self, wx.ID_ANY)
-        self.cvf = cvf
-        self.get_cvf().set_maxfev(1000)
+        CurveFit.set_maxfev(1000)
 
         # -------------------------------------------REGRESSION TYPE SELECTION------------------------------------------------------------------REGRESSION TYPE SELECTION-----------------------
         self.regress_box = wx.StaticBox(self.panel, wx.ID_ANY, "Curve Type", size=(420, 150), pos=(10,10))
@@ -155,127 +155,127 @@ class GraphSelectDialog(wx.Dialog):
         for y_values in self.get_y_rvals():
             # ------------------------------------------------------------------------------ linear
             try:
-                popt0, pcov0 = self.get_cvf().linear_data(np.array(self.get_x_rvals()), np.array(y_values))
-                r2_0 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().linear_fit(self.get_x_rvals(), *popt0))
+                popt0, pcov0 = CurveFit.linear_data(np.array(self.get_x_rvals()), np.array(y_values))
+                r2_0 = CurveFit.r_squared(np.array(y_values), CurveFit.linear_fit(self.get_x_rvals(), *popt0))
             except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
                 self.get_error_text().AppendText("Linear: " + str(e) + '\n')
                 r2_0 = 0
             # -------------------------------------------------------------------------------- proportional
             try:
-                popt1, pcov1 = self.get_cvf().prop_data(np.array(self.get_x_rvals()), np.array(y_values))
-                r2_1 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().prop_fit(self.get_x_rvals(), *popt1))
+                popt1, pcov1 = CurveFit.prop_data(np.array(self.get_x_rvals()), np.array(y_values))
+                r2_1 = CurveFit.r_squared(np.array(y_values), CurveFit.prop_fit(self.get_x_rvals(), *popt1))
             except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
                 self.get_error_text().AppendText("Proportional: " + str(e) + '\n')
                 # logging.error(traceback.format_exc())
                 r2_1 = 0
             # -------------------------------------------------------------------------------- quadratic
             try:
-                popt2, pcov2 = self.get_cvf().quad_data(np.array(self.get_x_rvals()), np.array(y_values))
-                r2_2 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().quad_fit(self.get_x_rvals(), *popt2))
+                popt2, pcov2 = CurveFit.quad_data(np.array(self.get_x_rvals()), np.array(y_values))
+                r2_2 = CurveFit.r_squared(np.array(y_values), CurveFit.quad_fit(self.get_x_rvals(), *popt2))
             except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
                 self.get_error_text().AppendText("Quadratic: " + str(e) + '\n')
                 # logging.error(traceback.format_exc())
                 r2_2 = 0
             # ---------------------------------------------------------------------------------- cubic
             try:
-                popt3, pcov3 = self.get_cvf().cubic_data(np.array(self.get_x_rvals()), np.array(y_values))
-                r2_3 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().cubic_fit(self.get_x_rvals(), *popt3))
+                popt3, pcov3 = CurveFit.cubic_data(np.array(self.get_x_rvals()), np.array(y_values))
+                r2_3 = CurveFit.r_squared(np.array(y_values), CurveFit.cubic_fit(self.get_x_rvals(), *popt3))
             except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
                 self.get_error_text().AppendText("Cubic: " + str(e) + '\n')
                 # logging.error(traceback.format_exc())
                 r2_3 = 0
             # ---------------------------------------------------------------------------------- quartic
             try:
-                popt4, pcov4 = self.get_cvf().quartic_data(np.array(self.get_x_rvals()), np.array(y_values))
-                r2_4 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().quartic_fit(self.get_x_rvals(), *popt4))
+                popt4, pcov4 = CurveFit.quartic_data(np.array(self.get_x_rvals()), np.array(y_values))
+                r2_4 = CurveFit.r_squared(np.array(y_values), CurveFit.quartic_fit(self.get_x_rvals(), *popt4))
             except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
                 self.get_error_text().AppendText("Quartic: " + str(e) + '\n')
                 # logging.error(traceback.format_exc())
                 r2_4 = 0
             # ---------------------------------------------------------------------------------- quintic
             try:
-                popt5, pcov5 = self.get_cvf().quintic_data(np.array(self.get_x_rvals()), np.array(y_values))
-                r2_5 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().quintic_fit(self.get_x_rvals(), *popt5))
+                popt5, pcov5 = CurveFit.quintic_data(np.array(self.get_x_rvals()), np.array(y_values))
+                r2_5 = CurveFit.r_squared(np.array(y_values), CurveFit.quintic_fit(self.get_x_rvals(), *popt5))
             except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
                 self.get_error_text().AppendText("Quintic: " + str(e) + '\n')
                 # logging.error(traceback.format_exc())
                 r2_5 = 0
             # ---------------------------------------------------------------------------------- power
             try:
-                popt6, pcov6 = self.get_cvf().power_data(np.array(self.get_x_rvals()), np.array(y_values))
-                r2_6 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().power_fit(self.get_x_rvals(), *popt6))
+                popt6, pcov6 = CurveFit.power_data(np.array(self.get_x_rvals()), np.array(y_values))
+                r2_6 = CurveFit.r_squared(np.array(y_values), CurveFit.power_fit(self.get_x_rvals(), *popt6))
             except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
                 self.get_error_text().AppendText("Power: " + str(e) + '\n')
                 # logging.error(traceback.format_exc())
                 r2_6 = 0
             # ---------------------------------------------------------------------------------- inverse
             try:
-                popt7, pcov7 = self.get_cvf().inverse_data(np.array(self.get_x_rvals()), np.array(y_values))
-                r2_7 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().inverse_fit(self.get_x_rvals(), *popt7))
+                popt7, pcov7 = CurveFit.inverse_data(np.array(self.get_x_rvals()), np.array(y_values))
+                r2_7 = CurveFit.r_squared(np.array(y_values), CurveFit.inverse_fit(self.get_x_rvals(), *popt7))
             except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
                 self.get_error_text().AppendText("Inverse: " + str(e) + '\n')
                 # logging.error(traceback.format_exc())
                 r2_7 = 0
             # ---------------------------------------------------------------------------------- inverse squared
             try:
-                popt8, pcov8 = self.get_cvf().insq_data(np.array(self.get_x_rvals()), np.array(y_values))
-                r2_8 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().insq_fit(self.get_x_rvals(), *popt8))
+                popt8, pcov8 = CurveFit.insq_data(np.array(self.get_x_rvals()), np.array(y_values))
+                r2_8 = CurveFit.r_squared(np.array(y_values), CurveFit.insq_fit(self.get_x_rvals(), *popt8))
             except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
                 self.get_error_text().AppendText("Inverse Squared: " + str(e) + '\n')
                 # logging.error(traceback.format_exc())
                 r2_8 = 0
             # ---------------------------------------------------------------------------------- natural exponent
             try:
-                popt9, pcov9 = self.get_cvf().nexp_data(np.array(self.get_x_rvals()), np.array(y_values))
-                r2_9 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().nexp_fit(self.get_x_rvals(), *popt9))
+                popt9, pcov9 = CurveFit.nexp_data(np.array(self.get_x_rvals()), np.array(y_values))
+                r2_9 = CurveFit.r_squared(np.array(y_values), CurveFit.nexp_fit(self.get_x_rvals(), *popt9))
             except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
                 self.get_error_text().AppendText("Natural Exponent: " + str(e) + '\n')
                 # logging.error(traceback.format_exc())
                 r2_9 = 0
             # ---------------------------------------------------------------------------------- log e
             try:
-                popt10, pcov10 = self.get_cvf().ln_data(np.array(self.get_x_rvals()), np.array(y_values))
-                r2_10 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().ln_fit(self.get_x_rvals(), *popt10))
+                popt10, pcov10 = CurveFit.ln_data(np.array(self.get_x_rvals()), np.array(y_values))
+                r2_10 = CurveFit.r_squared(np.array(y_values), CurveFit.ln_fit(self.get_x_rvals(), *popt10))
             except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
                 self.get_error_text().AppendText("Natural Log: " + str(e) + '\n')
                 # logging.error(traceback.format_exc())
                 r2_10 = 0
             # ---------------------------------------------------------------------------------- log 10
             try:
-                popt11, pcov11 = self.get_cvf().b10log_data(np.array(self.get_x_rvals()), np.array(y_values))
-                r2_11 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().b10log_fit(self.get_x_rvals(), *popt11))
+                popt11, pcov11 = CurveFit.b10log_data(np.array(self.get_x_rvals()), np.array(y_values))
+                r2_11 = CurveFit.r_squared(np.array(y_values), CurveFit.b10log_fit(self.get_x_rvals(), *popt11))
             except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
                 self.get_error_text().AppendText("Log10: " + str(e) + '\n')
                 # logging.error(traceback.format_exc())
                 r2_11 = 0
             # ---------------------------------------------------------------------------------- inverse exponent
             try:
-                popt12, pcov12 = self.get_cvf().invexp_data(np.array(self.get_x_rvals()), np.array(y_values))
-                r2_12 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().invexp_fit(self.get_x_rvals(), *popt12))
+                popt12, pcov12 = CurveFit.invexp_data(np.array(self.get_x_rvals()), np.array(y_values))
+                r2_12 = CurveFit.r_squared(np.array(y_values), CurveFit.invexp_fit(self.get_x_rvals(), *popt12))
             except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
                 self.get_error_text().AppendText("Inverse Exponent: " + str(e) + '\n')
                 # logging.error(traceback.format_exc())
                 r2_12 = 0
             # ---------------------------------------------------------------------------------- sin
             try:
-                popt13, pcov13 = self.get_cvf().sine_data(np.array(self.get_x_rvals()), np.array(y_values))
-                r2_13 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().sine_fit(self.get_x_rvals(), *popt13))
+                popt13, pcov13 = CurveFit.sine_data(np.array(self.get_x_rvals()), np.array(y_values))
+                r2_13 = CurveFit.r_squared(np.array(y_values), CurveFit.sine_fit(self.get_x_rvals(), *popt13))
             except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
                 self.get_error_text().AppendText("Sine: " + str(e) + '\n')
                 # logging.error(traceback.format_exc())
                 r2_13 = 0
             # ---------------------------------------------------------------------------------- cos
             try:
-                popt14, pcov14 = self.get_cvf().cosine_data(np.array(self.get_x_rvals()), np.array(y_values))
-                r2_14 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().cosine_fit(self.get_x_rvals(), *popt14))
+                popt14, pcov14 = CurveFit.cosine_data(np.array(self.get_x_rvals()), np.array(y_values))
+                r2_14 = CurveFit.r_squared(np.array(y_values), CurveFit.cosine_fit(self.get_x_rvals(), *popt14))
             except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
                 self.get_error_text().AppendText("Cosine: " + str(e) + '\n')
                 # logging.error(traceback.format_exc())
                 r2_14 = 0
             # ---------------------------------------------------------------------------------- gaussian
             try:
-                popt15, pcov15 = self.get_cvf().gauss_data(np.array(self.get_x_rvals()), np.array(y_values))
-                r2_15 = self.get_cvf().r_squared(np.array(y_values), self.get_cvf().gauss_fit(self.get_x_rvals(), *popt15))
+                popt15, pcov15 = CurveFit.gauss_data(np.array(self.get_x_rvals()), np.array(y_values))
+                r2_15 = CurveFit.r_squared(np.array(y_values), CurveFit.gauss_fit(self.get_x_rvals(), *popt15))
             except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
                 self.get_error_text().AppendText("Gaussian: " + str(e) + '\n')
                 # logging.error(traceback.format_exc())
@@ -394,7 +394,7 @@ class GraphSelectDialog(wx.Dialog):
     def get_recurse_value(self, event):
 
         try:
-            self.get_cvf().set_maxfev(int(self.get_recursion_amount().GetValue()))
+            CurveFit.set_maxfev(int(self.get_recursion_amount().GetValue()))
         except (ValueError) as e:
             self.get_error_text().AppendText("Recursion: " + str(e) + '\n')
 
@@ -404,14 +404,13 @@ class GraphSelectDialog(wx.Dialog):
     def get_error_text(self): return self.error_text
     def get_selected(self): return self.selectedList
     def keyfunc(self, x): return x[0]
-    def get_cvf(self): return self.cvf
     def get_recursion_amount(self): return self.recursion_amount
 # Class for the dialog which contains the regression plots
 # this is essentially identical to the code in the RegressionSelectDialog class
 # see class RegressionSelectDialog in CanvasPanel.py
 class RegressionDialog(wx.Frame):
 
-    def __init__(self, parent, title, x, xr, y, cvf, swb, tree):
+    def __init__(self, parent, title, x, xr, y, swb, tree):
         # wx.Dialog.__init__(self, parent, wx.ID_ANY, "Graph", size=(640, 480))
         wx.Frame.__init__(self, parent, title=title, size=(640, 530), style=wx.DEFAULT_FRAME_STYLE | wx.STAY_ON_TOP)
 
@@ -419,7 +418,7 @@ class RegressionDialog(wx.Frame):
         self.workbook = swb
         self.tree_menu = tree
 
-        self.graph = RegressionPlot(self, x, xr, y, cvf, swb, tree)
+        self.graph = RegressionPlot(self, x, xr, y, swb, tree)
         # ------------------- Regression stuff -----------------------
         self.popt, self.pcov = None, None
 
@@ -1002,12 +1001,12 @@ class SclbyAreaDialog(wx.Frame):
 # the functions OnSave, OnLabel, etc... are the same as described in class RegressionSelectDialog
 class R2byScaleDialog(wx.Frame):
 
-    def __init__(self, parent, title, data, error_txt, cvf, tree_menu, root, id):
+    def __init__(self, parent, title, data, error_txt, tree_menu, root, id):
         # wx.Dialog.__init__(self, parent, wx.ID_ANY, "Graph", size=(640, 480))
         wx.Frame.__init__(self, parent, title=title, size=(640, 530), style=wx.DEFAULT_FRAME_STYLE | wx.STAY_ON_TOP)
 
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.graph = R2byScalePlot(self, data, error_txt, cvf, tree_menu, root, id)
+        self.graph = R2byScalePlot(self, data, error_txt, tree_menu, root, id)
 
         # ----------------------------------- MENU STUFF -----------------------------------------------------
         # 'file' sub menu on menu bar

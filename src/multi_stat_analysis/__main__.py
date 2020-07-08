@@ -1,12 +1,14 @@
 import warnings
+warnings.simplefilter("error", RuntimeWarning)
+
 import wx
 import wx.adv
 import wx.grid
 import openpyxl
 
+from aenum import IntEnum
 from Workbook import Workbook
 from scipy.optimize import OptimizeWarning
-from CurveFit import CurveFit
 from Dialogs import RegressionDialog
 from Dialogs import GraphSelectDialog
 from Dialogs import R2byScaleDialog
@@ -20,11 +22,11 @@ from StatsTestsUI import FtestDialog
 from StatsTestsUI import TtestDialog
 from StatsTestsUI import ANOVAtestDialog
 
-import faulthandler
-faulthandler.enable()
+#import faulthandler
+#faulthandler.enable()
 
 name = 'Multiscale Statisitcal Analysis'
-__version__ = '0.1.1'
+__version__ = '0.3.0'
 __license__ = 'MIT'
 __author__ = 'Matthew Spofford, Nathaniel Rutkowski'
 __author_email__ = 'mespofford@wpi.edu'
@@ -48,7 +50,7 @@ def OnRegression(event):
     warnings.simplefilter("error", OptimizeWarning)
     try:
         rsdlg = GraphSelectDialog(frame, data.get_results_scale(), data.get_x_regress(), data.get_regress_sets(),
-                                  error_txt, cvf)
+                                  error_txt)
         rsdlg.CenterOnScreen()
         resid = rsdlg.ShowModal()
 
@@ -61,8 +63,7 @@ def OnRegression(event):
             #   [3] - Tree menu item label
             #   [4] - Error dialog label
             #   [5] - Boolean is true if the dialog is for an R^2 dialog
-            regressR2Dialogs = \
-                (
+            regressR2Dialogs = (
                 (rsdlg.prop1check.IsChecked,"Proportional",RP.proportional_fit_plot,"Proportional Regression","Proportional: ", False),
                 (rsdlg.lin1check.IsChecked,"Linear",RP.linear_fit_plot,"Linear Regression","Linear: ", False),
                 (rsdlg.quad1check.IsChecked,"Quadratic",RP.quadratic_fit_plot,"Quadratic Regression","Quadratic: ", False),
@@ -94,8 +95,7 @@ def OnRegression(event):
                 (rsdlg.invexp2check.IsChecked,"R^2 by Scale for Inverse Exponent Regression",R2.inverse_exp_plot,"Inverse Exponent R^2 - Scale","Inverse Exponent R^2: ", True),
                 (rsdlg.sin2check.IsChecked,"R^2 by Scale for Sine Regression",R2.sin_plot,"Sine R^2 - Scale","Sine R^2: ", True),
                 (rsdlg.cos2check.IsChecked,"R^2 by Scale for Cosine Regression",R2.cos_plot,"Cosine R^2 - Scale","Cosine R^2: ", True),
-                (rsdlg.gauss2check.IsChecked,"R^2 by Scale for Gaussian Regression",R2.gaussian_plot,"Gaussian R^2 - Scale","Gaussian R^2: ", True)
-                )
+                (rsdlg.gauss2check.IsChecked,"R^2 by Scale for Gaussian Regression",R2.gaussian_plot,"Gaussian R^2 - Scale","Gaussian R^2: ", True))
 
             # Run through all given dialogs to find if the given option has been selected
             # If it has been selected, generate the corresponding graph dialog, and graph
@@ -107,21 +107,21 @@ def OnRegression(event):
                     try:
                         # Generate either R^2 or Regression dialog depending on selection
                         if isR2:
-                            gdlg = R2byScaleDialog(frame, title, data, error_txt, cvf, tree_menu, selectedID, id)
+                            gdlg = R2byScaleDialog(frame, title, data, error_txt, tree_menu, selectedID, id)
                         else:
                             gdlg = RegressionDialog(frame, title, data.get_results_scale(), data.get_x_regress(),
-                                                        data.get_regress_sets(), cvf, selectedID, tree_menu)
+                                                        data.get_regress_sets(), selectedID, tree_menu)
                         fit_func(gdlg.get_graph())
                         tree_menu.AppendItem(selectedID, menu_label, data=gdlg)
                         break
-                    except (ZeroDivisionError, OptimizeWarning) as e: #RuntimeError, Exception, Warning, TypeError, RuntimeWarning,
+                    except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
                         error_txt.AppendText(error_label + str(e) + '\n')
                 # Don't increase ID if current dialog is not an R^2 dialog
                 id += 1 if isR2 else 0
 
             # Refresh tree menu to show newly created graphs
             tree_menu.Refresh()
-    except (ZeroDivisionError, OptimizeWarning) as e: #RuntimeError, Warning, TypeError, RuntimeWarning,
+    except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
         error_txt.AppendText("Graph: " + str(e) + '\n')
 
 # function to get the x-regression values
@@ -136,88 +136,85 @@ def OnData(event):
         datadialog.SaveString()
         data.set_x_regress(datadialog.get_xvals())
 
-# function to show F-test dialog
-def OnFtest(event):
+class DiscrimTests(IntEnum, start=0):
+    Ftest
+    Ttest
+    Anova
+
+def OnDiscrimTests(test_enum):
+    # Contains list of discrimination test dialog properties
+    #   [0] - Function for creating the dialogs
+    #   [1] - Error dialog label
+    discrim_test_choices = \
+        {DiscrimTests.Ftest:(FtestDialog, "F-test:"),
+         DiscrimTests.Ttest:(TtestDialog, "T-test:"),
+         DiscrimTests.Anova:(ANOVAtestDialog, "Anova:")}
+    selected_test_func, test_str = discrim_test_choices[test_enum]
+
     selectedID = getPlotDataID()
     data = tree_menu.GetItemData(selectedID)
 
     try:
-        dlg = FtestDialog(frame, data, error_txt, tree_menu, selectedID)
-    except (ZeroDivisionError) as e:
-        error_txt.AppendText("F-test: " + str(e) + '\n')
+        dlg = selected_test_func(frame, data, error_txt, tree_menu, selectedID)
+    except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
+        error_txt.AppendText(test_str + " " + str(e) + '\n')
 
     dlg.CenterOnScreen()
     dlg.ShowModal()
     tree_menu.Refresh()
+
+# function to show F-test dialog
+def OnFtest(event):
+    OnDiscrimTests(DiscrimTests.Ftest)
 
 # current: paired two tails t-test, which one should I use or options...?
 # function to show T-test dialog
 def OnTtest(event):
-    selectedID = getPlotDataID()
-    data = tree_menu.GetItemData(selectedID)
-
-    try:
-        dlg = TtestDialog(frame, data, error_txt, tree_menu, selectedID)
-    except (ZeroDivisionError) as e:
-        error_txt.AppendText("T-test: " + str(e) + '\n')
-
-    dlg.CenterOnScreen()
-    dlg.ShowModal()
-    tree_menu.Refresh()
-    # dlg.PooledVarianceTTest()
+    OnDiscrimTests(DiscrimTests.Ttest)
 
 # function to show the ANOVA test dialog
 def OnANOVA(event):
+    OnDiscrimTests(DiscrimTests.Anova)
+
+class ScalePlots(IntEnum, start=0):
+    Area
+    Complexity
+
+def OnScalePlot(plot_enum):
     selectedID = getPlotDataID()
     data = tree_menu.GetItemData(selectedID)
 
-    try:
-        dlg = ANOVAtestDialog(frame, data, error_txt, tree_menu, selectedID)
-    except (ZeroDivisionError) as e:
-        error_txt.AppendText("Anova: " + str(e) + '\n')
+    plot_choices = \
+        {ScalePlots.Area:("Area-Scale Graph:", "Scale by Relative Area", data.get_relative_area, "Relative Area - Scale", None),
+         ScalePlots.Complexity:("Complexity-Scale Graph:", "Scale by Complexity", data.get_complexity, "Complexity - Scale", "Complexity")}
+    plot_str, title, scale_func, menu_text, y_label = plot_choices[plot_enum]
 
-    dlg.CenterOnScreen()
-    dlg.ShowModal()
-    tree_menu.Refresh()
+    if data is None :
+        error_txt.AppendText(plot_str + " No data given\n")
+
+    gdlg = SclbyAreaDialog(frame, title, data.get_results_scale(),
+                             scale_func(),
+                             data.get_legend_txt(), data)
+    if not y_label == None:
+        gdlg.get_graph().get_axes().set_ylabel(y_label)
+        print(y_label)
+
+    try:
+        gdlg.get_graph().draw_plot()
+        tree_menu.AppendItem(parent=selectedID, text=menu_text, data=gdlg)
+        tree_menu.Refresh()
+    except (RuntimeError, ZeroDivisionError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
+         error_txt.AppendText(plot_str + " " + str(e) + '\n')
 
 # function to create the scale area plot
 def OnAreaPlot(event):
-    selectedID = getPlotDataID()
-    data = tree_menu.GetItemData(selectedID)
-
-    if data is None :
-        error_txt.AppendText("Area-Scale Graph: No data given\n")
-
-    gdlg17 = SclbyAreaDialog(frame, "Scale by Relative Area", data.get_results_scale(),
-                             data.get_relative_area(),
-                             data.get_legend_txt(), data)
-    try:
-        gdlg17.get_graph().draw_plot()
-        tree_menu.AppendItem(parent=selectedID, text="Relative Area - Scale", data=gdlg17)
-        tree_menu.Refresh()
-    except (RuntimeError, ZeroDivisionError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
-         error_txt.AppendText("Area-Scale Graph: " + str(e) + '\n')
+    OnScalePlot(ScalePlots.Area)
 
 # function to create the scale complexity plot
 def OnComplexityPlot(event):
-    selectedID = getPlotDataID()
-    data = tree_menu.GetItemData(selectedID)
-
-    if data is None :
-        error_txt.AppendText("Area-Scale Graph: No data given\n")
-
-    gdlg18 = SclbyAreaDialog(frame, "Scale by Complexity", data.get_results_scale(), data.get_complexity(),
-                             data.get_legend_txt(), data)
-    gdlg18.get_graph().get_axes().set_ylabel("Complexity")
-    try:
-        gdlg18.get_graph().draw_complexity_plot()
-        tree_menu.AppendItem(selectedID, "Complexity - Scale", data=gdlg18)
-        tree_menu.Refresh()
-    except (RuntimeError, ZeroDivisionError, Exception, Warning, TypeError, OptimizeWarning, RuntimeWarning) as e:
-        error_txt.AppendText("Complexity-Scale Graph: " + str(e) + '\n')
+    OnScalePlot(ScalePlots.Complexity)
 
 def OnHHPlot(event):
-
     gdlg19 = HHPlotDialog(frame, 'Height-Height Plot')
     gdlg19.CenterOnScreen()
     resid = gdlg19.Show()
@@ -323,7 +320,7 @@ def OnOpen(event):
         elif result == wx.ID_CANCEL:
             output = False
     except (Exception) as e:
-        raise e
+        error_txt.AppendText("File Open: " + str(e) + '\n')
     finally:
         frame.EnableCloseButton(True)
         return output
@@ -389,13 +386,13 @@ def OnSave(event):
         elif result == wx.ID_CANCEL:
             output = False
     except e:
-        raise e
+        error_txt.AppendText("File Save: " + str(e) + '\n')
     finally:
         frame.EnableCloseButton(True)
         return output
 
 # function to handle window maximization
-def onMaxmizeRestore(event):
+def OnMaxmizeRestore(event):
     global resized
     global frame
     global width, height
@@ -447,11 +444,9 @@ if __name__ == "__main__":
     frame.SetBackgroundColour('#ffffff')
     frame.EnableCloseButton(enable=True)
     frame.Bind(wx.EVT_CLOSE, OnExit)
-    frame.Bind(wx.EVT_SIZE, onMaxmizeRestore)
-    
+    frame.Bind(wx.EVT_SIZE, OnMaxmizeRestore)
+
     # this is a bunch of GUI stuff
-    # general curve fit object which has all of the regression curve functions
-    cvf = CurveFit()
     # create the menu bar and populate it
     filemenu = wx.Menu()
     openitem = wx.MenuItem(parentMenu=filemenu, id=wx.ID_OPEN, text="Open")
@@ -576,5 +571,5 @@ if __name__ == "__main__":
     frame.SetSizer(sizer)
     frame.Show()
     app.MainLoop()
-else :
+else:
     pass
