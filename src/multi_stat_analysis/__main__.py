@@ -22,12 +22,11 @@ from StatsTestsUI import FtestDialog
 from StatsTestsUI import TtestDialog
 from StatsTestsUI import ANOVAtestDialog
 
-
 #import faulthandler
 #faulthandler.enable()
 
 __name__ = 'Multiscale Statisitcal Analysis'
-__version__ = '0.1.1'
+__version__ = '0.3.0'
 __license__ = 'MIT'
 __author__ = 'Matthew Spofford, Nathaniel Rutkowski'
 __author_email__ = 'mespofford@wpi.edu'
