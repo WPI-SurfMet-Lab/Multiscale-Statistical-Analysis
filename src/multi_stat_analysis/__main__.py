@@ -1,4 +1,6 @@
 import warnings
+warnings.simplefilter("error", RuntimeWarning)
+
 import wx
 import wx.adv
 import wx.grid
@@ -19,6 +21,7 @@ from CanvasPanel import R2byScalePlot as R2
 from StatsTestsUI import FtestDialog
 from StatsTestsUI import TtestDialog
 from StatsTestsUI import ANOVAtestDialog
+
 
 #import faulthandler
 #faulthandler.enable()
@@ -55,8 +58,7 @@ def OnRegression(event):
             #   [3] - Tree menu item label
             #   [4] - Error dialog label
             #   [5] - Boolean is true if the dialog is for an R^2 dialog
-            regressR2Dialogs = \
-                (
+            regressR2Dialogs = (
                 (rsdlg.prop1check.IsChecked,"Proportional",RP.proportional_fit_plot,"Proportional Regression","Proportional: ", False),
                 (rsdlg.lin1check.IsChecked,"Linear",RP.linear_fit_plot,"Linear Regression","Linear: ", False),
                 (rsdlg.quad1check.IsChecked,"Quadratic",RP.quadratic_fit_plot,"Quadratic Regression","Quadratic: ", False),
@@ -88,8 +90,7 @@ def OnRegression(event):
                 (rsdlg.invexp2check.IsChecked,"R^2 by Scale for Inverse Exponent Regression",R2.inverse_exp_plot,"Inverse Exponent R^2 - Scale","Inverse Exponent R^2: ", True),
                 (rsdlg.sin2check.IsChecked,"R^2 by Scale for Sine Regression",R2.sin_plot,"Sine R^2 - Scale","Sine R^2: ", True),
                 (rsdlg.cos2check.IsChecked,"R^2 by Scale for Cosine Regression",R2.cos_plot,"Cosine R^2 - Scale","Cosine R^2: ", True),
-                (rsdlg.gauss2check.IsChecked,"R^2 by Scale for Gaussian Regression",R2.gaussian_plot,"Gaussian R^2 - Scale","Gaussian R^2: ", True)
-                )
+                (rsdlg.gauss2check.IsChecked,"R^2 by Scale for Gaussian Regression",R2.gaussian_plot,"Gaussian R^2 - Scale","Gaussian R^2: ", True))
 
             # Run through all given dialogs to find if the given option has been selected
             # If it has been selected, generate the corresponding graph dialog, and graph
@@ -115,7 +116,7 @@ def OnRegression(event):
 
             # Refresh tree menu to show newly created graphs
             tree_menu.Refresh()
-    except (ZeroDivisionError, RuntimeError, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
+    except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
         error_txt.AppendText("Graph: " + str(e) + '\n')
 
 # function to get the x-regression values
@@ -136,6 +137,9 @@ class DiscrimTests(IntEnum, start=0):
     Anova
 
 def OnDiscrimTests(test_enum):
+    # Contains list of discrimination test dialog properties
+    #   [0] - Function for creating the dialogs
+    #   [1] - Error dialog label
     discrim_test_choices = \
         {DiscrimTests.Ftest:(FtestDialog, "F-test:"),
          DiscrimTests.Ttest:(TtestDialog, "T-test:"),
@@ -147,7 +151,7 @@ def OnDiscrimTests(test_enum):
 
     try:
         dlg = selected_test_func(frame, data, error_txt, tree_menu, selectedID)
-    except (ZeroDivisionError) as e:
+    except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
         error_txt.AppendText(test_str + " " + str(e) + '\n')
 
     dlg.CenterOnScreen()
@@ -306,7 +310,7 @@ def OnOpen(event):
         elif result == wx.ID_CANCEL:
             output = False
     except (Exception) as e:
-        raise e
+        error_txt.AppendText("File Open: " + str(e) + '\n')
     finally:
         frame.EnableCloseButton(True)
         return output
@@ -372,7 +376,7 @@ def OnSave(event):
         elif result == wx.ID_CANCEL:
             output = False
     except e:
-        raise e
+        error_txt.AppendText("File Save: " + str(e) + '\n')
     finally:
         frame.EnableCloseButton(True)
         return output
