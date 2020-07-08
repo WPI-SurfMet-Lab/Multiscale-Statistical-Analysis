@@ -1,4 +1,5 @@
 
+import __main__
 import os
 import wx
 import csv
@@ -10,9 +11,8 @@ import winreg
 from wx import TextCtrl, TreeCtrl
 from wx.grid import Grid
 from Workbook import Workbook
-from _Resources import resource_path
-from enum import IntEnum
-
+import _Resources
+from enum import Enum
 
 # Class PlotData:
 # the purpose of this class is to create an object which stores all of the data opened from files as well as user inputs
@@ -250,26 +250,30 @@ class PlotData:
 
         self.get_error_text().AppendText("Done." + '\n')
 
-    class _SensitivityOption(IntEnum, start=0):
-        pass
-    class _AnalysisOption(IntEnum, start=0):
-        pass
+    class __SensitivityOption:
+        Complexity = ("Complexity Analysis", None)
+        Scale = ("Scale-sensitive Analysis", None)
+        def __init__(self, label, func):
+            self.label = label
+            self.func = func
+
+    class __AnalysisOption(Enum):
+        Length = ("Length Analysis", None)
+        Area = ("Area Analysis", None)
+        def __init__(self, label, func):
+            self.label = label
+            self.func = func
 
     def open_sur(self, file_paths) -> None :
         """Takes an input of an array of strings for the file path of each surface being analyzed. These surfaces are
         input into MountainsMap using mouse and keyboard control. The user is then given a choice of selecting either
         length-scale, area-scale, or complexity analysis. These results are then record in various text files which are
-        then also opened."""
+        then opened seperatly."""
 
-        results_dir = get_surface_options()
-
-        aboutInfo.CenterOnScreen()
-        aboutInfo.ShowModal()
-        
+        results_dir, sensitive_choice, analysis_choice = PlotData.__get_surface_options()
         wd = os.getcwd() + "\\"
         cmd_path = wd + "temp-cmds.txt"
-        tmplt_path = resource_path("ssfa-template.mnt")
-        results_dir = wd # TODO: Change this to fit input from popup
+        tmplt_path = _Resources.resource_path("ssfa-template.mnt")
         result_file_paths = []
 
         for surf_file_path in file_paths :
@@ -297,37 +301,38 @@ class PlotData:
         # Open generated result text files
         open_file2(result_file_paths)
 
-    def get_surface_options() :
-        """
-        """
+    def __get_surface_options() :
+        """Create surface import options selection. This includes specifying scale/complexity sensitivity,
+        the type of surface analysis being done, as well as the directory for saving the analysis data."""
+
         # TODO: Create popup that takes in scale-sensitive/complexity option, form of scale analysis, as well as
         #       the directory for storing the results files.
-        # width, height = wx.DisplaySize()
-        aboutInfo = wx.Dialog(frame, wx.ID_ANY, 'About ' + __name__ + ' ' + version, size=(480, 400))
+        width = 1200
+        height = 1000
+        options_dialog = wx.Dialog(__main__.frame, wx.ID_ANY, "Surface Import Options", size=(width, height))
+        options_panel = wx.Frame(options_dialog, wx.ID_ANY)
 
-        title_text = wx.StaticText(aboutInfo, wx.ID_ANY, label=__name__ + ' ' + version, pos=(60, 20),
-                                   style=wx.ALIGN_CENTER_HORIZONTAL)
-        title_text.SetFont(wx.Font(wx.FontInfo(14)).Bold())
-        description_text = wx.StaticText(aboutInfo, wx.ID_ANY, label=description, pos=(45, 50),
-                                         style=wx.ALIGN_CENTER_HORIZONTAL)
+        # Analysis Type Selection
+        analysis_choices = []
+        for choice in PlotData.__AnalysisOption:
+            analysis_choices.append(choice.label)
+        analysis_type_combo = wx.ComboBox(options_panel, wx.ID_OK, analysis_choices[0], pos=((width/4, height/4)),
+                                          style=wx.CB_SIMPLE | wx.CB_READONLY,
+                                          choices=analysis_choices)
 
-        github = wx.adv.HyperlinkCtrl(aboutInfo, id=wx.ID_ANY, label='Open-Source Code',
-                                      url='https://github.com/MatthewSpofford/Multiscale-Statistical-Analysis',
-                                      pos=(180, 150), style=wx.adv.HL_DEFAULT_STYLE)
-        donate = wx.adv.HyperlinkCtrl(aboutInfo, id=wx.ID_ANY, label='Support Development',
-                                      url='https://paypal.me/nrutkowski1?locale.x=en_US',
-                                      pos=(173, 170), style=wx.adv.HL_DEFAULT_STYLE)
-        lab_site = wx.adv.HyperlinkCtrl(aboutInfo, id=wx.ID_ANY, label='WPI Surface Metrology Lab',
-                                        url='https://www.surfacemetrology.org/',
-                                        pos=(159, 190), style=wx.adv.HL_DEFAULT_STYLE)
+        # Results folder selection button handling
+        results_dir_str = "Select Results Folder"
+        resutls_dir_dialog = wx.DirPickerCtrl(options_panel, wx.ID_ANY, path="",
+                                              message=results_dir_str, pos=(width/2, height/2),# size=DefaultSize,
+                                              style=wx.DIRP_DEFAULT_STYLE)
 
-        line = wx.StaticLine(aboutInfo, id=wx.ID_ANY, pos=(10, 220), size=(450, -1), style=wx.LI_HORIZONTAL)
+        options_panel.Fit()
+        options_panel.Refresh()
+        options_dialog.Layout()
+        options_dialog.CenterOnScreen()
+        result = options_dialog.ShowModal()
 
-        d_title = wx.StaticText(aboutInfo, wx.ID_ANY, label='Developers', pos=(190, 240))
-        d_title.SetFont(wx.Font(wx.FontInfo(11)).Bold())
-        devs = wx.StaticText(aboutInfo, wx.ID_ANY, label=developers, pos=(178, 260), style=wx.ALIGN_CENTER_HORIZONTAL)
-
-        okbtn = wx.Button(aboutInfo, wx.ID_OK, pos=(365, 325))
+        return None,None,None
 
     def get_relative_area(self): return self.relative_area
     def get_results_scale(self): return self.results_scale

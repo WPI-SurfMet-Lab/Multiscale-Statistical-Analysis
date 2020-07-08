@@ -31,13 +31,9 @@ __author__ = 'Matthew Spofford, Nathaniel Rutkowski'
 __author_email__ = 'mespofford@wpi.edu'
 __url__ = 'https://github.com/MatthewSpofford/Multiscale-Statistical-Analysis'
 
-global wb_counter
 wb_counter = 1
-global wb_list
 wb_list = []
-global frame
 frame = None
-global app
 app = None
 
 # function for show the curve fit dialog and get regression graphs
@@ -178,8 +174,8 @@ class ScalePlots:
     [2] - Function for creating the dialogs
     [3] - Tree menu label string
     [4] - Graph y-axis label"""
-    Area = ("Area-Scale Graph:", "Scale by Relative Area", data.get_relative_area, "Relative Area - Scale", None),
-    Complexity = ("Complexity-Scale Graph:", "Scale by Complexity", data.get_complexity, "Complexity - Scale", "Complexity")
+    Area = ("Area-Scale Graph:", "Scale by Relative Area", PlotData.get_relative_area, "Relative Area - Scale", None)
+    Complexity = ("Complexity-Scale Graph:", "Scale by Complexity", PlotData.get_complexity, "Complexity - Scale", "Complexity")
 
 def OnScalePlot(plot_choice):
     selectedID = getPlotDataID()
@@ -256,9 +252,9 @@ def OnAbout(event):
     # Reconfigure author strings to use newline seperate and not comma seperation
     developers = "\n".join(__author__.split(", "))
 
-    aboutInfo = wx.Dialog(frame, wx.ID_ANY, 'About ' + __name__ + ' ' + version, size=(480, 400))
+    aboutInfo = wx.Dialog(frame, wx.ID_ANY, 'About ' + name + ' ' + version, size=(480, 400))
 
-    title_text = wx.StaticText(aboutInfo, wx.ID_ANY, label=__name__ + ' ' + version, pos=(60, 20),
+    title_text = wx.StaticText(aboutInfo, wx.ID_ANY, label=name + ' ' + version, pos=(60, 20),
                                style=wx.ALIGN_CENTER_HORIZONTAL)
     title_text.SetFont(wx.Font(wx.FontInfo(14)).Bold())
     description_text = wx.StaticText(aboutInfo, wx.ID_ANY, label=description, pos=(45, 50),
