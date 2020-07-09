@@ -18,7 +18,6 @@ from enum import Enum
 # the purpose of this class is to create an object which stores all of the data opened from files as well as user inputs
 # contains two functions to read multi-scale data from either the .csv files from sfrax or the .txt files from MountainsMap
 # which contains the scale, relative area / length, and complexity (as well as R^2 which I don't understand / use).
-
 class PlotData:
 
     def __init__(self, error_text:TextCtrl, grid:Grid, wb:Workbook):
@@ -250,27 +249,14 @@ class PlotData:
 
         self.get_error_text().AppendText("Done." + '\n')
 
-    class __SensitivityOption(Enum):
-        Scale = ("Scale-sensitive Analysis", None)
-        Complexity = ("Complexity Analysis", None)
-        def __init__(self, label, func):
-            self.label = label
-            self.func = func
-
-    class __AnalysisOption(Enum):
-        Length = ("Length Analysis", None)
-        Area = ("Area Analysis", None)
-        def __init__(self, label, func):
-            self.label = label
-            self.func = func
-
     def open_sur(self, file_paths) -> None :
         """Takes an input of an array of strings for the file path of each surface being analyzed. These surfaces are
         input into MountainsMap using mouse and keyboard control. The user is then given a choice of selecting either
         length-scale, area-scale, or complexity analysis. These results are then record in various text files which are
         then opened seperatly."""
 
-        results_dir, sensitive_choice, analysis_choice = PlotData.__get_surface_options()
+        results_dir, sensitive_func, analysis_func = get_surface_options()
+
         wd = os.getcwd() + "\\"
         cmd_path = wd + "temp-cmds.txt"
         tmplt_path = _Resources.resource_path("ssfa-template.mnt")
@@ -301,74 +287,6 @@ class PlotData:
         # Open generated result text files
         open_file2(result_file_paths)
 
-    def __get_surface_options() :
-        """Create surface import options selection. This includes specifying scale/complexity sensitivity,
-        the type of surface analysis being done, as well as the directory for saving the analysis data."""
-
-        # TODO: Create popup that takes in scale-sensitive/complexity option, form of scale analysis, as well as
-        #       the directory for storing the results files.
-        width = 600
-        height = 250
-        options_dialog = wx.Dialog(__main__.frame, wx.ID_ANY, "Surface Import Options", size=(width, height))
-        options_panel = wx.Panel(options_dialog, wx.ID_ANY)
-        options_sizer = wx.BoxSizer(wx.VERTICAL)
-
-        def getTypeCombo(enum):
-            choices = []
-            for choice in enum:
-                choices.append(choice.label)
-            return wx.ComboBox(options_panel, wx.ID_OK, choices[0],
-                                              style=wx.CB_SIMPLE | wx.CB_READONLY,
-                                              choices=choices)
-        # Analysis Type Selection
-        analysis_label = wx.StaticText(options_panel, wx.ID_ANY, label="Analysis Type:")
-        analysis_combo = getTypeCombo(PlotData.__AnalysisOption)
-
-        # Sensitivity Type Selection
-        sensitivity_label = wx.StaticText(options_panel, wx.ID_ANY, label="Sensitivity Type:")
-        sensitivity_combo = getTypeCombo(PlotData.__SensitivityOption)
-
-        # Initialize sizer for both combo boxes
-        combo_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        analysis_sizer = wx.BoxSizer(wx.VERTICAL)
-        sensitivity_sizer = wx.BoxSizer(wx.VERTICAL)
-        # Initialize Analyasis sizer
-        analysis_sizer.AddStretchSpacer()
-        analysis_sizer.Add(analysis_label, flag=wx.ALIGN_LEFT)
-        analysis_sizer.Add(analysis_combo, flag=wx.ALIGN_LEFT)
-        analysis_sizer.AddStretchSpacer()
-        # Initialize Sensitivity sizer
-        sensitivity_sizer.AddStretchSpacer()
-        sensitivity_sizer.Add(sensitivity_label, flag=wx.ALIGN_LEFT)
-        sensitivity_sizer.Add(sensitivity_combo, flag=wx.ALIGN_LEFT)
-        sensitivity_sizer.AddStretchSpacer()
-        # Layout combo sizers
-        combo_sizer.AddStretchSpacer()
-        combo_sizer.Add(analysis_sizer, flag=wx.CENTER)
-        combo_sizer.AddStretchSpacer()
-        combo_sizer.Add(sensitivity_sizer, flag=wx.CENTER)
-        combo_sizer.AddStretchSpacer()
-        
-
-        # Results folder selection button handling
-        results_label = wx.StaticText(options_panel, wx.ID_ANY, label="Select Results Folder:")
-        results_dir_dialog = wx.DirPickerCtrl(options_panel, wx.ID_ANY, message="Select Results Folder",
-                                              style=wx.DIRP_DEFAULT_STYLE)
-
-        options_sizer.AddStretchSpacer()
-        options_sizer.Add(combo_sizer, flag=wx.CENTER)
-        options_sizer.AddStretchSpacer()
-        options_sizer.Add(results_label, flag=wx.CENTER)
-        options_sizer.Add(results_dir_dialog, flag=wx.CENTER)
-        options_sizer.AddStretchSpacer()
-
-        options_panel.SetSizerAndFit(options_sizer)
-        options_panel.Refresh()
-        options_dialog.CenterOnScreen()
-        result = options_dialog.ShowModal()
-
-        return None,None,None
-
     def get_relative_area(self): return self.relative_area
     def get_results_scale(self): return self.results_scale
     def get_legend_txt(self): return self.legend_text
@@ -387,3 +305,125 @@ class PlotData:
     def set_wb(self, wb): self.wb = wb
     def get_strings(self): return self.strings
     def set_strings(self, string): self.strings = string
+
+
+sensitivity_option_map = {}
+class SensitivityOption(Enum):
+    Scale = ("Scale-sensitive Analysis", 1)
+    Complexity = ("Complexity Analysis", 2)
+    def __init__(self, label, func):
+        self.label = label
+        self.func = func
+        global sensitivity_option_map
+        sensitivity_option_map[label] = func
+
+analysis_option_map = {}
+class AnalysisOption(Enum):
+    Length = ("Length Analysis", 3)
+    Area = ("Area Analysis", 4)
+    def __init__(self, label, func):
+        self.label = label
+        self.func = func
+        global analysis_option_map
+        analysis_option_map[label] = func
+
+def get_surface_options() :
+    """Create surface import options selection. This includes specifying scale/complexity sensitivity,
+    the type of surface analysis being done, as well as the directory for saving the analysis data.
+    @return results_dir, sensitive_func, analysis_func"""
+
+    results_dir = None
+    sensitive_func = None
+    analysis_func = None
+
+    width = 600
+    height = 250
+    options_dialog = wx.Dialog(__main__.frame, wx.ID_ANY, "Surface Import Options", size=(width, height))
+    options_panel = wx.Panel(options_dialog, wx.ID_ANY)
+    options_sizer = wx.BoxSizer(wx.VERTICAL)
+
+    def getTypeCombo(enum):
+        choices = []
+        for choice in enum:
+            choices.append(choice.label)
+        return wx.ComboBox(options_panel, wx.ID_OK, choices[0],
+                                            style=wx.CB_SIMPLE | wx.CB_READONLY,
+                                            choices=choices)
+    # Analysis Type Selection
+    analysis_label = wx.StaticText(options_panel, wx.ID_ANY, label="Analysis Type:")
+    analysis_combo = getTypeCombo(AnalysisOption)
+
+    # Sensitivity Type Selection
+    sensitivity_label = wx.StaticText(options_panel, wx.ID_ANY, label="Sensitivity Type:")
+    sensitivity_combo = getTypeCombo(SensitivityOption)
+
+    # Initialize sizer for both combo boxes
+    combo_sizer = wx.BoxSizer(wx.HORIZONTAL)
+    analysis_sizer = wx.BoxSizer(wx.VERTICAL)
+    sensitivity_sizer = wx.BoxSizer(wx.VERTICAL)
+    # Initialize Analyasis sizer
+    analysis_sizer.AddStretchSpacer()
+    analysis_sizer.Add(analysis_label, flag=wx.ALIGN_LEFT)
+    analysis_sizer.Add(analysis_combo, flag=wx.ALIGN_LEFT)
+    analysis_sizer.AddStretchSpacer()
+    # Initialize Sensitivity sizer
+    sensitivity_sizer.AddStretchSpacer()
+    sensitivity_sizer.Add(sensitivity_label, flag=wx.ALIGN_LEFT)
+    sensitivity_sizer.Add(sensitivity_combo, flag=wx.ALIGN_LEFT)
+    sensitivity_sizer.AddStretchSpacer()
+    # Layout combo sizers
+    combo_sizer.AddStretchSpacer()
+    combo_sizer.Add(analysis_sizer, flag=wx.CENTER)
+    combo_sizer.AddStretchSpacer()
+    combo_sizer.Add(sensitivity_sizer, flag=wx.CENTER)
+    combo_sizer.AddStretchSpacer()
+
+    # Results folder selection button handling
+    results_label = wx.StaticText(options_panel, wx.ID_ANY, label="Select Results Folder:")
+    results_dir_dialog = wx.DirPickerCtrl(options_panel, wx.ID_ANY, message="Select Results Folder",
+                                            style=wx.DIRP_DEFAULT_STYLE)
+
+    # Completion button initialization
+    completion_sizer = wx.BoxSizer(wx.HORIZONTAL)
+    cancelBtn = wx.Button(options_panel, wx.ID_CANCEL, label="Cancel")
+    okBtn = wx.Button(options_panel, wx.ID_ANY, label="Ok")
+    completion_sizer.Add(cancelBtn, flag=wx.ALIGN_LEFT)
+    completion_sizer.Add(okBtn, flag=wx.ALIGN_LEFT)
+    # Bind ok button to handler
+    def okBtnHandler(event):
+        path = results_dir_dialog.GetPath()
+        if os.path.isdir(path):
+            options_dialog.EndModal(wx.ID_OK)
+        else:
+            try:
+                os.mkdir(path)
+                options_dialog.EndModal(wx.ID_OK)
+            except Exception as e:
+                error_dialog = wx.MessageDialog(options_dialog, str(e), "Directory Create Error")
+                error_dialog.CenterOnScreen()
+                error_dialog.ShowModal()
+    options_dialog.Bind(wx.EVT_BUTTON, okBtnHandler, okBtn)
+
+    # Final initialization of dialog's sizer
+    options_sizer.AddStretchSpacer()
+    options_sizer.Add(combo_sizer, flag=wx.CENTER)
+    options_sizer.AddStretchSpacer()
+    options_sizer.Add(results_label, flag=wx.CENTER)
+    options_sizer.Add(results_dir_dialog, flag=wx.CENTER)
+    options_sizer.AddStretchSpacer()
+    options_sizer.Add(completion_sizer, flag=wx.CENTER)
+    options_sizer.AddStretchSpacer()
+
+    options_panel.SetSizerAndFit(options_sizer)
+    options_panel.Refresh()
+    options_dialog.CenterOnScreen()
+    result = options_dialog.ShowModal()
+
+    if result == wx.ID_OK:
+        results_dir = results_dir_dialog.GetPath()
+        sensitive_func = sensitivity_option_map[sensitivity_combo.GetStringSelection()]
+        analysis_func = analysis_option_map[analysis_combo.GetStringSelection()]
+    else:
+        pass # Window purposfully closed (hopefully)
+
+    return results_dir, sensitive_func, analysis_func
