@@ -250,9 +250,9 @@ class PlotData:
 
         self.get_error_text().AppendText("Done." + '\n')
 
-    class __SensitivityOption:
-        Complexity = ("Complexity Analysis", None)
+    class __SensitivityOption(Enum):
         Scale = ("Scale-sensitive Analysis", None)
+        Complexity = ("Complexity Analysis", None)
         def __init__(self, label, func):
             self.label = label
             self.func = func
@@ -307,28 +307,63 @@ class PlotData:
 
         # TODO: Create popup that takes in scale-sensitive/complexity option, form of scale analysis, as well as
         #       the directory for storing the results files.
-        width = 1200
-        height = 1000
+        width = 600
+        height = 250
         options_dialog = wx.Dialog(__main__.frame, wx.ID_ANY, "Surface Import Options", size=(width, height))
-        options_panel = wx.Frame(options_dialog, wx.ID_ANY)
+        options_panel = wx.Panel(options_dialog, wx.ID_ANY)
+        options_sizer = wx.BoxSizer(wx.VERTICAL)
 
+        def getTypeCombo(enum):
+            choices = []
+            for choice in enum:
+                choices.append(choice.label)
+            return wx.ComboBox(options_panel, wx.ID_OK, choices[0],
+                                              style=wx.CB_SIMPLE | wx.CB_READONLY,
+                                              choices=choices)
         # Analysis Type Selection
-        analysis_choices = []
-        for choice in PlotData.__AnalysisOption:
-            analysis_choices.append(choice.label)
-        analysis_type_combo = wx.ComboBox(options_panel, wx.ID_OK, analysis_choices[0], pos=((width/4, height/4)),
-                                          style=wx.CB_SIMPLE | wx.CB_READONLY,
-                                          choices=analysis_choices)
+        analysis_label = wx.StaticText(options_panel, wx.ID_ANY, label="Analysis Type:")
+        analysis_combo = getTypeCombo(PlotData.__AnalysisOption)
+
+        # Sensitivity Type Selection
+        sensitivity_label = wx.StaticText(options_panel, wx.ID_ANY, label="Sensitivity Type:")
+        sensitivity_combo = getTypeCombo(PlotData.__SensitivityOption)
+
+        # Initialize sizer for both combo boxes
+        combo_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        analysis_sizer = wx.BoxSizer(wx.VERTICAL)
+        sensitivity_sizer = wx.BoxSizer(wx.VERTICAL)
+        # Initialize Analyasis sizer
+        analysis_sizer.AddStretchSpacer()
+        analysis_sizer.Add(analysis_label, flag=wx.ALIGN_LEFT)
+        analysis_sizer.Add(analysis_combo, flag=wx.ALIGN_LEFT)
+        analysis_sizer.AddStretchSpacer()
+        # Initialize Sensitivity sizer
+        sensitivity_sizer.AddStretchSpacer()
+        sensitivity_sizer.Add(sensitivity_label, flag=wx.ALIGN_LEFT)
+        sensitivity_sizer.Add(sensitivity_combo, flag=wx.ALIGN_LEFT)
+        sensitivity_sizer.AddStretchSpacer()
+        # Layout combo sizers
+        combo_sizer.AddStretchSpacer()
+        combo_sizer.Add(analysis_sizer, flag=wx.CENTER)
+        combo_sizer.AddStretchSpacer()
+        combo_sizer.Add(sensitivity_sizer, flag=wx.CENTER)
+        combo_sizer.AddStretchSpacer()
+        
 
         # Results folder selection button handling
-        results_dir_str = "Select Results Folder"
-        resutls_dir_dialog = wx.DirPickerCtrl(options_panel, wx.ID_ANY, path="",
-                                              message=results_dir_str, pos=(width/2, height/2),# size=DefaultSize,
+        results_label = wx.StaticText(options_panel, wx.ID_ANY, label="Select Results Folder:")
+        results_dir_dialog = wx.DirPickerCtrl(options_panel, wx.ID_ANY, message="Select Results Folder",
                                               style=wx.DIRP_DEFAULT_STYLE)
 
-        options_panel.Fit()
+        options_sizer.AddStretchSpacer()
+        options_sizer.Add(combo_sizer, flag=wx.CENTER)
+        options_sizer.AddStretchSpacer()
+        options_sizer.Add(results_label, flag=wx.CENTER)
+        options_sizer.Add(results_dir_dialog, flag=wx.CENTER)
+        options_sizer.AddStretchSpacer()
+
+        options_panel.SetSizerAndFit(options_sizer)
         options_panel.Refresh()
-        options_dialog.Layout()
         options_dialog.CenterOnScreen()
         result = options_dialog.ShowModal()
 
