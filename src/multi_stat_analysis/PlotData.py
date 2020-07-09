@@ -261,9 +261,9 @@ class PlotData:
             return
 
         # Store directory locations for external cmds and mountains template
-        cmd_path = os.getcwd() + "temp-cmds.txt"
+        cmd_path = os.path.join(os.sep, os.getcwd(), "temp-cmds.txt")
         tmplt_path = _Resources.resource_path("ssfa-template.mnt")
-        if os.path.exists(tmplt_path):
+        if not os.path.exists(tmplt_path):
             raise Exception("Could not find mountains template file at " + tmplt_path)
 
         # Store directory location for mountains executable
@@ -278,11 +278,16 @@ class PlotData:
                 "AUTOSAVE OFF",
                 "SUBSTITUTE_STUDIABLE \"" + surf_file_path + "\" 1 MULTILAYER_MODE=-1",
             ]
-            cmd_file.writelines(cmd_contents)
+            cmd_file.write("\n".join(cmd_contents))
             cmd_file.close()
 
             # Launch Mountains
-            subprocess.call(mountains_path + " /NOSPLASHCREEN /CMDFILE:\"" + cmd_path + "\"")
+            launch_cmd = mountains_path + "/CMDFILE:\"" + cmd_path + "\" /NOSPLASHCREEN "
+            print(launch_cmd)
+            subprocess.call(launch_cmd)
+
+            #while True:
+            #    pass
 
             # Remove temporary script files
             #subprocess.call(["rm -f \"" + cmd_path + "\""])

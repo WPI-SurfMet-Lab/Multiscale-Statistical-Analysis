@@ -118,6 +118,9 @@ def OnRegression(event):
             tree_menu.Refresh()
     except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
         error_txt.AppendText("Graph: " + str(e) + '\n')
+        if __debug__:
+            import traceback
+            traceback.print_exc()
 
 # function to get the x-regression values
 def OnData(event):
@@ -149,6 +152,9 @@ def OnDiscrimTests(test_choice):
         dlg = selected_test_func(frame, data, error_txt, tree_menu, selectedID)
     except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
         error_txt.AppendText(test_str + " " + str(e) + '\n')
+        if __debug__:
+            import traceback
+            traceback.print_exc()
 
     dlg.CenterOnScreen()
     dlg.ShowModal()
@@ -197,7 +203,10 @@ def OnScalePlot(plot_choice):
         tree_menu.AppendItem(parent=selectedID, text=menu_text, data=gdlg)
         tree_menu.Refresh()
     except (RuntimeError, ZeroDivisionError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
-         error_txt.AppendText(plot_str + " " + str(e) + '\n')
+        error_txt.AppendText(plot_str + " " + str(e) + '\n')
+        if __debug__:
+            import traceback
+            traceback.print_exc()
 
 # function to create the scale area plot
 def OnAreaPlot(event):
@@ -314,6 +323,9 @@ def OnOpen(event):
             output = False
     except (Exception) as e:
         error_txt.AppendText("File Open: " + str(e) + '\n')
+        if __debug__:
+            import traceback
+            traceback.print_exc()
     finally:
         frame.EnableCloseButton(True)
         return output
