@@ -255,19 +255,15 @@ class PlotData:
         length-scale, area-scale, or complexity analysis. These results are then record in various text files which are
         then opened seperatly."""
 
-        results_dir, sensitive_func, analysis_func = get_surface_options()
+        result_file_paths, result_file_names, sensitive_func, analysis_func = get_surface_options(file_paths)
         # If the options were not selected, end file opening prematurely
-        if not (results_dir and sensitive_func and analysis_func):
+        if not (result_file_paths and result_file_names and sensitive_func and analysis_func):
             return
 
-        wd = os.getcwd() + "\\"
-        cmd_path = wd + "temp-cmds.txt"
+        cmd_path = os.getcwd() + "temp-cmds.txt"
         tmplt_path = _Resources.resource_path("ssfa-template.mnt")
-        result_file_paths = []
 
         for surf_file_path in file_paths :
-            # Generate name for results file to be used
-            sub()
             # Write external command file for MountainsMap
             cmd_file = open(cmd_path, "w")
             cmd_contents = [
@@ -275,7 +271,6 @@ class PlotData:
                 "LOAD_DOCUMENT \"" + tmplt_path + "\"",
                 "AUTOSAVE OFF",
                 "SUBSTITUTE_STUDIABLE \"" + surf_file_path + "\" 1 MULTILAYER_MODE=-1",
-                "EXPORT_RESULTS \"" + result_path + "\"",
                 "QUIT"
             ]
             cmd_file.writelines(cmd_contents)
@@ -330,12 +325,13 @@ class AnalysisOption(Enum):
         global analysis_option_map
         analysis_option_map[label] = func
 
-def get_surface_options() :
+def get_surface_options(file_paths) :
     """Create surface import options selection. This includes specifying scale/complexity sensitivity,
     the type of surface analysis being done, as well as the directory for saving the analysis data.
-    @return results_dir, sensitive_func, analysis_func"""
-
-    results_dir = None
+    @return resultFilePaths, resultFileNames, sensitive_func, analysis_func"""
+    resultFilePaths = None
+    resultFileNames = None
+    resultsDir = None
     sensitive_func = None
     analysis_func = None
 
@@ -346,9 +342,7 @@ def get_surface_options() :
     options_sizer = wx.BoxSizer(wx.VERTICAL)
 
     def getTypeCombo(enum):
-        choices = []
-        for choice in enum:
-            choices.append(choice.label)
+        choices  = [choice.label for choice in enum]
         return wx.ComboBox(options_panel, wx.ID_OK, choices[0],
                                             style=wx.CB_SIMPLE | wx.CB_READONLY,
                                             choices=choices)
@@ -392,22 +386,59 @@ def get_surface_options() :
     okBtn = wx.Button(options_panel, wx.ID_ANY, label="Ok")
     completion_sizer.Add(cancelBtn, flag=wx.ALIGN_LEFT)
     completion_sizer.Add(okBtn, flag=wx.ALIGN_LEFT)
+
     # Bind ok button to handler
     def okBtnHandler(event):
         try:
-            path = results_dir_dialog.GetPath()
-            if os.path.isabs(path):
-                if os.path.isdir(path):
-                    options_dialog.EndModal(wx.ID_OK)
+            resultsDir = results_dir_dialog.GetPath()
+            if os.path.isabs(resultsDir):
+                if os.path.isdir(resultsDir):
+                    # Build new file path based on given surface files and results dir
+                    result_file_paths = []
+                    result_file_names = []
+                    already_exists = []
+                    for index, surfName in enumerate(file_paths):
+                        surfName = os.path.normpath(surfName) # Remove stray/double slashes
+                        surfName = os.path.splitext(surfName)[0] # Remove file extension
+                        surfName = os.path.basename(surfName) # Grab file name
+                        surf_new_ext = surfName + ".txt"
+                        # Add to file name lists
+                        result_file_names.append(surfName)
+                        result_file_paths.append(os.path.join(os.sep, resultsDir, surf_new_ext))
+                        # Create file overwrite dialog if file already exists
+                        if os.path.exists(result_file_paths[index]):
+                            already_exists.append(surf_new_ext)
+
+                    # Display overwrite dialog
+                    if already_exists:
+                        #print(already_exists)
+                        existsStr = ["\n\t" + file_name for file_name in already_exists]
+                        existsStr = "".join(existsStr)
+                        print(existsStr)
+                        overwrite_dialog = wx.MessageDialog(__main__.frame, 
+                            "Files already exist in this directory. "
+                            "Are you sure you want to overwrite these files?\n" + existsStr,
+                            style=wx.YES_NO|wx.ICON_WARNING)
+                        overwrite_choice = overwrite_dialog.ShowModal()
+                        if overwrite_choice == wx.ID_YES:
+                            pass
+                        else:
+                            resultsDir = None
+                            resultFilePaths = None
+                            resultFileNames = None
+                    else:
+                        options_dialog.EndModal(wx.ID_OK)
                 else:
-                    os.mkdir(path)
+                    os.mkdir(resultsDir)
                     options_dialog.EndModal(wx.ID_OK)
             else:
                 raise Exception("Invalid path given. Path needs to be absolute.")
         except Exception as e:
+            import traceback
             error_dialog = wx.MessageDialog(options_dialog, str(e), "Directory Path Error", style=wx.ICON_ERROR)
             error_dialog.CenterOnScreen()
             error_dialog.ShowModal()
+            resultsDir = None
     options_dialog.Bind(wx.EVT_BUTTON, okBtnHandler, okBtn)
 
     # Final initialization of dialog's sizer
@@ -426,10 +457,9 @@ def get_surface_options() :
     result = options_dialog.ShowModal()
 
     if result == wx.ID_OK:
-        results_dir = results_dir_dialog.GetPath()
         sensitive_func = sensitivity_option_map[sensitivity_combo.GetStringSelection()]
         analysis_func = analysis_option_map[analysis_combo.GetStringSelection()]
     else:
         pass # Window purposfully closed (hopefully)
 
-    return results_dir, sensitive_func, analysis_func
+    return resultFilePaths, resultFileNames, sensitive_func, analysis_func
