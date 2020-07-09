@@ -7,12 +7,12 @@ import numpy as np
 import pyautogui
 import winreg
 from re import sub
-import winreg
 from wx import TextCtrl, TreeCtrl
 from wx.grid import Grid
 from Workbook import Workbook
 import _Resources
 from enum import Enum
+import subprocess
 
 # Class PlotData:
 # the purpose of this class is to create an object which stores all of the data opened from files as well as user inputs
@@ -260,8 +260,14 @@ class PlotData:
         if not (result_file_paths and result_file_names and sensitive_func and analysis_func):
             return
 
+        # Store directory locations for external cmds and mountains template
         cmd_path = os.getcwd() + "temp-cmds.txt"
         tmplt_path = _Resources.resource_path("ssfa-template.mnt")
+        if os.path.exists(tmplt_path):
+            raise Exception("Could not find mountains template file at " + tmplt_path)
+
+        # Store directory location for mountains executable
+        mountains_path = _Resources.find_mountains_map()
 
         for surf_file_path in file_paths :
             # Write external command file for MountainsMap
@@ -271,16 +277,15 @@ class PlotData:
                 "LOAD_DOCUMENT \"" + tmplt_path + "\"",
                 "AUTOSAVE OFF",
                 "SUBSTITUTE_STUDIABLE \"" + surf_file_path + "\" 1 MULTILAYER_MODE=-1",
-                "QUIT"
             ]
             cmd_file.writelines(cmd_contents)
             cmd_file.close()
 
             # Launch Mountains
-            # subprocess.call()
+            subprocess.call(mountains_path + " /NOSPLASHCREEN /CMDFILE:\"" + cmd_path + "\"")
 
             # Remove temporary script files
-            subprocess.call(["rm -f \"" + cmd_path + "\""])
+            #subprocess.call(["rm -f \"" + cmd_path + "\""])
 
         # Open generated result text files
         open_file2(result_file_paths)
@@ -389,56 +394,63 @@ def get_surface_options(file_paths) :
 
     # Bind ok button to handler
     def okBtnHandler(event):
+        successful = False
         try:
+            nonlocal resultFilePaths,resultFileNames,resultsDir
             resultsDir = results_dir_dialog.GetPath()
             if os.path.isabs(resultsDir):
                 if os.path.isdir(resultsDir):
                     # Build new file path based on given surface files and results dir
-                    result_file_paths = []
-                    result_file_names = []
                     already_exists = []
+                    resultFilePaths = []
+                    resultFileNames = []
                     for index, surfName in enumerate(file_paths):
                         surfName = os.path.normpath(surfName) # Remove stray/double slashes
                         surfName = os.path.splitext(surfName)[0] # Remove file extension
                         surfName = os.path.basename(surfName) # Grab file name
                         surf_new_ext = surfName + ".txt"
-                        # Add to file name lists
-                        result_file_names.append(surfName)
-                        result_file_paths.append(os.path.join(os.sep, resultsDir, surf_new_ext))
+                        # Add to file lists
+                        resultFilePaths.append(os.path.join(os.sep, resultsDir, surf_new_ext))
+                        resultFileNames.append(surfName)
                         # Create file overwrite dialog if file already exists
-                        if os.path.exists(result_file_paths[index]):
+                        if os.path.exists(resultFilePaths[index]):
                             already_exists.append(surf_new_ext)
 
                     # Display overwrite dialog
                     if already_exists:
-                        #print(already_exists)
                         existsStr = ["\n\t" + file_name for file_name in already_exists]
                         existsStr = "".join(existsStr)
-                        print(existsStr)
                         overwrite_dialog = wx.MessageDialog(__main__.frame, 
                             "Files already exist in this directory. "
                             "Are you sure you want to overwrite these files?\n" + existsStr,
                             style=wx.YES_NO|wx.ICON_WARNING)
                         overwrite_choice = overwrite_dialog.ShowModal()
                         if overwrite_choice == wx.ID_YES:
-                            pass
+                            successful = True # Overwrite was accepted, directory accepted
                         else:
-                            resultsDir = None
-                            resultFilePaths = None
-                            resultFileNames = None
+                            pass # Overwrite was denied, do nothing
                     else:
-                        options_dialog.EndModal(wx.ID_OK)
-                else:
+                        successful = True # No issues occured, directory accepted
+                else: # Create new directory to save files, directory accepted
                     os.mkdir(resultsDir)
-                    options_dialog.EndModal(wx.ID_OK)
+                    successful = True
             else:
                 raise Exception("Invalid path given. Path needs to be absolute.")
         except Exception as e:
-            import traceback
+            if __debug__:
+                import traceback
+                traceback.print_exc()
             error_dialog = wx.MessageDialog(options_dialog, str(e), "Directory Path Error", style=wx.ICON_ERROR)
             error_dialog.CenterOnScreen()
             error_dialog.ShowModal()
-            resultsDir = None
+        finally:
+            # Handle return condition for ok button
+            if successful:
+                options_dialog.EndModal(wx.ID_OK)
+            else:
+                resultsDir = None
+                resultFilePaths = []
+                resultFileNames = []
     options_dialog.Bind(wx.EVT_BUTTON, okBtnHandler, okBtn)
 
     # Final initialization of dialog's sizer
