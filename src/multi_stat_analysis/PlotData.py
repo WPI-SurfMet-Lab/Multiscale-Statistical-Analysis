@@ -256,6 +256,9 @@ class PlotData:
         then opened seperatly."""
 
         results_dir, sensitive_func, analysis_func = get_surface_options()
+        # If the options were not selected, end file opening prematurely
+        if not (results_dir and sensitive_func and analysis_func):
+            return
 
         wd = os.getcwd() + "\\"
         cmd_path = wd + "temp-cmds.txt"
@@ -391,17 +394,20 @@ def get_surface_options() :
     completion_sizer.Add(okBtn, flag=wx.ALIGN_LEFT)
     # Bind ok button to handler
     def okBtnHandler(event):
-        path = results_dir_dialog.GetPath()
-        if os.path.isdir(path):
-            options_dialog.EndModal(wx.ID_OK)
-        else:
-            try:
-                os.mkdir(path)
-                options_dialog.EndModal(wx.ID_OK)
-            except Exception as e:
-                error_dialog = wx.MessageDialog(options_dialog, str(e), "Directory Create Error")
-                error_dialog.CenterOnScreen()
-                error_dialog.ShowModal()
+        try:
+            path = results_dir_dialog.GetPath()
+            if os.path.isabs(path):
+                if os.path.isdir(path):
+                    options_dialog.EndModal(wx.ID_OK)
+                else:
+                    os.mkdir(path)
+                    options_dialog.EndModal(wx.ID_OK)
+            else:
+                raise Exception("Invalid path given. Path needs to be absolute.")
+        except Exception as e:
+            error_dialog = wx.MessageDialog(options_dialog, str(e), "Directory Path Error", style=wx.ICON_ERROR)
+            error_dialog.CenterOnScreen()
+            error_dialog.ShowModal()
     options_dialog.Bind(wx.EVT_BUTTON, okBtnHandler, okBtn)
 
     # Final initialization of dialog's sizer
