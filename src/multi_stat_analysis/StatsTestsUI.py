@@ -87,15 +87,17 @@ class FtestDialog(wx.Dialog):
             self.set_res_list([])
 
             d = []
+            # Used as confidence level (percentage) as a function of scale (collected from means square ratio)
             alpha = float(self.get_selectedAlpha())
             # default tails for the f-test this is a statistics thing which I figured wasnt a big deal right now
             # code is commented out but this can be selected by the user
-            tails = 'two (σ1 = σ2)'
             # typ = self.get_selectedType()
+            tails = 'two (σ1 = σ2)'
             outlier = self.get_selectedOutlier()
             # the following code is to perform the F-test on every scale if there is more than one data set selected in the
             # data selection area. If there is only one in each an F-test will be performed to compare all of the relative areas
             # of the data set.
+            # TODO: Confirm if surface is being split for only two surfaces (#74)
             if len(self.get_group_selection().get_group1_choices()) == 1 and len(self.get_group_selection().get_group2_choices()) == 1:
 
                 d = self.get_f_data1()
@@ -267,6 +269,7 @@ class FtestDialog(wx.Dialog):
 
         return f_data
 
+    # The tail's refer to the edges of bell shaped curve (in terms of variation from mean)
     def F_Tail_helper(self, alpha, data, num_data, f1, f2):
         var = []
         mean = []
