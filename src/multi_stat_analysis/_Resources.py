@@ -1,15 +1,40 @@
 import sys, os, winreg
+from typing import Optional
+from ctypes import wintypes, windll, create_unicode_buffer
 
+__resource_paths = {}
 def resource_path(relative_path):
     """Get absolute path to resource, works for normal file handling and for PyInstaller.
-    Found from this stackoverflow page: 
+    Based on answer from stackoverflow page: 
     https://stackoverflow.com/questions/5227107/python-code-to-read-registry."""
+
+    # If path has already been found (resouces cannot move), return it
+    global __resource_paths
+    if relative_path in __resource_paths:
+        return __resource_paths[relative_path]
+
     try:
         # PyInstaller creates a temp folder and stores path in _MEIPASS
         base_path = sys._MEIPASS
     except Exception:
-        base_path = os.getcwd()
-    return os.path.join(os.sep, base_path, relative_path)
+        base_path = os.path.join(os.sep, os.getcwd(), "resources")
+
+    path = os.path.join(os.sep, base_path, relative_path)
+    if not os.path.exists(path):
+        raise FileNotFoundError("Could not find resource " + path)
+
+    return path
+
+def get_foreground_window_title():
+    hWnd = windll.user32.GetForegroundWindow()
+    length = windll.user32.GetWindowTextLengthW(hWnd)
+    buf = create_unicode_buffer(length + 1)
+    windll.user32.GetWindowTextW(hWnd, buf, length + 1)
+    # 1-liner alternative: return buf.value if buf.value else None
+    if buf.value:
+        return buf.value
+    else:
+        return None
 
 __mountains_path = None
 def find_mountains_map() -> str:
