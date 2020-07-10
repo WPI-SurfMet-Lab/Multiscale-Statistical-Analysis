@@ -255,42 +255,51 @@ class PlotData:
         length-scale, area-scale, or complexity analysis. These results are then record in various text files which are
         then opened seperatly."""
 
-        result_file_paths, result_file_names, sensitive_func, analysis_func = get_surface_options(file_paths)
+        results_dir, result_file_paths, result_file_names, mnts_interact_funcs = get_surface_options(file_paths)
+        if __debug__:
+            print(results_dir, result_file_paths, result_file_names, mnts_interact_funcs)
+
         # If the options were not selected, end file opening prematurely
-        if not (result_file_paths and result_file_names and sensitive_func and analysis_func):
+        if not (results_dir and result_file_paths and result_file_names and mnts_interact_funcs):
             return
 
         # Store directory locations for external cmds and mountains template
         cmd_path = os.path.join(os.sep, os.getcwd(), "temp-cmds.txt")
         tmplt_path = _Resources.resource_path("ssfa-template.mnt")
         if not os.path.exists(tmplt_path):
-            raise Exception("Could not find mountains template file at " + tmplt_path)
+            raise FileNotFoundError("Could not find mountains template file at " + tmplt_path)
 
         # Store directory location for mountains executable
         mountains_path = _Resources.find_mountains_map()
 
-        for surf_file_path in file_paths :
+        # Minimize all windows
+        pyautogui.keyDown('')
+
+        mnts_instances = []
+        # Generate result files for each selected surface
+        for i, surf_file_path in enumerate(file_paths) :
             # Write external command file for MountainsMap
-            cmd_file = open(cmd_path, "w")
-            cmd_contents = [
-                "SHOW",
-                "LOAD_DOCUMENT \"" + tmplt_path + "\"",
-                "AUTOSAVE OFF",
-                "SUBSTITUTE_STUDIABLE \"" + surf_file_path + "\" 1 MULTILAYER_MODE=-1",
-            ]
-            cmd_file.write("\n".join(cmd_contents))
-            cmd_file.close()
+            with open(cmd_path, "w") as cmd_file :
+                cmd_contents = [
+                    "SHOW",
+                    "LOAD_DOCUMENT \"" + tmplt_path + "\"",
+                    "AUTOSAVE OFF",
+                    "SUBSTITUTE_STUDIABLE \"" + surf_file_path + "\" 1 MULTILAYER_MODE=-1",
+                ]
+                cmd_file.write("\n".join(cmd_contents))
+            # Launch Mountains for this current surface
+            mnts_instances.append(subprocess.Popen(
+                mountains_path, "/CMDFILE:\"" + cmd_path + "\"", "/NOSPLASHCREEN"))
+            # Start up and 
+            init_mountains()
 
-            # Launch Mountains
-            launch_cmd = mountains_path + "/CMDFILE:\"" + cmd_path + "\" /NOSPLASHCREEN "
-            print(launch_cmd)
-            subprocess.call(launch_cmd)
-
-            #while True:
-            #    pass
-
-            # Remove temporary script files
-            #subprocess.call(["rm -f \"" + cmd_path + "\""])
+        # Interact with Mountains and generate the result files
+        for i in range(len(result_file_paths)) :
+            mnts_interact_funcs[i]()
+            mnts_instances[i].kill() # Terminate this instance of mountains, current job complete
+            mnts_instances[i].wait() # Wait to see if this instance of mountains has terminated
+            if not os.path.exists(result_file_paths[i]):
+                raise FileNotFoundError("Could not find results file " + result_file_paths[i])
 
         # Open generated result text files
         open_file2(result_file_paths)
@@ -314,16 +323,79 @@ class PlotData:
     def get_strings(self): return self.strings
     def set_strings(self, string): self.strings = string
 
+def init_mountains():
+    """Use keyboard to startup MountainsMap"""
+    # Open windows tab menu, and move to the back of the list where Mountains will be
+    pyautogui.keyDown('alt')
+    pyautogui.keyDown('shift')
+    pyautogui.press('tab')
+    pyautogui.press('enter')
+    # Release keys
+    pyautogui.keyUp('alt')
+    pyautogui.keyUp('shift')
+
+def select_ssfa_graph():
+    """Highlight SSFA graph"""
+    pyautogui.press('tab')
+    pyautogui.press('tab')
+
+def unselect_ssfa_graph():
+    """Stop selecting current selection"""
+    pyautogui.press('esc')
+
+def interact_func(index, sensitivity_func, analysis_func):
+    """Defines how the mouse and keyboard will interact with MountainsMap"""
+    from time import sleep
+    # Open windows tab menu, move to the window corresponding to the surface
+    # file being interacted with
+    pyautogui.keyDown('alt')
+    [pyautogui.press('tab') for i in range(index)]
+    pyautogui.keyUp('alt')
+    sleep(5)
+
+    # Select sensitivity and analysis options
+    sensitivity_func()
+    sleep(5)
+    analysis_func()
+    sleep(5)
+
+    # Export result files
+    pyautogui.click(721, 269)
+
+
+def select_scale_sensitivity():
+    """Select scale-sensitivity option"""
+    select_ssfa_graph()
+    pyautogui.click(434,85)
+    unselect_ssfa_graph()
+
+def select_complexity():
+    """Select complexity option"""
+    select_ssfa_graph()
+    pyautogui.click(508,85)
+    unselect_ssfa_graph()
 
 sensitivity_option_map = {}
 class SensitivityOption(Enum):
-    Scale = ("Scale-sensitive Analysis", 1)
-    Complexity = ("Complexity Analysis", 2)
+    Scale = ("Scale-sensitive Analysis", select_scale_sensitivity)
+    Complexity = ("Complexity Analysis", select_complexity)
     def __init__(self, label, func):
         self.label = label
         self.func = func
         global sensitivity_option_map
         sensitivity_option_map[label] = func
+
+def select_length_analysis():
+    """Select length analysis option"""
+    select_ssfa_graph()
+    pyautogui.click(434,85)
+    unselect()
+
+def select_area_analysis():
+    """Select area analysis option"""
+    select_ssfa_graph()
+    pyautogui.click(508,85)
+    unselect()
 
 analysis_option_map = {}
 class AnalysisOption(Enum):
@@ -335,15 +407,46 @@ class AnalysisOption(Enum):
         global analysis_option_map
         analysis_option_map[label] = func
 
+def get_results_path_name(file_paths, results_dir, sensitive_func, analysis_func):
+    """Given the list of surface files and a results directory,
+    generate the corresponding list of new file names and paths.
+    Also generates mountains interaction functions."""
+    file_count = len(file_paths)
+    result_paths = []
+    result_names = []
+    mountains_interact_funcs = []
+    for index, surfName in enumerate(file_paths):
+        surfName = os.path.normpath(surfName) # Remove stray/double slashes
+        surfName = os.path.splitext(surfName)[0] # Remove file extension
+        surfName = os.path.basename(surfName) # Grab file name
+        # Add to file lists
+        result_paths.append(os.path.join(os.sep, results_dir, surfName + ".txt"))
+        result_names.append(surfName)
+
+
+    return result_paths, result_names, mountains_interact_funcs
+
+class OverwriteDialog(wx.MessageDialog):
+    """Dialog box to be displayed to give the user the option
+    to overwrite the given existing files"""
+    def __init__(self, parent, existing_files):
+        existsStr = ["\n\t" + file_name for file_name in existing_files]
+        existsStr = "".join(existsStr)
+        wx.MessageDialog.__init__(self, __main__.frame, 
+            "Files already exist in this directory. Are you sure "
+            "you want to overwrite these files?\n" + existsStr,
+            style=wx.YES_NO|wx.ICON_WARNING)
+
 def get_surface_options(file_paths) :
     """Create surface import options selection. This includes specifying scale/complexity sensitivity,
     the type of surface analysis being done, as well as the directory for saving the analysis data.
-    @return resultFilePaths, resultFileNames, sensitive_func, analysis_func"""
-    resultFilePaths = None
-    resultFileNames = None
-    resultsDir = None
-    sensitive_func = None
-    analysis_func = None
+    @param file_paths - List of surface file paths that will be analyzed into result files.
+    @return results_dir, result_file_paths, result_file_names, mnts_interact_funcs. 
+            Array indexes line up with given file_paths."""
+    result_file_paths = None
+    result_file_names = None
+    results_dir = None
+    mnts_interact_funcs = None
 
     width = 600
     height = 250
@@ -399,48 +502,50 @@ def get_surface_options(file_paths) :
 
     # Bind ok button to handler
     def okBtnHandler(event):
-        successful = False
+        """Handles generation of result file names and mountains interaction functions
+        when the user pressed the "ok" button."""
         try:
-            nonlocal resultFilePaths,resultFileNames,resultsDir
-            resultsDir = results_dir_dialog.GetPath()
-            if os.path.isabs(resultsDir):
-                if os.path.isdir(resultsDir):
-                    # Build new file path based on given surface files and results dir
-                    already_exists = []
-                    resultFilePaths = []
-                    resultFileNames = []
-                    for index, surfName in enumerate(file_paths):
-                        surfName = os.path.normpath(surfName) # Remove stray/double slashes
-                        surfName = os.path.splitext(surfName)[0] # Remove file extension
-                        surfName = os.path.basename(surfName) # Grab file name
-                        surf_new_ext = surfName + ".txt"
-                        # Add to file lists
-                        resultFilePaths.append(os.path.join(os.sep, resultsDir, surf_new_ext))
-                        resultFileNames.append(surfName)
-                        # Create file overwrite dialog if file already exists
-                        if os.path.exists(resultFilePaths[index]):
-                            already_exists.append(surf_new_ext)
+            # Get Output from combo box and directory picker
+            sensitive_func = sensitivity_option_map[sensitivity_combo.GetStringSelection()]
+            analysis_func = analysis_option_map[analysis_combo.GetStringSelection()]
+            selected_results_dir = results_dir_dialog.GetPath()
 
-                    # Display overwrite dialog
-                    if already_exists:
-                        existsStr = ["\n\t" + file_name for file_name in already_exists]
-                        existsStr = "".join(existsStr)
-                        overwrite_dialog = wx.MessageDialog(__main__.frame, 
-                            "Files already exist in this directory. "
-                            "Are you sure you want to overwrite these files?\n" + existsStr,
-                            style=wx.YES_NO|wx.ICON_WARNING)
-                        overwrite_choice = overwrite_dialog.ShowModal()
-                        if overwrite_choice == wx.ID_YES:
-                            successful = True # Overwrite was accepted, directory accepted
-                        else:
-                            pass # Overwrite was denied, do nothing
-                    else:
-                        successful = True # No issues occured, directory accepted
-                else: # Create new directory to save files, directory accepted
-                    os.mkdir(resultsDir)
-                    successful = True
-            else:
+            # If the given directory is relative, do not use it
+            if not os.path.isabs(selected_results_dir):
                 raise Exception("Invalid path given. Path needs to be absolute.")
+                return
+
+            # Files could possibly be overwritten if the directory already exists
+            overwriteSearch = False
+            if os.path.isdir(selected_results_dir):
+                overwriteSearch = True
+            else: # Create new directory to save files, directory accepted
+                os.mkdir(selected_results_dir)
+
+            # Build new file path based on given surface files and results dir
+            new_file_paths, new_file_names, new_mountains_funcs = \
+                get_results_path_name(file_paths, selected_results_dir, sensitive_func, analysis_func)
+
+            # Possibly overwrite check was requested
+            already_exists = []
+            if overwriteSearch:
+                # Go through possibly file names and confirm if these files already exist
+                for i, path in enumerate(new_file_paths):
+                    if os.path.exists(path):
+                        already_exists.append(new_file_names[i])
+                # Display overwrite dialog if needed
+                if already_exists:
+                    overwrite_dialog = OverwriteDialog(options_dialog, already_exists)
+                    # If the user requests to not overwrite these files, end early
+                    if not overwrite_dialog.ShowModal() == wx.ID_YES:
+                        return
+
+            nonlocal result_file_paths, result_file_names, results_dir
+            results_dir = selectedResultsDir
+            result_file_paths = new_file_paths
+            result_file_names = new_file_names
+            mountainsInteractFuncs = new_mountains_funcs
+            options_dialog.EndModal(wx.ID_OK)
         except Exception as e:
             if __debug__:
                 import traceback
@@ -448,14 +553,7 @@ def get_surface_options(file_paths) :
             error_dialog = wx.MessageDialog(options_dialog, str(e), "Directory Path Error", style=wx.ICON_ERROR)
             error_dialog.CenterOnScreen()
             error_dialog.ShowModal()
-        finally:
-            # Handle return condition for ok button
-            if successful:
-                options_dialog.EndModal(wx.ID_OK)
-            else:
-                resultsDir = None
-                resultFilePaths = []
-                resultFileNames = []
+    # Bind button handler to "Ok" button
     options_dialog.Bind(wx.EVT_BUTTON, okBtnHandler, okBtn)
 
     # Final initialization of dialog's sizer
@@ -473,10 +571,4 @@ def get_surface_options(file_paths) :
     options_dialog.CenterOnScreen()
     result = options_dialog.ShowModal()
 
-    if result == wx.ID_OK:
-        sensitive_func = sensitivity_option_map[sensitivity_combo.GetStringSelection()]
-        analysis_func = analysis_option_map[analysis_combo.GetStringSelection()]
-    else:
-        pass # Window purposfully closed (hopefully)
-
-    return resultFilePaths, resultFileNames, sensitive_func, analysis_func
+    return results_dir, result_file_paths, result_file_names, mnts_interact_funcs
