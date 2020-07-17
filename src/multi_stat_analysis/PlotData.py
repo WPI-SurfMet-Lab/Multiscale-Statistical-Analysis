@@ -213,25 +213,21 @@ class PlotData:
         add_data = {(start - 1, 0): s[3][0]}
 
         for num in range(start + 1, len(self.get_results_scale()) + 1 + start):
-
-            add_data.__setitem__((num, 0), self.get_results_scale()[num - (1 + start)])
+            add_data[(num, 0)] = self.get_results_scale()[num - (1 + start)]
 
         for num in range(2, 2*len(self.get_legend_txt()) + 1, 2):
-
-            add_data.__setitem__((start, int(num - 1)), self.get_legend_txt()[int(num / 2) - 1][:len(self.get_legend_txt()[int(num / 2) - 1]) - 4])
+            add_data[(start, int(num - 1))] = self.get_legend_txt()[int(num / 2) - 1][:len(self.get_legend_txt()[int(num / 2) - 1]) - 4]
             # relative area
-            add_data.__setitem__((start - 1, num - 1), s[3][1])
-            add_data.__setitem__((start, int(num)), self.get_legend_txt()[int(num / 2) - 1][:len(self.get_legend_txt()[int(num / 2) - 1]) - 4])
+            add_data[(start - 1, num - 1)] = s[3][1]
+            add_data[(start, int(num))] = self.get_legend_txt()[int(num / 2) - 1][:len(self.get_legend_txt()[int(num / 2) - 1]) - 4]
             # Fractal complexity
-            add_data.__setitem__((start - 1, num), s[3][2])
+            add_data[(start - 1, num)] = s[3][2]
 
             for i in range(start + 1, len(self.get_relative_area()[int(num / 2) - 1]) + 1 + start):
-
-                add_data.__setitem__((i, int(num - 1)), self.get_relative_area()[int(num / 2) - 1][i - (1 + start)])
+                add_data[(i, int(num - 1))] = self.get_relative_area()[int(num / 2) - 1][i - (1 + start)]
 
             for i in range(start + 1, len(self.get_complexity()[int(num / 2) - 1]) + 1 + start):
-
-                add_data.__setitem__((i, int(num)), self.get_complexity()[int(num / 2) - 1][i - (1 + start)])
+                add_data[(i, int(num))] = self.get_complexity()[int(num / 2) - 1][i - (1 + start)]
 
         self.wb.set_data(add_data)
         self.get_grid().SetTable(self.wb)

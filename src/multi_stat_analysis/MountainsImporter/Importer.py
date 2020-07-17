@@ -128,10 +128,10 @@ def import_surfaces(file_paths):
         if mnts_instance is not None:
             pyautogui.press('esc')
             pyautogui.hotkey('alt', 'f4')
-            pyautogui.hotkey('alt', 'f4')
+            pyautogui.press('enter')
             mnts_instance.kill()
             mnts_instance.wait()
-        ## Delete temporary directory
+        # Delete temporary directory
         #if temp_dir is not None:
         #    shutil.rmtree(temp_dir, ignore_errors=False)
 
