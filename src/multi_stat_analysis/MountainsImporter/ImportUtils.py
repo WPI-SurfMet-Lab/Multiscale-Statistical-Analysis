@@ -15,6 +15,7 @@ class ResourceFiles:
     ANALYSIS_OPTION_BTN = "analysis-method.png"
 
     EXPORT_BTN = "export-curve.png"
+    SAVE_BTN = "save-curve.png"
 
 def append_to_path(end_str, prefix=os.getcwd()):
     """Joins the given end string to the end of the file path prefix."""
@@ -70,7 +71,7 @@ def click_resource(relative_path, wait=True):
 def get_foreground_window_rect(window_title):
     """Using given window title, find window coordinates.
     @return (top_left_x, top_left_y, btm_right_x, btm_right_y)"""
-    hWnd = windll.user32.FindWindowW(0, window_title)
+    hWnd = windll.user32.FindWindowW(None, window_title)
     rect = wintypes.RECT()
     windll.user32.GetWindowRect(hWnd, pointer(rect))
     if rect is None:

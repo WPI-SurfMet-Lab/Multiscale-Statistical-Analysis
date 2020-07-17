@@ -6,11 +6,11 @@ import pyautogui
 from multiprocessing import Process, Pipe
 from enum import Enum
 
-_CMDS_FILE_NAME = "temp-cmds.txt"
+_CMDS_FILE_NAME = "-temp-cmds.txt"
 
-_DELAY = 2
-_PYAUTOGUI_ACTION_DELAY = 1
-_FILE_DIALOG_TAB_INTERVAL = 1
+_DELAY = 1
+_PYAUTOGUI_ACTION_DELAY = 0.05
+_FILE_DIALOG_TAB_INTERVAL = 0.05
 
 def import_surfaces(file_paths):
     """Takes an input of an array of strings for the file path of each surface being analyzed. These surfaces are
@@ -19,56 +19,62 @@ def import_surfaces(file_paths):
     @return result_file_paths - Set to None if import could not continue"""
     orig_FAILSAFE = pyautogui.FAILSAFE
     orig_PAUSE = pyautogui.PAUSE
-    pyautogui.FAILSAFE = False
-    pyautogui.PAUSE = _PYAUTOGUI_ACTION_DELAY
 
     mnts_instance = None
     temp_dir = None
+    output = None
+
+    # Collect user selected configuration from import options dialog
+    options_dialog = ImportOptionsDialog(file_paths)
+    options_dialog.CenterOnScreen()
+    options_dialog.ShowModal()
+
+    # Get output from dialog
+    result_file_paths = options_dialog.get_result_file_paths()
+    mnts_processes = options_dialog.get_mnts_processes()
+    if __debug__:
+        print(mnts_processes)
+
+    # If the options were not selected, end file opening prematurely
+    if not (result_file_paths and mnts_processes):
+        return None
+
+    # Delete old result files if they exist
+    for file in result_file_paths:
+        if os.path.exists(file):
+            os.remove(file)
+
+    # Create temporary directory
+    temp_dir = ImportUtils.append_to_path(".temp")
+    if not os.path.exists(temp_dir):
+        os.mkdir(temp_dir)
+
+    # Store directory locations for mountains template
+    tmplt_path = ImportUtils.resource_abs_path(ResourceFiles.SSFA_TEMPLATE)
+
+    # Store directory location for mountains executable
+    mountains_path = ImportUtils.find_mountains_map()
+
+    # Store directory locations for mountains external commands file
+    # Uses time in the file name to prevent accidental usage of this file
+    cmd_path = ImportUtils.append_to_path(str(time.time_ns()) + _CMDS_FILE_NAME)
 
     # Catch errors while assuming control of keyboard/mouse with pyautogui
     try:
-        # Collect user selected configuration from import options dialog
-        options_dialog = ImportOptionsDialog(file_paths)
-        options_dialog.CenterOnScreen()
-        options_dialog.ShowModal()
-
-        # Get output from dialog
-        result_file_paths = options_dialog.get_result_file_paths()
-        mnts_processes = options_dialog.get_mnts_processes()
-        if __debug__:
-            print(mnts_processes)
-
-        # If the options were not selected, end file opening prematurely
-        if not (mnts_processes):
-            return None
-
-        # Create temporary directory
-        temp_dir = ImportUtils.append_to_path(".temp")
-        if os.path.exists(temp_dir):
-            shutil.rmtree(temp_dir, ignore_errors=False)
-        os.mkdir(temp_dir)
-
-        # Store directory locations for mountains template
-        tmplt_path = ImportUtils.resource_abs_path(ResourceFiles.SSFA_TEMPLATE)
-
-        # Store directory location for mountains executable
-        mountains_path = ImportUtils.find_mountains_map()
-
-        # Store directory locations for mountains external commands file
-        # Uses time in the file name to prevent accidental usage of this file
-        cmd_path = ImportUtils.append_to_path(_CMDS_FILE_NAME + str(time.time_ns()))
+        # Initialize pyautogui
+        pyautogui.FAILSAFE = False
+        pyautogui.PAUSE = _PYAUTOGUI_ACTION_DELAY
 
         # Launch Mountains for surfaces
         mnts_instance = subprocess.Popen("\"" + mountains_path + "\"" + \
-            " /CMDFILE:\"" + cmd_path + "\" /NOSPLASHCREEN", shell=True)
-        # Handle MountainsMap startup window
-        ImportUtils.click_resource(ResourceFiles.START_MNTS_BTN)
+            " /CMDFILE:\"" + cmd_path + "\" /NOSPLASHCREEN", shell=False)
 
         # Generate result files for each selected surface
         for i, surf_file_path in enumerate(file_paths) :
             # Generate temporary 
             surf_name = mnts_processes[i].get_file_name()
-            surf_tmplt_path = ImportUtils.append_to_path(surf_name + "-tmplt.mnt", temp_dir)
+            surf_tmplt_path = ImportUtils.append_to_path(
+                str(time.time_ns()) + "-" + surf_name + "-tmplt.mnt", temp_dir)
             shutil.copyfile(tmplt_path, surf_tmplt_path)
             # Write external command file for MountainsMap
             with open(cmd_path, "w") as cmd_file :
@@ -81,37 +87,48 @@ def import_surfaces(file_paths):
                 ]
                 cmd_file.write("\n".join(cmd_contents))
 
+            # Handle MountainsMap startup window
+            if i <= 0:
+                ImportUtils.click_resource(ResourceFiles.START_MNTS_BTN)
+
             # Use Mountains and generate given surface file
             mnts_process = mnts_processes[i]
             excep_recv = mnts_process.get_exception_recv()
             mnts_process.start()
 
-            # While interaction is being run, check that failsafe is not being triggered
+            # Used to check that failsafe is not being triggered
             while mnts_process.is_alive():
                 # Kill thread if failsafe was triggered
                 x, y = pyautogui.position()
                 print(x,y)
                 if x == 0 and y == 0:
-                    mnts_process.terminate()
+                    mnts_process.kill()
                     raise Exception("Terminating import prematurly. Failsafe triggered.")
+
                 # Terminate alive check if exception occured during runtime
                 exception = excep_recv.recv()
                 if not exception is None:
                     e, tb = exception
                     print(tb)
                     raise e
+
+        # Set output to generated result file paths
+        output = result_file_paths
     finally:
         # Terminate this instance of mountains, current job complete
-        mnts_instance.terminate()
-        mnts_instance.wait()
+        if mnts_instance is not None:
+            mnts_instance.kill()
+            mnts_instance.wait()
         # Delete temporary directory
-        shutil.rmtree(temp_dir, ignore_errors=False)
+        if temp_dir is not None:
+            shutil.rmtree(temp_dir, ignore_errors=False)
+
         # Revert pyautogui to old settings
         pyautogui.FAILSAFE = orig_FAILSAFE
         pyautogui.PAUSE = orig_PAUSE
 
     # Output generated result files
-    return result_file_paths
+    return output
 
 class MountainsProcess(Process):
     """Using the given result file destination and MountainsMap interaction function,
@@ -122,7 +139,7 @@ class MountainsProcess(Process):
       [1] - Traceback to print out"""
     def __init__(self, result_file_path, file_dir, file_name,
                  sensitivity_func, analysis_func_wrapper):
-        super().__init__(target=self.interact_func)
+        Process.__init__(self, target=self.interact_func)
         self.result_file_path = result_file_path
         self.file_dir = file_dir
         self.file_name = file_name
@@ -143,24 +160,34 @@ class MountainsProcess(Process):
         except Exception as e:
             self.excep_write.send((e, traceback.format_exc()))
         print("Process terminated.")
+        self.terminate()
 
     def option_select_export_func(self):
         """Defines how the mouse and keyboard will interact with MountainsMap"""
-        
-        # Wait for template document to load
         window_title = ""
-        while not self.file_name in window_title:
+        window_rect = ()
+        top_left_x = top_left_y = btm_right_x = btm_right_y = 0
+        # Wait for template document to load
+        while True:
+            # Get current title of current MountainsMap window
             window_title = ImportUtils.get_foreground_window_title()
             # If a title could not be found, set it to be blank
             if window_title is None:
                 window_title = ""
-            print(window_title)
-            time.sleep(0.5)
+            # Check if template document has loaded with correct file name
+            if not self.file_name in window_title:
+                # Check to make sure the current window position is not (0,0,0,0)
+                # If it is (0,0,0,0), then window still needs to be initialized
+                window_rect = ImportUtils.get_foreground_window_rect(window_title)
+                if not window_rect == (0,0,0,0):
+                    break
+            # Add delay to prevent excesive usage of this loop
+            time.sleep(0.01)
+
         # Give time for finishing loading process
         time.sleep(1.0)
         # Get point at center of screen
-        top_left_x, top_left_y, btm_right_x, btm_right_y = ImportUtils.get_foreground_window_rect(window_title)
-        print(top_left_x, top_left_y, btm_right_x, btm_right_y)
+        top_left_x, top_left_y, btm_right_x, btm_right_y = [abs(coord) for coord in window_rect]
         pos = ((btm_right_x - top_left_x)//2 + top_left_x,
                (btm_right_y - top_left_y)//2 + top_left_y)
         # Select ssfa graph
@@ -202,16 +229,12 @@ class MountainsProcess(Process):
         pyautogui.press('enter')
         if __debug__:
             print("Entered file directory")
-            time.sleep(10)
-        # Highlight enter button
-        pyautogui.keyDown('shift')
-        pyautogui.press('tab', presses=4, interval=_FILE_DIALOG_TAB_INTERVAL)
-        pyautogui.keyUp('shift')
+            time.sleep(_DELAY)
+        # Press save button
+        #pyautogui.press('enter')
+        ImportUtils.click_resource(ResourceFiles.SAVE_BTN)
         if __debug__:
-            time.sleep(10)
-        pyautogui.press('enter')
-        if __debug__:
-            print("Opened file editor")
+            print("Saved result file")
             time.sleep(_DELAY)
         # Exit file editor
         pyautogui.hotkey('alt', 'f4')
