@@ -57,7 +57,7 @@ def import_surfaces(file_paths):
 
     # Store directory locations for mountains external commands file
     # Uses time in the file name to prevent accidental usage of this file
-    cmd_path = ImportUtils.append_to_path(str(time.time_ns()) + _CMDS_FILE_NAME)
+    cmd_path = ImportUtils.append_to_path(str(time.time_ns()) + _CMDS_FILE_NAME, temp_dir)
 
     # Catch errors while assuming control of keyboard/mouse with pyautogui
     try:
@@ -67,7 +67,7 @@ def import_surfaces(file_paths):
 
         # Launch Mountains for surfaces
         mnts_instance = subprocess.Popen("\"" + mountains_path + "\"" + \
-            " /CMDFILE:\"" + cmd_path + "\" /NOSPLASHCREEN", shell=False)
+            " /CMDFILE:\"" + cmd_path + "\" /NOSPLASHCREEN", shell=True)
 
         # Generate result files for each selected surface
         for i, surf_file_path in enumerate(file_paths) :
@@ -79,6 +79,7 @@ def import_surfaces(file_paths):
             # Write external command file for MountainsMap
             with open(cmd_path, "w") as cmd_file :
                 cmd_contents = [
+                    "STOP_ON_ERROR OFF",
                     "SHOW",
                     "MESSAGES OFF",
                     "LOAD_DOCUMENT \"" + surf_tmplt_path + "\"",
@@ -97,7 +98,7 @@ def import_surfaces(file_paths):
             mnts_process.start()
 
             # Used to check that failsafe is not being triggered
-            while mnts_process.is_alive():
+            while True:
                 # Kill thread if failsafe was triggered
                 x, y = pyautogui.position()
                 print(x,y)
@@ -109,19 +110,30 @@ def import_surfaces(file_paths):
                 exception = excep_recv.recv()
                 if not exception is None:
                     e, tb = exception
-                    print(tb)
-                    raise e
+                    # If end process exception was thrown, leave failsafe check loop
+                    if isinstance(e, MountainsProcess.EndProcessException):
+                        break
+                    # Otherwise, a normal exception was thrown
+                    else:
+                        print(tb)
+                        raise e
+
+            # End MountainsMap interact process, no longer needed
+            mnts_process.kill()
 
         # Set output to generated result file paths
         output = result_file_paths
     finally:
         # Terminate this instance of mountains, current job complete
         if mnts_instance is not None:
+            pyautogui.press('esc')
+            pyautogui.hotkey('alt', 'f4')
+            pyautogui.hotkey('alt', 'f4')
             mnts_instance.kill()
             mnts_instance.wait()
-        # Delete temporary directory
-        if temp_dir is not None:
-            shutil.rmtree(temp_dir, ignore_errors=False)
+        ## Delete temporary directory
+        #if temp_dir is not None:
+        #    shutil.rmtree(temp_dir, ignore_errors=False)
 
         # Revert pyautogui to old settings
         pyautogui.FAILSAFE = orig_FAILSAFE
@@ -139,28 +151,32 @@ class MountainsProcess(Process):
       [1] - Traceback to print out"""
     def __init__(self, result_file_path, file_dir, file_name,
                  sensitivity_func, analysis_func_wrapper):
-        Process.__init__(self, target=self.interact_func)
+        Process.__init__(self, target=MountainsProcess.interact_func, args=(self,))
         self.result_file_path = result_file_path
         self.file_dir = file_dir
         self.file_name = file_name
         self.sensitivity_func = sensitivity_func
         self.analysis_func_wrapper = analysis_func_wrapper
         self.excep_recv, self.excep_write = Pipe(False)
-        print("Initializeed process.")
+
+    class EndProcessException(Exception):
+        """Exception thrown when the process ends sucessfully."""
+        def __init__(self):
+            super().__init__()
 
     def interact_func(self):
-        print("Running interact_func()...")
         try:
+            print(self)
             # Generate results file from scale-sensitive fractal analysis
             self.option_select_export_func()
             # Throw exception if the results file was not correctly generated
             if not os.path.exists(self.result_file_path):
                 raise FileNotFoundError("Could not find results file " + self.result_file_path +
                                         ". Terminating early.")
+            # Process has terminated
+            raise MountainsProcess.EndProcessException()
         except Exception as e:
             self.excep_write.send((e, traceback.format_exc()))
-        print("Process terminated.")
-        self.terminate()
 
     def option_select_export_func(self):
         """Defines how the mouse and keyboard will interact with MountainsMap"""
@@ -168,26 +184,33 @@ class MountainsProcess(Process):
         window_rect = ()
         top_left_x = top_left_y = btm_right_x = btm_right_y = 0
         # Wait for template document to load
-        while True:
+        while ImportUtils.find_resource(ResourceFiles.EXPORT_BTN, wait=False) is None:
+            # Add delay to prevent excesive usage of this loop
+            time.sleep(0.01)
             # Get current title of current MountainsMap window
             window_title = ImportUtils.get_foreground_window_title()
             # If a title could not be found, set it to be blank
             if window_title is None:
-                window_title = ""
+                continue
+
             # Check if template document has loaded with correct file name
             if not self.file_name in window_title:
-                # Check to make sure the current window position is not (0,0,0,0)
-                # If it is (0,0,0,0), then window still needs to be initialized
-                window_rect = ImportUtils.get_foreground_window_rect(window_title)
-                if not window_rect == (0,0,0,0):
-                    break
-            # Add delay to prevent excesive usage of this loop
-            time.sleep(0.01)
+                continue
+
+            # Check to make sure the current window position is not (0,0,0,0)
+            # If it is (0,0,0,0), then window still needs to be initialized
+            window_rect = ImportUtils.get_foreground_window_rect(window_title)
+            if window_rect == (0,0,0,0):
+                continue
+
+            # Set window dimension values and leave loop
+            top_left_x, top_left_y, btm_right_x, btm_right_y = window_rect
+            break
 
         # Give time for finishing loading process
         time.sleep(1.0)
         # Get point at center of screen
-        top_left_x, top_left_y, btm_right_x, btm_right_y = [abs(coord) for coord in window_rect]
+        top_left_x, top_left_y, btm_right_x, btm_right_y = window_rect
         pos = ((btm_right_x - top_left_x)//2 + top_left_x,
                (btm_right_y - top_left_y)//2 + top_left_y)
         # Select ssfa graph
@@ -309,7 +332,7 @@ class AnalysisOption(Enum):
         # Assign label to function map
         global _analysis_option_map
         # Assign analysis option function
-        _analysis_option_map[label] = AnalysisOptionFuncWrapper(len(_analysis_option_map))
+        _analysis_option_map[label] = AnalysisOptionFuncWrapper(len(_analysis_option_map) + 1)
 
 class ImportOptionsDialog(wx.Dialog):
     """Create surface import options selection. This includes specifying scale/complexity sensitivity,

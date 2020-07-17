@@ -49,14 +49,19 @@ def find_resource(relative_path, wait=True, func=None):
     """Using a path to a resource image file, wait for that image to appear.
     A function can then be called while waiting.
     @return pos - center Point of object being clicked. Return None if position was not found"""
+    pos = None
     while True:
+        time.sleep(0.01)
         pos = pyautogui.locateCenterOnScreen(resource_abs_path(relative_path))
-        if not pos is None or not wait:
+        # Don't wait if wait is False
+        if not wait:
+            break
+        # Resource image was found, return position
+        if not pos is None:
             return pos
-
+        # Run the given function if possible
         if not func is None:
             func()
-        time.sleep(0.01)
     # If resource could not be found somehow, return None
     return pos
 
