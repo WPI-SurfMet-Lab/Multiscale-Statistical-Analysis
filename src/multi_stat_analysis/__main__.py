@@ -298,7 +298,7 @@ def OnOpen(event):
         # create the open file dialog
         openFileDialog = wx.FileDialog(frame, "Open",
                                        wildcard=
-                                       "MountainsMap Surface Files (*.sur)|*.sur|"    
+                                       "MountainsMap Surface Files|*|"
                                        "Comma Seperated Values - UTF-8 (*.csv)|*.csv|"
                                        "Text File (*.txt)|*.txt",
                                        style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST | wx.FD_MULTIPLE)
@@ -314,9 +314,9 @@ def OnOpen(event):
             # opens the file and reads it
             if filepath[0][len(filepath[0]) - 3:len(filepath[0])] == 'csv':
                 data.open_file(filepath)
-            if filepath[0][len(filepath[0]) - 3:len(filepath[0])] == 'txt':
+            elif filepath[0][len(filepath[0]) - 3:len(filepath[0])] == 'txt':
                 data.open_file2(filepath)
-            if filepath[0][len(filepath[0]) - 3:len(filepath[0])] == 'sur':
+            else:
                 data.open_sur(filepath)
             output = True
         elif result == wx.ID_CANCEL:
@@ -383,7 +383,6 @@ def OnSave(event):
             sheet = file.worksheets[0]
 
             for item in zip(cells, values):
-
                 sheet.cell(row=item[0][0] + 1, column=item[0][1] + 1).value = str(item[1])
 
             file.save(filepath)
