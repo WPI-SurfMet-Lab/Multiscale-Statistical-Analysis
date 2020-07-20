@@ -295,12 +295,16 @@ def OnOpen(event):
     frame.EnableCloseButton(False)
     output = False
     try:
+        # File dialog choices
+        data = tree_menu.GetItemData(getPlotDataID())
+        choices = [
+                ("MountainsMap Surface Files|*", data.open_sur),
+                ("MountainsMap Results Text Files (*.txt)|*.txt", data.open_file2),
+                ("Sfrax CSV Results - UTF-8 (*.csv)|*.csv", data.open_file)
+            ]
         # create the open file dialog
         openFileDialog = wx.FileDialog(frame, "Open",
-                                       wildcard=
-                                       "MountainsMap Surface Files|*|"
-                                       "Comma Seperated Values - UTF-8 (*.csv)|*.csv|"
-                                       "Text File (*.txt)|*.txt",
+                                       wildcard="|".join([choice[0] for choice in choices]),
                                        style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST | wx.FD_MULTIPLE)
         openFileDialog.CenterOnScreen()
         # shows the dialog on screen
@@ -308,17 +312,13 @@ def OnOpen(event):
         # only opens the file if 'open' in dialog is pressed otherwise if 'cancel' in dialog is pressed closes dialog
         if result == wx.ID_OK:
             # gets the file path
+            selection_index = openFileDialog.GetCurrentlySelectedFilterIndex()
             filepath = openFileDialog.GetPaths()
-            data = tree_menu.GetItemData(getPlotDataID())
 
-            # opens the file and reads it
-            if filepath[0][len(filepath[0]) - 3:len(filepath[0])] == 'csv':
-                data.open_file(filepath)
-            elif filepath[0][len(filepath[0]) - 3:len(filepath[0])] == 'txt':
-                data.open_file2(filepath)
-            else:
-                data.open_sur(filepath)
+            # Handle the opening and reading of the selected files
+            choices[selection_index][1](filepath)
             output = True
+
         elif result == wx.ID_CANCEL:
             output = False
     except (Exception) as e:
