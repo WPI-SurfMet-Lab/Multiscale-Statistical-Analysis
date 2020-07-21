@@ -3,10 +3,11 @@ import MountainsImporter.ImportUtils as ImportUtils
 from MountainsImporter.ImportUtils import ResourceFiles
 import wx, os, subprocess, time, traceback, shutil
 import pyautogui
-from multiprocessing import Process, Pipe
+from multiprocessing import Process, Queue
 from enum import Enum
 
 _CMDS_FILE_NAME = "-temp-cmds.txt"
+_TMPLT_FILE_NAME = "-ssfa-tmplt.mnt"
 
 _DELAY = 1
 _PYAUTOGUI_ACTION_DELAY = 0.05
@@ -71,21 +72,21 @@ def import_surfaces(file_paths):
 
         # Generate result files for each selected surface
         for i, surf_file_path in enumerate(file_paths) :
-            # Generate temporary 
-            surf_name = mnts_processes[i].get_file_name()
-            surf_tmplt_path = ImportUtils.append_to_path(
-                str(time.time_ns()) + "-" + surf_name + "-tmplt.mnt", temp_dir)
-            shutil.copyfile(tmplt_path, surf_tmplt_path)
             # Write external command file for MountainsMap
             with open(cmd_path, "w") as cmd_file :
-                cmd_contents = [
-                    "STOP_ON_ERROR OFF",
-                    "SHOW",
-                    "MESSAGES OFF",
-                    "LOAD_DOCUMENT \"" + surf_tmplt_path + "\"",
-                    "AUTOSAVE OFF",
-                    "SUBSTITUTE_STUDIABLE \"" + surf_file_path + "\" 1 MULTILAYER_MODE=-1",
-                ]
+                cmd_contents = []
+                # If the command file has not been created yet, include extra initialization commands
+                if i == 0:
+                    cmd_contents = [
+                        "STOP_ON_ERROR OFF",
+                        "SHOW",
+                        "MESSAGES OFF",
+                        "LOAD_DOCUMENT \"" + tmplt_path + "\"",
+                        "AUTOSAVE OFF"
+                    ]
+                # Add substitution command to file
+                cmd_contents.append("SUBSTITUTE_STUDIABLE \"" + surf_file_path + "\" 1 MULTILAYER_MODE=7")
+                # Create command file
                 cmd_file.write("\n".join(cmd_contents))
 
             # Handle MountainsMap startup window
@@ -94,20 +95,21 @@ def import_surfaces(file_paths):
 
             # Use Mountains and generate given surface file
             mnts_process = mnts_processes[i]
-            excep_recv = mnts_process.get_exception_recv()
+            excep_queue = mnts_process.get_excep_queue()
             mnts_process.start()
 
             # Used to check that failsafe is not being triggered
             while True:
                 # Kill thread if failsafe was triggered
                 x, y = pyautogui.position()
-                print(x,y)
                 if x == 0 and y == 0:
                     mnts_process.kill()
                     raise Exception("Terminating import prematurly. Failsafe triggered.")
 
                 # Terminate alive check if exception occured during runtime
-                exception = excep_recv.recv()
+                exception = None
+                if not excep_queue.empty():
+                    exception = excep_queue.get()
                 if not exception is None:
                     e, tb = exception
                     # If end process exception was thrown, leave failsafe check loop
@@ -157,7 +159,7 @@ class MountainsProcess(Process):
         self.file_name = file_name
         self.sensitivity_func = sensitivity_func
         self.analysis_func_wrapper = analysis_func_wrapper
-        self.excep_recv, self.excep_write = Pipe(False)
+        self.excep_queue = Queue()
 
     class EndProcessException(Exception):
         """Exception thrown when the process ends sucessfully."""
@@ -165,8 +167,13 @@ class MountainsProcess(Process):
             super().__init__()
 
     def interact_func(self):
+        orig_FAILSAFE = pyautogui.FAILSAFE
+        orig_PAUSE = pyautogui.PAUSE
         try:
+            pyautogui.FAILSAFE = False
+            pyautogui.PAUSE = _PYAUTOGUI_ACTION_DELAY
             print(self)
+
             # Generate results file from scale-sensitive fractal analysis
             self.option_select_export_func()
             # Throw exception if the results file was not correctly generated
@@ -176,13 +183,16 @@ class MountainsProcess(Process):
             # Process has terminated
             raise MountainsProcess.EndProcessException()
         except Exception as e:
-            self.excep_write.send((e, traceback.format_exc()))
+            self.excep_queue.put((e, traceback.format_exc()))
+        finally:
+            pyautogui.FAILSAFE = orig_FAILSAFE
+            pyautogui.PAUSE = orig_PAUSE
 
     def option_select_export_func(self):
         """Defines how the mouse and keyboard will interact with MountainsMap"""
         window_title = ""
-        window_rect = ()
         top_left_x = top_left_y = btm_right_x = btm_right_y = 0
+        window_center = (0,0)
         # Wait for template document to load
         while ImportUtils.find_resource(ResourceFiles.EXPORT_BTN, wait=False) is None:
             # Add delay to prevent excesive usage of this loop
@@ -194,27 +204,31 @@ class MountainsProcess(Process):
                 continue
 
             # Check if template document has loaded with correct file name
-            if not self.file_name in window_title:
+            if not ResourceFiles.SSFA_TEMPLATE in window_title:
                 continue
 
             # Check to make sure the current window position is not (0,0,0,0)
             # If it is (0,0,0,0), then window still needs to be initialized
             window_rect = ImportUtils.get_foreground_window_rect(window_title)
-            if window_rect == (0,0,0,0):
+            if window_rect is None or window_rect == (0,0,0,0):
                 continue
 
             # Set window dimension values and leave loop
             top_left_x, top_left_y, btm_right_x, btm_right_y = window_rect
+            # Get point at center of screen
+            window_center = ((btm_right_x - top_left_x)//2 + top_left_x,
+                             (btm_right_y - top_left_y)//2 + top_left_y)
+            # If point is at failsafe position, recalculate center
+            if window_center == (0,0):
+                continue
+
+            # Window center has been found, break out of init loop
             break
 
         # Give time for finishing loading process
         time.sleep(1.0)
-        # Get point at center of screen
-        top_left_x, top_left_y, btm_right_x, btm_right_y = window_rect
-        pos = ((btm_right_x - top_left_x)//2 + top_left_x,
-               (btm_right_y - top_left_y)//2 + top_left_y)
         # Select ssfa graph
-        pyautogui.click(*pos)
+        pyautogui.click(*window_center)
         time.sleep(_DELAY)
         if __debug__:
             print("Selected graph")
@@ -264,7 +278,7 @@ class MountainsProcess(Process):
         if __debug__:
             print("Closed file editor")
 
-    def get_exception_recv(self): return self.excep_recv
+    def get_excep_queue(self): return self.excep_queue
     def get_file_name(self): return self.file_name
 
 def get_results_data(file_paths, results_dir, sensitive_func, analysis_func_wrapper):
