@@ -68,7 +68,7 @@ def import_surfaces(file_paths):
 
         # Launch Mountains for surfaces
         mnts_instance = subprocess.Popen("\"" + mountains_path + "\"" + \
-            " /CMDFILE:\"" + cmd_path + "\" /NOSPLASHCREEN", shell=True)
+            " /CMDFILE:\"" + cmd_path + "\" /NOSPLASHCREEN")
 
         # Generate result files for each selected surface
         for i, surf_file_path in enumerate(file_paths) :
@@ -128,14 +128,11 @@ def import_surfaces(file_paths):
     finally:
         # Terminate this instance of mountains, current job complete
         if mnts_instance is not None:
-            pyautogui.press('esc')
-            pyautogui.hotkey('alt', 'f4')
-            pyautogui.press('enter')
             mnts_instance.kill()
             mnts_instance.wait()
         # Delete temporary directory
-        #if temp_dir is not None:
-        #    shutil.rmtree(temp_dir, ignore_errors=False)
+        if temp_dir is not None:
+            shutil.rmtree(temp_dir, ignore_errors=False)
 
         # Revert pyautogui to old settings
         pyautogui.FAILSAFE = orig_FAILSAFE

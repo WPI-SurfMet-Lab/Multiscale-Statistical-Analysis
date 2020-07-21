@@ -3,6 +3,9 @@ import pyautogui
 from typing import Optional
 from ctypes import wintypes, windll, create_unicode_buffer, pointer
 
+__DEFAULT_TIMEOUT = 60.0
+__resource_paths = {}
+
 class ResourceFiles:
     SSFA_TEMPLATE = "ssfa-template.mnt"
     MULTI_STAT_TEMPLATE_INIT = "multi-stat-template-init.png"
@@ -21,7 +24,6 @@ def append_to_path(end_str, prefix=os.getcwd()):
     """Joins the given end string to the end of the file path prefix."""
     return os.path.join(os.sep, prefix, end_str)
 
-__resource_paths = {}
 def resource_abs_path(relative_path):
     """Get absolute path to resources, works for normal file handling and for PyInstaller.
     Based on answer from stackoverflow page: 
@@ -45,30 +47,44 @@ def resource_abs_path(relative_path):
 
     return path
 
-def find_resource(relative_path, wait=True, func=None):
+def find_resource(relative_path, timeout=__DEFAULT_TIMEOUT, wait=True, func=None):
     """Using a path to a resource image file, wait for that image to appear.
     A function can then be called while waiting.
     @return pos - center Point of object being clicked. Return None if position was not found"""
-    pos = None
+
+    end_time = time.time() + (0 if timeout is None else timeout)
+    print(timeout)
+    print(time.time())
+    print(end_time)
+    def timedout():
+        if timeout is None:
+            return False
+        else:
+            return time.time() >= end_time
+
     while True:
         time.sleep(0.01)
         pos = pyautogui.locateCenterOnScreen(resource_abs_path(relative_path))
-        # Don't wait if wait is False
-        if not wait:
-            break
         # Resource image was found, return position
         if not pos is None:
             return pos
         # Run the given function if possible
         if not func is None:
             func()
-    # If resource could not be found somehow, return None
-    return pos
+        # Don't wait if wait is False
+        if not wait:
+            break
+        # Throw exception if the timeout has occured
+        if timedout():
+            raise TimeoutError("Timeout has occured, could not find resource on screen.")
 
-def click_resource(relative_path, wait=True):
+    # Loop exited, resource could not be found, return None
+    return None
+
+def click_resource(relative_path, timeout=__DEFAULT_TIMEOUT, wait=True):
     """Using a path to a resource image file, wait for that image to appear, and then click on the screen.
     @return pos - center Point of object being clicked. Return None if position was not found"""
-    pos = find_resource(relative_path, wait)
+    pos = find_resource(relative_path, timeout, wait)
     if not pos is None:
         pyautogui.click(*pos)
     return pos
