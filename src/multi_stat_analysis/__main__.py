@@ -192,11 +192,10 @@ def OnScalePlot(plot_choice):
         error_txt.AppendText(plot_str + " No data given\n")
 
     gdlg = SclbyAreaDialog(frame, title, data.get_results_scale(),
-                             scale_func(),
+                             scale_func(data),
                              data.get_legend_txt(), data)
     if not y_label == None:
         gdlg.get_graph().get_axes().set_ylabel(y_label)
-        print(y_label)
 
     try:
         gdlg.get_graph().draw_plot()
@@ -298,8 +297,8 @@ def OnOpen(event):
         # File dialog choices
         data = tree_menu.GetItemData(getPlotDataID())
         choices = [
-                ("MountainsMap Surface Files|*", data.open_sur),
                 ("MountainsMap Results Text Files (*.txt)|*.txt", data.open_file2),
+                ("MountainsMap Surface Files|*", data.open_sur),
                 ("Sfrax CSV Results - UTF-8 (*.csv)|*.csv", data.open_file)
             ]
         # create the open file dialog

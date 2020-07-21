@@ -135,7 +135,7 @@ class PlotData:
         self.set_complexity([])
         self.set_strings([])
 
-        s = []
+        file_info_strs = []
 
         # iterates over each file path in the list of file paths opened by the user
         for i in file_paths:
@@ -174,9 +174,10 @@ class PlotData:
                         # if it is text a value error will be thrown here and is skipped
                         # otherwise check if the scale value is in the list of scales
                         scaleVal = np.sqrt(2*float(line[0]))
-                        if not np.round_(scaleVal, 4) in self.get_results_scale():
+                        scaleVal = np.round_(scaleVal, 4)
+                        if not scaleVal in self.get_results_scale():
                             # if not add the value to the list of scales
-                            self.get_results_scale().append(np.round_(scaleVal, 4))
+                            self.get_results_scale().append(scaleVal)
                             
                         # second value in the line is always relative area add to temp list
                         tempList.append(np.round_(float(line[1]), 4))
@@ -186,31 +187,37 @@ class PlotData:
                         dataFound = True
                     # throw and log errors
                     except ValueError as e:
-                        s.append(line)
+                        file_info_strs.append(line)
                         if dataFound :
                             self.get_error_text().AppendText("Open (" + openfile.name + ":" + str(lineNum) + "): " + str(e) + '\n')
                 # append temp lists to complexity and relative area lists
                 self.get_relative_area().append(tempList)
                 self.get_complexity().append(complexList)
-                self.set_strings(s)
-            # close the file recursively open the next file
-            openfile.close()
+                self.set_strings(file_info_strs)
 
         # iterate over all of the relative areas from each file at the same time
         # see example below
         for y_values in zip(*self.get_relative_area()):
-
             # the list of all relative areas at the same scale for the different data sets
             # these lists are then appended to regress sets such that
             # there is a list of relative areas for each scale.
             self.get_regress_sets().append(list(y_values))
 
-        # add data to workbook hopefully ----------------------------------------------------
-        [print(x) for x in s]
+        # add data to workbook ----------------------------------------------------
+        if __debug__:
+            [print(x) for x in file_info_strs]
 
-        start = 5
+        # Find row with data labels sections
+        label_row = 0
+        for i, row in enumerate(file_info_strs):
+            # First section contains the "scale of analysis" label, row has been found
+            if 'scale of analysis' in row[0].lower():
+                label_row = i
+                break
+
+        start = 1
         # scale of analysis
-        add_data = {(start - 1, 0): s[3][0]}
+        add_data = {(start - 1, 0): file_info_strs[label_row][0]}
 
         for num in range(start + 1, len(self.get_results_scale()) + 1 + start):
             add_data[(num, 0)] = self.get_results_scale()[num - (1 + start)]
@@ -218,10 +225,10 @@ class PlotData:
         for num in range(2, 2*len(self.get_legend_txt()) + 1, 2):
             add_data[(start, int(num - 1))] = self.get_legend_txt()[int(num / 2) - 1][:len(self.get_legend_txt()[int(num / 2) - 1]) - 4]
             # relative area
-            add_data[(start - 1, num - 1)] = s[3][1]
+            add_data[(start - 1, num - 1)] = file_info_strs[label_row][1]
             add_data[(start, int(num))] = self.get_legend_txt()[int(num / 2) - 1][:len(self.get_legend_txt()[int(num / 2) - 1]) - 4]
             # Fractal complexity
-            add_data[(start - 1, num)] = s[3][2]
+            add_data[(start - 1, num)] = file_info_strs[label_row][2]
 
             for i in range(start + 1, len(self.get_relative_area()[int(num / 2) - 1]) + 1 + start):
                 add_data[(i, int(num - 1))] = self.get_relative_area()[int(num / 2) - 1][i - (1 + start)]
@@ -243,7 +250,7 @@ class PlotData:
         if result_file_paths is None:
             return
         # Open generated result text files
-        PlotData.open_file2(result_file_paths)
+        self.open_file2(result_file_paths)
 
     def get_relative_area(self): return self.relative_area
     def get_results_scale(self): return self.results_scale
