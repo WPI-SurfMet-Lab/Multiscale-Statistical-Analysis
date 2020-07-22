@@ -110,6 +110,10 @@ def get_foreground_window_title():
     # Output possible found window title
     return buf.value if buf.value else None
 
+class MountainsNotFound(str):
+    def __init__(self):
+        super().__init__()
+
 _MOUNTAINS_PATH = None
 def find_mountains_map() -> str:
     """Get the absolute path to the MountainsMap executable. If it cannot be found,
@@ -141,7 +145,8 @@ def find_mountains_map() -> str:
         if __debug__:
             import traceback
             traceback.print_exc()
-        raise Exception("Could not find MountainsMap installation.")
+        _MOUNTAINS_PATH = MountainsNotFound()
+        raise FileNotFoundError("Could not find MountainsMap installation.")
     finally:
         return _MOUNTAINS_PATH
 
