@@ -1,8 +1,10 @@
 import __main__
 import MountainsImporter.ImportUtils as ImportUtils
-from MountainsImporter.ImportUtils import ResourceFiles
-import wx, os, subprocess, time, traceback, shutil
+from MountainsImporter.ImportUtils import ResourceFiles, TEMP_PATH
+import wx, os, time, traceback, shutil
 import pyautogui
+import multiprocessing
+from threading import Thread
 from multiprocessing import Process, Queue
 from enum import Enum
 
@@ -18,37 +20,43 @@ def import_surfaces(file_paths):
     input into MountainsMap using mouse and keyboard control. The user is then given a choice of selecting either
     length-scale, area-scale, or complexity analysis. These result file paths are then returned.
     @return result_file_paths - Set to None if import could not continue"""
+
+    # Display import information/requirements dialog
+    info_dialog = ImportInfoDialog(__main__.frame)
+    info_dialog.CenterOnScreen()
+    # If the dialog was closed or cancelled, leave import process
+    if not info_dialog.ShowModal() == wx.ID_OK:
+        return None
+
     orig_FAILSAFE = pyautogui.FAILSAFE
     orig_PAUSE = pyautogui.PAUSE
 
     mnts_instance = None
-    temp_dir = None
     output = None
 
     # Collect user selected configuration from import options dialog
-    options_dialog = ImportOptionsDialog(file_paths)
+    options_dialog = ImportOptionsDialog(__main__.frame, file_paths)
     options_dialog.CenterOnScreen()
-    options_dialog.ShowModal()
+    # If the dialog was closed or cancelled, leave import process
+    if not options_dialog.ShowModal() == wx.ID_OK:
+        return None
 
     # Get output from dialog
     result_file_paths = options_dialog.get_result_file_paths()
+    result_temp_paths = options_dialog.get_result_temp_paths()
     mnts_processes = options_dialog.get_mnts_processes()
     if __debug__:
         print(mnts_processes)
 
     # If the options were not selected, end file opening prematurely
-    if not (result_file_paths and mnts_processes):
+    if not (result_file_paths and result_temp_paths and mnts_processes):
         return None
 
-    # Delete old result files if they exist
-    for file in result_file_paths:
-        if os.path.exists(file):
-            os.remove(file)
-
+    # Delete directory/contents if temp folder already exists
+    if os.path.exists(TEMP_PATH):
+        shutil.rmtree(TEMP_PATH, ignore_errors=False)
     # Create temporary directory
-    temp_dir = ImportUtils.append_to_path(".temp")
-    if not os.path.exists(temp_dir):
-        os.mkdir(temp_dir)
+    os.mkdir(TEMP_PATH)
 
     # Store directory locations for mountains template
     tmplt_path = ImportUtils.resource_abs_path(ResourceFiles.SSFA_TEMPLATE)
@@ -56,9 +64,9 @@ def import_surfaces(file_paths):
     # Store directory location for mountains executable
     mountains_path = ImportUtils.find_mountains_map()
 
-    # Store directory locations for mountains external commands file
+    # Store directory location for mountains external commands script
     # Uses time in the file name to prevent accidental usage of this file
-    cmd_path = ImportUtils.append_to_path(str(time.time_ns()) + _CMDS_FILE_NAME, temp_dir)
+    cmd_path = ImportUtils.append_to_path(str(time.time_ns()) + _CMDS_FILE_NAME, TEMP_PATH)
 
     # Catch errors while assuming control of keyboard/mouse with pyautogui
     try:
@@ -67,28 +75,12 @@ def import_surfaces(file_paths):
         pyautogui.PAUSE = _PYAUTOGUI_ACTION_DELAY
 
         # Launch Mountains for surfaces
-        mnts_instance = subprocess.Popen("\"" + mountains_path + "\"" + \
-            " /CMDFILE:\"" + cmd_path + "\" /NOSPLASHCREEN")
+        mnts_instance = ImportUtils.MountainsProcess(cmd_path)
 
         # Generate result files for each selected surface
         for i, surf_file_path in enumerate(file_paths) :
             # Write external command file for MountainsMap
-            with open(cmd_path, "w") as cmd_file :
-                cmd_contents = []
-                # If the command file has not been created yet, include extra initialization commands
-                if i == 0:
-                    cmd_contents = [
-                        "STOP_ON_ERROR OFF",
-                        "SHOW",
-                        "MESSAGES OFF",
-                        "LOAD_DOCUMENT \"" + tmplt_path + "\"",
-                        "AUTOSAVE OFF"
-                    ]
-                # Add substitution command to file
-                cmd_contents.append("SUBSTITUTE_STUDIABLE \"" + surf_file_path + "\" 1 MULTILAYER_MODE=7")
-                # Create command file
-                cmd_file.write("\n".join(cmd_contents))
-
+            ImportUtils.write_mnts_surf_import_script(cmd_path, surf_file_path, initializer=(i == 0))
             # Handle MountainsMap startup window
             if i <= 0:
                 ImportUtils.click_resource(ResourceFiles.START_MNTS_BTN)
@@ -96,43 +88,46 @@ def import_surfaces(file_paths):
             # Use Mountains and generate given surface file
             mnts_process = mnts_processes[i]
             excep_queue = mnts_process.get_excep_queue()
+            debug_msgs = mnts_process.get_debug_msgs()
             mnts_process.start()
 
             # Used to check that failsafe is not being triggered
-            while True:
+            while mnts_process.is_alive():
                 # Kill thread if failsafe was triggered
                 x, y = pyautogui.position()
                 if x == 0 and y == 0:
                     mnts_process.kill()
                     raise Exception("Terminating import prematurly. Failsafe triggered.")
 
+                # Print out debug messages
+                if __debug__:
+                    while not debug_msgs.empty():
+                        print("PROCESS: " + debug_msgs.get())
+
                 # Terminate alive check if exception occured during runtime
-                exception = None
                 if not excep_queue.empty():
                     exception = excep_queue.get()
-                if not exception is None:
-                    e, tb = exception
-                    # If end process exception was thrown, leave failsafe check loop
-                    if isinstance(e, MountainsProcess.EndProcessException):
-                        break
-                    # Otherwise, a normal exception was thrown
-                    else:
+                    # Throw exception if valid
+                    if not exception is None:
+                        e, tb = exception
                         print(tb)
                         raise e
 
             # End MountainsMap interact process, no longer needed
             mnts_process.kill()
 
-        # Set output to generated result file paths
+            # Copy temporary result files and replace them in actual result file directory
+            shutil.copyfile(result_temp_paths[i], result_file_paths[i])
+
+        # Import process successful, set output to generated result file paths
         output = result_file_paths
     finally:
         # Terminate this instance of mountains, current job complete
         if mnts_instance is not None:
             mnts_instance.kill()
             mnts_instance.wait()
-        # Delete temporary directory
-        if temp_dir is not None:
-            shutil.rmtree(temp_dir, ignore_errors=False)
+        # Delete temporary directory/contents
+        shutil.rmtree(TEMP_PATH, ignore_errors=False)
 
         # Revert pyautogui to old settings
         pyautogui.FAILSAFE = orig_FAILSAFE
@@ -141,27 +136,31 @@ def import_surfaces(file_paths):
     # Output generated result files
     return output
 
-class MountainsProcess(Process):
+class MntsImporterThread(Thread):
     """Using the given result file destination and MountainsMap interaction function,
     launch the MountainsMap app and generate the results file.
-    If an exception is thrown, it can be recieved using the excep_recv pipe.
-    This pipe outputs a tuple with data:
+    
+    @param result_file_path
+    @param file_dir
+    @param file_name
+    @param sensitivity_func
+    @param analysis_func_wrapper
+    
+    @return If an exception is thrown, it can be recieved using the excep_queue queue.
+    This queue outputs a tuple with data:
       [0] - Exception to re-raise
       [1] - Traceback to print out"""
     def __init__(self, result_file_path, file_dir, file_name,
                  sensitivity_func, analysis_func_wrapper):
-        Process.__init__(self, target=MountainsProcess.interact_func, args=(self,))
+        super().__init__(target=MntsImporterThread.interact_func, args=(self,))
         self.result_file_path = result_file_path
         self.file_dir = file_dir
         self.file_name = file_name
         self.sensitivity_func = sensitivity_func
         self.analysis_func_wrapper = analysis_func_wrapper
         self.excep_queue = Queue()
-
-    class EndProcessException(Exception):
-        """Exception thrown when the process ends sucessfully."""
-        def __init__(self):
-            super().__init__()
+        self.dbg_msg_queue = Queue()
+        self.send_debug("Mountains Import Process Initialized.")
 
     def interact_func(self):
         orig_FAILSAFE = pyautogui.FAILSAFE
@@ -169,16 +168,14 @@ class MountainsProcess(Process):
         try:
             pyautogui.FAILSAFE = False
             pyautogui.PAUSE = _PYAUTOGUI_ACTION_DELAY
-            print(self)
+            self.send_debug(self)
 
             # Generate results file from scale-sensitive fractal analysis
             self.option_select_export_func()
             # Throw exception if the results file was not correctly generated
             if not os.path.exists(self.result_file_path):
-                raise FileNotFoundError("Could not find results file " + self.result_file_path +
+                raise FileNotFoundError("Could not find results file: " + self.file_name +
                                         ". Terminating early.")
-            # Process has terminated
-            raise MountainsProcess.EndProcessException()
         except Exception as e:
             self.excep_queue.put((e, traceback.format_exc()))
         finally:
@@ -187,11 +184,10 @@ class MountainsProcess(Process):
 
     def option_select_export_func(self):
         """Defines how the mouse and keyboard will interact with MountainsMap"""
-        window_title = ""
-        top_left_x = top_left_y = btm_right_x = btm_right_y = 0
-        window_center = (0,0)
-        # Wait for template document to load
+
+        # Wait for template document to load by checking for the export button
         while ImportUtils.find_resource(ResourceFiles.EXPORT_BTN, wait=False) is None:
+            self.send_debug("Looking for export button...")
             # Add delay to prevent excesive usage of this loop
             time.sleep(0.01)
             # Get current title of current MountainsMap window
@@ -219,37 +215,32 @@ class MountainsProcess(Process):
             if window_center == (0,0):
                 continue
 
-            # Window center has been found, break out of init loop
-            break
-
-        # Give time for finishing loading process
-        time.sleep(1.0)
-        # Select ssfa graph
-        pyautogui.click(*window_center)
-        time.sleep(_DELAY)
-        if __debug__:
-            print("Selected graph")
+            # Select ssfa graph
+            pyautogui.click(*window_center)
+            time.sleep(_DELAY)
+            if __debug__:
+                self.send_debug("Selected graph")
 
         # Select sensitivity and analysis options
         self.sensitivity_func()
         if __debug__:
             time.sleep(_DELAY)
-            print("Ran sensitivity selection")
+            self.send_debug("Ran sensitivity selection")
         self.analysis_func_wrapper.call()
         if __debug__:
             time.sleep(_DELAY)
-            print("Ran selection")
+            self.send_debug("Ran selection")
 
         # Export result files --
         # Click on export button
         ImportUtils.click_resource(ResourceFiles.EXPORT_BTN)
         if __debug__:
-            print("Clicked export button")
+            self.send_debug("Clicked export button")
             time.sleep(_DELAY)
         # Enter file name
         pyautogui.typewrite(self.file_name)
         if __debug__:
-            print("Enter file name")
+            self.send_debug("Enter file name")
             time.sleep(_DELAY)
         # Tab to file path
         pyautogui.press('tab', presses=6, interval=_FILE_DIALOG_TAB_INTERVAL)
@@ -262,19 +253,22 @@ class MountainsProcess(Process):
             time.sleep(_DELAY)
         pyautogui.press('enter')
         if __debug__:
-            print("Entered file directory")
+            self.send_debug("Entered file directory")
             time.sleep(_DELAY)
         # Press save button
         #pyautogui.press('enter')
         ImportUtils.click_resource(ResourceFiles.SAVE_BTN)
         if __debug__:
-            print("Saved result file")
+            self.send_debug("Saved result file")
             time.sleep(_DELAY)
         # Exit file editor
         pyautogui.hotkey('alt', 'f4')
         if __debug__:
-            print("Closed file editor")
+            self.send_debug("Closed file editor")
 
+    def kill(self): super()._stop()
+    def send_debug(self, msg): self.dbg_msg_queue.put(msg)
+    def get_debug_msgs(self): return self.dbg_msg_queue
     def get_excep_queue(self): return self.excep_queue
     def get_file_name(self): return self.file_name
 
@@ -284,17 +278,21 @@ def get_results_data(file_paths, results_dir, sensitive_func, analysis_func_wrap
     Also generates mountains interaction process calls."""
     result_paths = []
     mountains_processes = []
+    result_temp_paths = []
     for i, surfName in enumerate(file_paths):
         surfName = os.path.normpath(surfName) # Remove stray/double slashes
         surfName = os.path.splitext(surfName)[0] # Remove file extension
         surfName = os.path.basename(surfName) # Grab file name
+        surf_full_name = surfName + ".txt"
         # Add to file lists
-        result_paths.append(ImportUtils.append_to_path(surfName + ".txt", results_dir))
+        result_paths.append(ImportUtils.append_to_path(surf_full_name, results_dir))
+        # Add to temporary file lists
+        result_temp_paths.append(ImportUtils.append_to_path(surf_full_name, TEMP_PATH))
         # Add to function list
         mountains_processes.append(
-            MountainsProcess(result_paths[i], results_dir, surfName, sensitive_func, analysis_func_wrapper))
+            MntsImporterThread(result_temp_paths[i], TEMP_PATH, surfName, sensitive_func, analysis_func_wrapper))
     # Output generated paths and functions
-    return result_paths, mountains_processes
+    return result_paths, result_temp_paths, mountains_processes
 
 def select_scale_sensitivity():
     """Select scale-sensitivity option"""
@@ -351,11 +349,11 @@ class ImportOptionsDialog(wx.Dialog):
     It can then be used to return these selected options wrapped within interactive functions designed
     for Digital Surf's MountainsMap application."""
 
-    def __init__(self, file_paths):
+    def __init__(self, parent, file_paths):
         """@param file_paths - List of surface file paths that will be analyzed into result files."""
         width = 600
         height = 250
-        wx.Dialog.__init__(self, __main__.frame, wx.ID_ANY, "Surface Import Options", size=(width, height))
+        wx.Dialog.__init__(self, parent, wx.ID_ANY, "Surface Import Options", size=(width, height))
         self.options_panel = wx.Panel(self, wx.ID_ANY)
         options_sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -363,6 +361,7 @@ class ImportOptionsDialog(wx.Dialog):
         self.file_paths = file_paths
         # Output values from dialog
         self.result_file_paths = None
+        self.result_temp_paths = None
         self.mnts_processes = None
 
         # Analysis Type Selection
@@ -423,7 +422,7 @@ class ImportOptionsDialog(wx.Dialog):
     def getTypeCombo(self, enum):
         """Generates the combo boxes for each drop down option using a set of enums."""
         choices  = [choice.label for choice in enum]
-        return wx.ComboBox(self.options_panel, wx.ID_OK, choices[0],
+        return wx.ComboBox(self.options_panel, wx.ID_ANY, choices[0],
                                         style=wx.CB_SIMPLE | wx.CB_READONLY,
                                         choices=choices)
 
@@ -449,7 +448,7 @@ class ImportOptionsDialog(wx.Dialog):
             sensitive_func = _sensitivity_option_map[self.sensitivity_combo.GetStringSelection()]
             analysis_func = _analysis_option_map[self.analysis_combo.GetStringSelection()]
             # Build new file path based on given surface files and results dir
-            new_file_paths, new_mountains_processes = \
+            new_file_paths, temp_file_paths, new_mountains_processes = \
                 get_results_data(self.file_paths, selected_results_dir, sensitive_func, analysis_func)
 
             # Possibly overwrite check was requested
@@ -468,6 +467,7 @@ class ImportOptionsDialog(wx.Dialog):
 
             self.mnts_processes = new_mountains_processes
             self.result_file_paths = new_file_paths
+            self.result_temp_paths = temp_file_paths
             self.EndModal(wx.ID_OK)
         except Exception as e:
             if __debug__:
@@ -478,6 +478,7 @@ class ImportOptionsDialog(wx.Dialog):
             error_dialog.ShowModal()
 
     def get_result_file_paths(self): return self.result_file_paths
+    def get_result_temp_paths(self): return self.result_temp_paths
     def get_mnts_processes(self): return self.mnts_processes
 
 class OverwriteDialog(wx.MessageDialog):
@@ -486,7 +487,26 @@ class OverwriteDialog(wx.MessageDialog):
     def __init__(self, parent, existing_files):
         existsStr = ["\n\t" + file_name for file_name in existing_files]
         existsStr = "".join(existsStr)
-        wx.MessageDialog.__init__(self, __main__.frame, 
+        super().__init__(__main__.frame, 
             "Files already exist in this directory. Are you sure "
             "you want to overwrite these files?\n" + existsStr,
+            caption="File Overwriting",
             style=wx.YES_NO|wx.ICON_WARNING)
+
+class ImportInfoDialog(wx.MessageDialog):
+    """Dialog box to be displayed to explain to the user the warnings involved
+    with using the import tool."""
+
+    tool_information = \
+    "Please follow these requirements in order to have the most optimal/functional experience with" \
+    "the surface import tool:\n\n" \
+    "  - Enable the MountainsMap product configuration startup window\n" \
+    "  - Verify that last usage of MountainsMap did not terminate unexpectedly\n" \
+    "  - Verify that MountainsMap is launching in fullscreen\n" \
+    "  - The MountainsMap program must be running on a screen resolution of 720p or higher\n" \
+    "  - Drag your mouse to the top left corner of the screen to stop the import process"
+
+    def __init__(self, parent):
+        super().__init__(__main__.frame, ImportInfoDialog.tool_information,
+                         caption="MountainsMap Import Tool Information",
+                         style=wx.OK | wx.CANCEL | wx.ICON_INFORMATION)

@@ -1,14 +1,14 @@
 import sys, os, winreg, time
 import pyautogui
+import subprocess
 from typing import Optional
 from ctypes import wintypes, windll, create_unicode_buffer, pointer
 
-__DEFAULT_TIMEOUT = 60.0
-__resource_paths = {}
+_DEFAULT_TIMEOUT = 60.0
+_resource_paths = {}
 
 class ResourceFiles:
     SSFA_TEMPLATE = "ssfa-template.mnt"
-    MULTI_STAT_TEMPLATE_INIT = "multi-stat-template-init.png"
 
     START_MNTS_BTN = "start-mountains.png"
 
@@ -30,9 +30,9 @@ def resource_abs_path(relative_path):
     https://stackoverflow.com/questions/5227107/python-code-to-read-registry."""
 
     # If path has already been found (resouces cannot move), return it
-    global __resource_paths
-    if relative_path in __resource_paths:
-        return __resource_paths[relative_path]
+    global _resource_paths
+    if relative_path in _resource_paths:
+        return _resource_paths[relative_path]
 
     try:
         # PyInstaller creates a temp folder and stores path in _MEIPASS
@@ -43,19 +43,21 @@ def resource_abs_path(relative_path):
     path = append_to_path(relative_path, base_path)
     if not os.path.exists(path):
         raise FileNotFoundError("Could not find resource " + path)
-    __resource_paths[relative_path] = path
+    _resource_paths[relative_path] = path
 
     return path
 
-def find_resource(relative_path, timeout=__DEFAULT_TIMEOUT, wait=True, func=None):
+def find_resource(relative_path, timeout=_DEFAULT_TIMEOUT, wait=True, func=None):
     """Using a path to a resource image file, wait for that image to appear.
     A function can then be called while waiting.
     @return pos - center Point of object being clicked. Return None if position was not found"""
 
     end_time = time.time() + (0 if timeout is None else timeout)
-    print(timeout)
-    print(time.time())
-    print(end_time)
+    if __debug__:
+        print("TIMEOUT:" + str(timeout))
+        print("TIMEOUT:" + str(time.time()))
+        print("TIMEOUT:" + str(end_time))
+
     def timedout():
         if timeout is None:
             return False
@@ -81,7 +83,7 @@ def find_resource(relative_path, timeout=__DEFAULT_TIMEOUT, wait=True, func=None
     # Loop exited, resource could not be found, return None
     return None
 
-def click_resource(relative_path, timeout=__DEFAULT_TIMEOUT, wait=True):
+def click_resource(relative_path, timeout=_DEFAULT_TIMEOUT, wait=True):
     """Using a path to a resource image file, wait for that image to appear, and then click on the screen.
     @return pos - center Point of object being clicked. Return None if position was not found"""
     pos = find_resource(relative_path, timeout, wait)
@@ -108,15 +110,15 @@ def get_foreground_window_title():
     # Output possible found window title
     return buf.value if buf.value else None
 
-__mountains_path = None
+_MOUNTAINS_PATH = None
 def find_mountains_map() -> str:
     """Get the absolute path to the MountainsMap executable. If it cannot be found,
     an exception will be thrown."""
 
     # If path has already been found, output it
-    global __mountains_path
-    if __mountains_path:
-        return __mountains_path
+    global _MOUNTAINS_PATH
+    if _MOUNTAINS_PATH:
+        return _MOUNTAINS_PATH
 
     try:
         # Open class ID key registery
@@ -134,11 +136,42 @@ def find_mountains_map() -> str:
 
         # Grab folder path for Mountains 'bin' directories
         mntsBinDir = os.path.dirname(mntsBinDir)
-        __mountains_path = append_to_path("Mountains.exe", mntsBinDir)
+        _MOUNTAINS_PATH = append_to_path("Mountains.exe", mntsBinDir)
     except Exception as e:
         if __debug__:
             import traceback
             traceback.print_exc()
         raise Exception("Could not find MountainsMap installation.")
     finally:
-        return __mountains_path
+        return _MOUNTAINS_PATH
+
+class MountainsProcess(subprocess.Popen):
+    """Starts a MountainsMap process that can then be interacted with to generate
+    results files. These results can then later be used to import into the app.
+
+    @param cmd_path - Given path to external commands script file."""
+
+    def __init__(self, cmd_path):
+        super().__init__("\"" + find_mountains_map() + "\"" + \
+                         " /CMDFILE:\"" + cmd_path + "\" /NOSPLASHCREEN")
+
+TEMP_PATH = append_to_path(".temp")
+TMPLT_PATH = resource_abs_path(ResourceFiles.SSFA_TEMPLATE)
+
+def write_mnts_surf_import_script(cmd_path, surf_file_path, initializer=True):
+    # Write external command file for MountainsMap
+    with open(cmd_path, "w") as cmd_file :
+        cmd_contents = []
+        # If the command file has not been created yet, include extra initialization commands
+        if initializer:
+            cmd_contents = [
+                "STOP_ON_ERROR OFF",
+                "SHOW",
+                "MESSAGES OFF",
+                "LOAD_DOCUMENT \"" + TMPLT_PATH + "\"",
+                "AUTOSAVE OFF"
+            ]
+        # Add substitution command to file
+        cmd_contents.append("SUBSTITUTE_STUDIABLE \"" + surf_file_path + "\" 1 MULTILAYER_MODE=7")
+        # Create command file
+        cmd_file.write("\n".join(cmd_contents))
