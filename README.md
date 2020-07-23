@@ -1,4 +1,5 @@
-![PyPI](https://img.shields.io/pypi/v/multiscale-statistical-analysis?color=Blue)
+[![PyPI version shields.io](https://img.shields.io/pypi/v/multiscale-statistical-analysis.svg)](https://pypi.org/project/multiscale-statistical-analysis/)
+[![PyPI license](https://img.shields.io/pypi/l/multiscale-statistical-analysis.svg)](https://pypi.org/project/multiscale-statistical-analysis/)
 # Multiscale-Statistical-Analysis
 ## About
 This is a standalone multiscale analysis software developed by [Nathaniel Rutkowski](https://github.com/nrutkowski1).
