@@ -16,7 +16,7 @@ def import_surfaces(file_paths):
     """Takes an input of an array of strings for the file path of each surface being analyzed. These surfaces are
     input into MountainsMap using mouse and keyboard control. The user is then given a choice of selecting either
     length-scale, area-scale, or complexity analysis. These result file paths are then returned.
-    @return result_file_paths - Set to None if import could not continue"""
+    @return output_paths - Outputs an empty list if paths could not be imported"""
 
     # Display import information/requirements dialog
     info_dialog = ImportInfoDialog(__main__.frame)
@@ -26,7 +26,7 @@ def import_surfaces(file_paths):
         return None
 
     mnts_instance = None
-    output = None
+    output_paths = []
 
     # Collect user selected configuration from import options dialog
     options_dialog = ImportOptionsDialog(__main__.frame, file_paths)
@@ -79,16 +79,21 @@ def import_surfaces(file_paths):
 
             # Copy temporary result files and replace them in actual result file directory
             shutil.copyfile(result_temp_paths[i], result_file_paths[i])
+            # Import process successful, add generated file to output list
+            output_paths.append(result_file_paths[i])
 
-        # Import process successful, set output to generated result file paths
-        output = result_file_paths
     except Exception as e:
-        excep = e
+        # Modify fail safe expcetion if it occured
+        if isinstance(e, pyautogui.FailSafeException):
+            __main__.error_txt.AppendText("Importer: Terminating import prematurly. Failsafe triggered.\n")
+        else:
+            excep = e
     finally:
         # Terminate this instance of mountains, current job complete
         if mnts_instance is not None:
             mnts_instance.kill()
             mnts_instance.wait()
+
         # Delete temporary directory/contents
         shutil.rmtree(TEMP_PATH, ignore_errors=False)
 
@@ -97,7 +102,7 @@ def import_surfaces(file_paths):
             raise excep
 
     # Output generated result files
-    return output
+    return output_paths
 
 class MntsImporter:
     """Using the given result file destination and MountainsMap interaction function,
@@ -147,11 +152,8 @@ class MntsImporter:
         finally:
             pyautogui.FAILSAFE = orig_FAILSAFE
             pyautogui.PAUSE = orig_PAUSE
-            # Modify fail safe expcetion if it occured
-            if isinstance(excep, pyautogui.FailSafeException):
-                raise Exception("Terminating import prematurly. Failsafe triggered.")
-            # Throw normal exception
-            elif not excep is None:
+            # Throw previous exception
+            if not excep is None:
                 raise excep
 
     def init_mnts(self):

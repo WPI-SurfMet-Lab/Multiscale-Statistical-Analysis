@@ -247,7 +247,7 @@ class PlotData:
         # Handle surface importing
         result_file_paths = import_surfaces(file_paths)
         # Exit if the value was not found
-        if result_file_paths is None:
+        if not result_file_paths:
             return
         # Open generated result text files
         self.open_file2(result_file_paths)
