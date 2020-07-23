@@ -5,6 +5,7 @@ import wx
 import wx.adv
 import wx.grid
 import openpyxl
+import MountainsImporter.ImportUtils as ImportUtils
 
 from Workbook import Workbook
 from scipy.optimize import OptimizeWarning
@@ -21,11 +22,8 @@ from StatsTestsUI import FtestDialog
 from StatsTestsUI import TtestDialog
 from StatsTestsUI import ANOVAtestDialog
 
-#import faulthandler
-#faulthandler.enable()
-
 name = 'Multiscale Statisitcal Analysis'
-__version__ = '0.4.0'
+__version__ = '0.4.1'
 __license__ = 'MIT'
 __author__ = 'Matthew Spofford, Nathaniel Rutkowski'
 __author_email__ = 'mespofford@wpi.edu'
@@ -35,6 +33,8 @@ wb_counter = 1
 wb_list = []
 frame = None
 app = None
+
+_MOUNTAINS_INSTALLED = None
 
 # function for show the curve fit dialog and get regression graphs
 def OnRegression(event):
@@ -296,11 +296,13 @@ def OnOpen(event):
     try:
         # File dialog choices
         data = tree_menu.GetItemData(getPlotDataID())
-        choices = [
-                ("MountainsMap Results Text Files (*.txt)|*.txt", data.open_file2),
-                ("MountainsMap Surface Files|*", data.open_sur),
-                ("Sfrax CSV Results - UTF-8 (*.csv)|*.csv", data.open_file)
-            ]
+        choices = [("MountainsMap Results Text Files (*.txt)|*.txt", data.open_file2),
+                   ("Sfrax CSV Results - UTF-8 (*.csv)|*.csv", data.open_file)]
+
+        # Add surface file import as an option
+        if not isinstance(ImportUtils.find_mountains_map(), ImportUtils.MountainsNotFound):
+            choices.insert(1, ("MountainsMap Surface Files|*", data.open_sur))
+
         # create the open file dialog
         openFileDialog = wx.FileDialog(frame, "Open",
                                        wildcard="|".join([choice[0] for choice in choices]),
@@ -573,6 +575,15 @@ if __name__ == "__main__":
     frame.Layout()
     frame.SetSizer(sizer)
     frame.Show()
+
+    # Check the existence of MountainsMap
+    try:
+        ImportUtils.find_mountains_map()
+    except (FileNotFoundError, Exception) as e:
+        error_txt.AppendText("Warning: MountainsMap installation could not be found.")
+
+    # Run Multiscale Analysis App
     app.MainLoop()
+
 else:
     pass

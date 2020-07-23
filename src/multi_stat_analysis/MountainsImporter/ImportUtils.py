@@ -1,4 +1,4 @@
-import sys, os, winreg, time
+import sys, os, winreg, time, errno
 import pyautogui
 import subprocess
 from typing import Optional
@@ -110,6 +110,10 @@ def get_foreground_window_title():
     # Output possible found window title
     return buf.value if buf.value else None
 
+class MountainsNotFound(str):
+    def __init__(self):
+        super().__init__()
+
 _MOUNTAINS_PATH = None
 def find_mountains_map() -> str:
     """Get the absolute path to the MountainsMap executable. If it cannot be found,
@@ -117,9 +121,10 @@ def find_mountains_map() -> str:
 
     # If path has already been found, output it
     global _MOUNTAINS_PATH
-    if _MOUNTAINS_PATH:
+    if not _MOUNTAINS_PATH is None:
         return _MOUNTAINS_PATH
 
+    excep = None
     try:
         # Open class ID key registery
         with winreg.ConnectRegistry(None, winreg.HKEY_CLASSES_ROOT) as reg:
@@ -137,12 +142,20 @@ def find_mountains_map() -> str:
         # Grab folder path for Mountains 'bin' directories
         mntsBinDir = os.path.dirname(mntsBinDir)
         _MOUNTAINS_PATH = append_to_path("Mountains.exe", mntsBinDir)
-    except Exception as e:
+        # Check if MountainsMap path actually exists
+        if not os.path.exists(_MOUNTAINS_PATH):
+            raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), _MOUNTAINS_PATH)
+    except (FileNotFoundError, Exception) as e:
         if __debug__:
             import traceback
             traceback.print_exc()
-        raise Exception("Could not find MountainsMap installation.")
+        prev_path = _MOUNTAINS_PATH
+        _MOUNTAINS_PATH = MountainsNotFound()
+        excep = e
     finally:
+        # Raise exception if it occured
+        if not excep is None:
+            raise excep
         return _MOUNTAINS_PATH
 
 class MountainsProcess(subprocess.Popen):
