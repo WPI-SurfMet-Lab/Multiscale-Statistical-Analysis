@@ -576,9 +576,14 @@ if __name__ == "__main__":
     frame.SetSizer(sizer)
     frame.Show()
 
-    if isinstance(ImportUtils.find_mountains_map(), ImportUtils.MountainsNotFound):
+    # Check the existence of MountainsMap
+    try:
+        ImportUtils.find_mountains_map()
+    except (FileNotFoundError, Exception) as e:
         error_txt.AppendText("Warning: MountainsMap installation could not be found.")
 
+    # Run Multiscale Analysis App
     app.MainLoop()
+
 else:
     pass
