@@ -1,11 +1,8 @@
 import __main__
 import MountainsImporter.ImportUtils as ImportUtils
 from MountainsImporter.ImportUtils import ResourceFiles, TEMP_PATH
-import wx, os, time, traceback, shutil
+import wx, os, time, shutil
 import pyautogui
-import multiprocessing
-from threading import Thread
-from multiprocessing import Process, Queue
 from enum import Enum
 
 _CMDS_FILE_NAME = "-temp-cmds.txt"
@@ -28,9 +25,6 @@ def import_surfaces(file_paths):
     if not info_dialog.ShowModal() == wx.ID_OK:
         return None
 
-    orig_FAILSAFE = pyautogui.FAILSAFE
-    orig_PAUSE = pyautogui.PAUSE
-
     mnts_instance = None
     output = None
 
@@ -44,12 +38,12 @@ def import_surfaces(file_paths):
     # Get output from dialog
     result_file_paths = options_dialog.get_result_file_paths()
     result_temp_paths = options_dialog.get_result_temp_paths()
-    mnts_processes = options_dialog.get_mnts_processes()
+    mnts_importers = options_dialog.get_mnts_processes()
     if __debug__:
-        print(mnts_processes)
+        print(mnts_importers)
 
     # If the options were not selected, end file opening prematurely
-    if not (result_file_paths and result_temp_paths and mnts_processes):
+    if not (result_file_paths and result_temp_paths and mnts_importers):
         return None
 
     # Delete directory/contents if temp folder already exists
@@ -69,11 +63,8 @@ def import_surfaces(file_paths):
     cmd_path = ImportUtils.append_to_path(str(time.time_ns()) + _CMDS_FILE_NAME, TEMP_PATH)
 
     # Catch errors while assuming control of keyboard/mouse with pyautogui
+    excep = None
     try:
-        # Initialize pyautogui
-        pyautogui.FAILSAFE = False
-        pyautogui.PAUSE = _PYAUTOGUI_ACTION_DELAY
-
         # Launch Mountains for surfaces
         mnts_instance = ImportUtils.MountainsProcess(cmd_path)
 
@@ -81,46 +72,18 @@ def import_surfaces(file_paths):
         for i, surf_file_path in enumerate(file_paths) :
             # Write external command file for MountainsMap
             ImportUtils.write_mnts_surf_import_script(cmd_path, surf_file_path, initializer=(i == 0))
-            # Handle MountainsMap startup window
-            if i <= 0:
-                ImportUtils.click_resource(ResourceFiles.START_MNTS_BTN)
 
             # Use Mountains and generate given surface file
-            mnts_process = mnts_processes[i]
-            excep_queue = mnts_process.get_excep_queue()
-            debug_msgs = mnts_process.get_debug_msgs()
-            mnts_process.start()
-
-            # Used to check that failsafe is not being triggered
-            while mnts_process.is_alive():
-                # Kill thread if failsafe was triggered
-                x, y = pyautogui.position()
-                if x == 0 and y == 0:
-                    mnts_process.kill()
-                    raise Exception("Terminating import prematurly. Failsafe triggered.")
-
-                # Print out debug messages
-                if __debug__:
-                    while not debug_msgs.empty():
-                        print("PROCESS: " + debug_msgs.get())
-
-                # Terminate alive check if exception occured during runtime
-                if not excep_queue.empty():
-                    exception = excep_queue.get()
-                    # Throw exception if valid
-                    if not exception is None:
-                        e, tb = exception
-                        print(tb)
-                        raise e
-
-            # End MountainsMap interact process, no longer needed
-            mnts_process.kill()
+            mnts_imp = mnts_importers[i]
+            mnts_imp.start()
 
             # Copy temporary result files and replace them in actual result file directory
             shutil.copyfile(result_temp_paths[i], result_file_paths[i])
 
         # Import process successful, set output to generated result file paths
         output = result_file_paths
+    except Exception as e:
+        excep = e
     finally:
         # Terminate this instance of mountains, current job complete
         if mnts_instance is not None:
@@ -129,14 +92,14 @@ def import_surfaces(file_paths):
         # Delete temporary directory/contents
         shutil.rmtree(TEMP_PATH, ignore_errors=False)
 
-        # Revert pyautogui to old settings
-        pyautogui.FAILSAFE = orig_FAILSAFE
-        pyautogui.PAUSE = orig_PAUSE
+        # Raise any expcetions that occured during the run
+        if not excep is None:
+            raise excep
 
     # Output generated result files
     return output
 
-class MntsImporterThread(Thread):
+class MntsImporter:
     """Using the given result file destination and MountainsMap interaction function,
     launch the MountainsMap app and generate the results file.
     
@@ -150,25 +113,28 @@ class MntsImporterThread(Thread):
     This queue outputs a tuple with data:
       [0] - Exception to re-raise
       [1] - Traceback to print out"""
-    def __init__(self, result_file_path, file_dir, file_name,
+    def __init__(self, is_init, result_file_path, file_dir, file_name,
                  sensitivity_func, analysis_func_wrapper):
-        super().__init__(target=MntsImporterThread.interact_func, args=(self,))
+        self.is_init = is_init
         self.result_file_path = result_file_path
         self.file_dir = file_dir
         self.file_name = file_name
         self.sensitivity_func = sensitivity_func
         self.analysis_func_wrapper = analysis_func_wrapper
-        self.excep_queue = Queue()
-        self.dbg_msg_queue = Queue()
-        self.send_debug("Mountains Import Process Initialized.")
+        if __debug__:
+            print("Mountains Import Process Initialized.")
 
-    def interact_func(self):
+    def start(self):
         orig_FAILSAFE = pyautogui.FAILSAFE
         orig_PAUSE = pyautogui.PAUSE
+        excep = None
         try:
-            pyautogui.FAILSAFE = False
+            pyautogui.FAILSAFE = True
             pyautogui.PAUSE = _PYAUTOGUI_ACTION_DELAY
-            self.send_debug(self)
+
+            # If required, initialize Mountains
+            if self.is_init:
+                self.init_mnts()
 
             # Generate results file from scale-sensitive fractal analysis
             self.option_select_export_func()
@@ -176,18 +142,28 @@ class MntsImporterThread(Thread):
             if not os.path.exists(self.result_file_path):
                 raise FileNotFoundError("Could not find results file: " + self.file_name +
                                         ". Terminating early.")
-        except Exception as e:
-            self.excep_queue.put((e, traceback.format_exc()))
+        except (pyautogui.FailSafeException, Exception) as e:
+            excep = e
         finally:
             pyautogui.FAILSAFE = orig_FAILSAFE
             pyautogui.PAUSE = orig_PAUSE
+            # Modify fail safe expcetion if it occured
+            if isinstance(excep, pyautogui.FailSafeException):
+                raise Exception("Terminating import prematurly. Failsafe triggered.")
+            # Throw normal exception
+            elif not excep is None:
+                raise excep
+
+    def init_mnts(self):
+        # Handle MountainsMap startup window
+        ImportUtils.click_resource(ResourceFiles.START_MNTS_BTN)
 
     def option_select_export_func(self):
         """Defines how the mouse and keyboard will interact with MountainsMap"""
 
         # Wait for template document to load by checking for the export button
         while ImportUtils.find_resource(ResourceFiles.EXPORT_BTN, wait=False) is None:
-            self.send_debug("Looking for export button...")
+            print("Looking for export button...")
             # Add delay to prevent excesive usage of this loop
             time.sleep(0.01)
             # Get current title of current MountainsMap window
@@ -219,28 +195,28 @@ class MntsImporterThread(Thread):
             pyautogui.click(*window_center)
             time.sleep(_DELAY)
             if __debug__:
-                self.send_debug("Selected graph")
+                print("Selected graph")
 
         # Select sensitivity and analysis options
         self.sensitivity_func()
         if __debug__:
             time.sleep(_DELAY)
-            self.send_debug("Ran sensitivity selection")
+            print("Ran sensitivity selection")
         self.analysis_func_wrapper.call()
         if __debug__:
             time.sleep(_DELAY)
-            self.send_debug("Ran selection")
+            print("Ran selection")
 
         # Export result files --
         # Click on export button
         ImportUtils.click_resource(ResourceFiles.EXPORT_BTN)
         if __debug__:
-            self.send_debug("Clicked export button")
+            print("Clicked export button")
             time.sleep(_DELAY)
         # Enter file name
         pyautogui.typewrite(self.file_name)
         if __debug__:
-            self.send_debug("Enter file name")
+            print("Enter file name")
             time.sleep(_DELAY)
         # Tab to file path
         pyautogui.press('tab', presses=6, interval=_FILE_DIALOG_TAB_INTERVAL)
@@ -253,24 +229,17 @@ class MntsImporterThread(Thread):
             time.sleep(_DELAY)
         pyautogui.press('enter')
         if __debug__:
-            self.send_debug("Entered file directory")
+            print("Entered file directory")
             time.sleep(_DELAY)
         # Press save button
-        #pyautogui.press('enter')
         ImportUtils.click_resource(ResourceFiles.SAVE_BTN)
         if __debug__:
-            self.send_debug("Saved result file")
+            print("Saved result file")
             time.sleep(_DELAY)
         # Exit file editor
         pyautogui.hotkey('alt', 'f4')
         if __debug__:
-            self.send_debug("Closed file editor")
-
-    def kill(self): super()._stop()
-    def send_debug(self, msg): self.dbg_msg_queue.put(msg)
-    def get_debug_msgs(self): return self.dbg_msg_queue
-    def get_excep_queue(self): return self.excep_queue
-    def get_file_name(self): return self.file_name
+            print("Closed file editor")
 
 def get_results_data(file_paths, results_dir, sensitive_func, analysis_func_wrapper):
     """Given the list of surface files and a results directory,
@@ -290,7 +259,7 @@ def get_results_data(file_paths, results_dir, sensitive_func, analysis_func_wrap
         result_temp_paths.append(ImportUtils.append_to_path(surf_full_name, TEMP_PATH))
         # Add to function list
         mountains_processes.append(
-            MntsImporterThread(result_temp_paths[i], TEMP_PATH, surfName, sensitive_func, analysis_func_wrapper))
+            MntsImporter(i==0, result_temp_paths[i], TEMP_PATH, surfName, sensitive_func, analysis_func_wrapper))
     # Output generated paths and functions
     return result_paths, result_temp_paths, mountains_processes
 
