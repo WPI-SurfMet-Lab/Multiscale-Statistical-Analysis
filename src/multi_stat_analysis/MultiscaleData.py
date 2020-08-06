@@ -2,37 +2,31 @@ from enum import Enum
 
 class MulticaleDataset:
     """Maintains the multiscale-dataset for relative area and complexity"""
-    def __init__(self, name, scales=set(), relative_area=[], complexity=[], regress_set=[], row_titles=[]):
+    
+    def set_vals_at_scale(self, scale, relative_area, complexity):
+        """Assign relative area & complexity values at the given scale."""
+        self._scales.add(scales)
+        self._area_map[scale] = relative_area
+        self._complexity_map[scale] = complexity
+    
+    def __init__(self, name="",
+                 scales=[], relative_area=[], complexity=[],
+                 row_titles=["Relative Area", "Fractal complexity"]):
+        """Generate MultiscaleDataset using given values."""
         self.name = name
         self.regress_val = self.name
         self.row_titles = row_titles
-        self._scales = scales
+        self._scales = set()
         self._area_map = {}
         self._complexity_map = {}
-        self._regress_map = {}
 
         # Run through collected scales and map them in order to areas and complexities
         for i, scale in enumerate(scales):
-            self._area_map[scale] = relative_area[i]
-            self._complexity_map[scale] = complexity[i]
-            self._regress_map[scale] = regress_set[i]
-
-    @staticmethod
-    def _map_setter(map, scale, value): self.map[scale] = value
-    @staticmethod
-    def _map_getter(map, scale):
-        if scale in map:
-            return map[scale]
-        else:
-            return None
+            self.set_vals_at_scale(scale, relative_area[i], complexity[i])
 
     def get_scales(self): return self._scales
-    def get_relative_area(self, scale): return _map_getter(self._area_map, scale)
-    def set_relative_area(self, scale, area): _map_setter(self._area_map, scale, area)
-    def get_complexity(self, scale): return _map_getter(self._complexity_map, scale)
-    def set_complexity(self, scale, complexity): _map_setter(self._complexity_map, scale, complexity)
-    def get_regress_set(self, scale): return _map_getter(self._regress_map, scale)
-    def set_regress_set(self, scale, regress_val): _map_setter(self._regress_map, scale, regress_val)
+    def get_relative_area(self, scale): return self._area_map.get(scale)
+    def get_complexity(self, scale): return self._complexity_map.get(scale)
 
 class DatasetAppendOptions(Enum):
     """Used to define the insert function to be used by Dataset.insertData."""
@@ -46,10 +40,12 @@ class MultiscaleDisjointCollectionException(Exception):
     def __init__(self, dataset:MulticaleDataset):
         super().__init__("The dataset" + dataset.name + " being added to MultiscaleCollection has disjoint scale values.")
 
+_TABLE_SCALE_COLUMN_LABEL = "Scale of Analysis"
+
 class MultiscaleCollection:
     """Maintains the full dataset being used for analysis, and helps with handling scale discrepencies."""
     def __init__(self):
-        """Creates empty dataset. To add to the dataset, use append_data."""
+        """Creates empty dataset collection. To add to the dataset, use append_data."""
         # List of datasets being added
         self._datasets = []
         # Set of unified scales, which ignores unidentical scales
@@ -61,23 +57,27 @@ class MultiscaleCollection:
         # Unified 2D list of list of regression set rows
         self._regress_sets = []
 
-    def append_data(self, scale_data:MulticaleDataset, option:DatasetAppendOptions=DatasetAppendOptions.IgnoreUnaligned):
-        """Add new result data to dataset.
-        @param scale_data - scale data to be inserted. If none is given, nothing will occur.
+    def _append_data_single(self, dataset:MulticaleDataset, option:DatasetAppendOptions=DatasetAppendOptions.IgnoreUnaligned):
+        """Add data to dataset.
+        @param scale_data - scale data to be inserted.
         @param option - Option configuration option for appending data."""
-        # Check for null data
-        if scale_data is None:
-            return
         # If dataset has not been initialized, define it
         if not self._datasets:
-            self._datasets.append(scale_data)
-            self._scales = scale_data.get_scales()
-            self._areas.append([scale_data.get_relative_area(scale) for scale in sorted(self._scales)])
-            self._complexities.append([scale_data.get_complexity(scale) for scale in sorted(self._scales)])
+            self._datasets.append(dataset)
+            self._scales = dataset.get_scales()
+            self._areas.append([dataset.get_relative_area(scale) for scale in sorted(self._scales)])
+            self._complexities.append([dataset.get_complexity(scale) for scale in sorted(self._scales)])
             self._regress_sets = self.build_regress_sets()
         # Add to dataset
         else:
-            option.append(self, scale_data)
+            option.append(self, dataset)
+
+    def _append_data_list(self, dataset_list:list, option:DatasetAppendOptions=DatasetAppendOptions.IgnoreUnaligned):
+        """Add list of data to dataset.
+        @param scale_data - list of scale data to be inserted.
+        @param option - Option configuration option for appending data."""
+        for dataset in dataset_list:
+            self._append_data_single(dataset, option)
 
     def _append_ignore_unaligned_scales(self, scale_data:MulticaleDataset):
         """Add new result data to dataset. Ignores unaligned scales.
@@ -125,6 +125,14 @@ class MultiscaleCollection:
         # Build regression sets after creating new relative area list
         self._regress_sets = self.build_regress_sets()
 
+    def append_data(self, dataset, option:DatasetAppendOptions=DatasetAppendOptions.IgnoreUnaligned):
+        """Add data to dataset.
+        @param scale_data - scale data to be inserted. Needs to be either a MulticaleDataset or list of MulticaleDatasets.
+        @param option - Option configuration option for appending data."""
+        if isinstance(dataset, list): self._append_data_list(dataset, option)
+        elif isinstance(dataset, MulticaleDataset): self._append_data_single(dataset, option)
+        else: raise ValueError("Argument 'dataset' cannot be of type '" + type(dataset).__name__ + "'.")
+
     def build_regress_sets(self):
         """Iterate over all of the relative areas from each dataset, and compile them into a regress set.
         Create a list of relative areas for each scale at each index.
@@ -137,10 +145,37 @@ class MultiscaleCollection:
             output_reg_set.append(list(y_values))
         return output_reg_set
 
+    def build_table_data(self):
+        """Builds data to be display on the table.
+        @return Dictionary with (row,column) position tuple as key"""
+        # Start with scale of analysis column label
+        data_dict = {(start - 1, 0): _TABLE_SCALE_COLUMN_LABEL}
+        row_titles = self.get_row_titles()
+        start = 1
+
+        for num in range(start + 1, len(self.get_results_scale()) + 1 + start):
+            data_dict[(num, 0)] = self.get_results_scale()[num - (1 + start)]
+
+        for num in range(2, 2*len(self.get_legend_txt()) + 1, 2):
+            data_dict[(start, int(num - 1))] = self.get_legend_txt()[int(num / 2) - 1][:len(self.get_legend_txt()[int(num / 2) - 1]) - 4]
+            # relative area
+            data_dict[(start - 1, num - 1)] = row_titles[0]
+            data_dict[(start, int(num))] = self.get_legend_txt()[int(num / 2) - 1][:len(self.get_legend_txt()[int(num / 2) - 1]) - 4]
+            # Fractal complexity
+            data_dict[(start - 1, num)] = row_titles[1]
+
+            for i in range(start + 1, len(self.get_relative_area()[int(num / 2) - 1]) + 1 + start):
+                data_dict[(i, int(num - 1))] = self.get_relative_area()[int(num / 2) - 1][i - (1 + start)]
+
+            for i in range(start + 1, len(self.get_complexity()[int(num / 2) - 1]) + 1 + start):
+                data_dict[(i, int(num))] = self.get_complexity()[int(num / 2) - 1][i - (1 + start)]
+
+        return data_dict
+
     def get_results_scale(self): return sorted(self._scales)
-    def get_legend_txt(self): return [self._datasets[i].name for i in self._dataset_indicies]
-    def get_row_titles(self): return [self._datasets[i].row_titles for i in self._dataset_indicies]
-    def get_x_regress(self): return [self._datasets[i].regress_val for i in self._dataset_indicies]
+    def get_legend_txt(self): return [dataset.name for dataset in self._datasets]
+    def get_row_titles(self): return [dataset.row_titles for dataset in self._datasets]
+    def get_x_regress(self): return [dataset.regress_val for dataset in self._datasets]
     def get_relative_area(self): return self._areas
     def get_complexity(self): return self._complexities
     def get_regress_sets(self): return self._regress_sets
