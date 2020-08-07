@@ -111,20 +111,17 @@ class MntsImporter:
     @param result_file_path
     @param file_dir
     @param file_name
-    @param sensitivity_func
     @param analysis_func_wrapper
     
     @return If an exception is thrown, it can be recieved using the excep_queue queue.
     This queue outputs a tuple with data:
       [0] - Exception to re-raise
       [1] - Traceback to print out"""
-    def __init__(self, is_init, result_file_path, file_dir, file_name,
-                 sensitivity_func, analysis_func_wrapper):
+    def __init__(self, is_init, result_file_path, file_dir, file_name, analysis_func_wrapper):
         self.is_init = is_init
         self.result_file_path = result_file_path
         self.file_dir = file_dir
         self.file_name = file_name
-        self.sensitivity_func = sensitivity_func
         self.analysis_func_wrapper = analysis_func_wrapper
         if __debug__:
             print("Mountains Import Process Initialized.")
@@ -199,11 +196,7 @@ class MntsImporter:
             if __debug__:
                 print("Selected graph")
 
-        # Select sensitivity and analysis options
-        self.sensitivity_func()
-        if __debug__:
-            time.sleep(_DELAY)
-            print("Ran sensitivity selection")
+        # Select analysis options
         self.analysis_func_wrapper.call()
         if __debug__:
             time.sleep(_DELAY)
@@ -243,7 +236,7 @@ class MntsImporter:
         if __debug__:
             print("Closed file editor")
 
-def get_results_data(file_paths, results_dir, sensitive_func, analysis_func_wrapper):
+def get_results_data(file_paths, results_dir, analysis_func_wrapper):
     """Given the list of surface files and a results directory,
     generate the corresponding list of new file names and paths.
     Also generates mountains interaction process calls."""
@@ -261,30 +254,9 @@ def get_results_data(file_paths, results_dir, sensitive_func, analysis_func_wrap
         result_temp_paths.append(ImportUtils.append_to_path(surf_full_name, TEMP_PATH))
         # Add to function list
         mountains_processes.append(
-            MntsImporter(i==0, result_temp_paths[i], TEMP_PATH, surfName, sensitive_func, analysis_func_wrapper))
+            MntsImporter(i==0, result_temp_paths[i], TEMP_PATH, surfName, analysis_func_wrapper))
     # Output generated paths and functions
     return result_paths, result_temp_paths, mountains_processes
-
-def select_scale_sensitivity():
-    """Select scale-sensitivity option"""
-    ImportUtils.click_resource(ResourceFiles.SCALE_SENSITIVE_BTN)
-
-def select_complexity():
-    """Select scale-sensitivity option"""
-    ImportUtils.click_resource(ResourceFiles.COMPLEXITY_BTN)
-
-_sensitivity_option_map = {}
-class SensitivityOption(Enum):
-    """Used by ImportOptionsDialog to specify options for sensitivity combo box."""
-    Scale = ("Scale-sensitive Analysis", select_scale_sensitivity)
-    Complexity = ("Complexity Analysis", select_complexity)
-
-    def __init__(self, label, func):
-        self.label = label
-        self.func = func
-        # Assign label to function map
-        global _sensitivity_option_map
-        _sensitivity_option_map[label] = func
 
 def select_analysis_option(pos):
     """Click on the analysis menu button to prepare for selecting the option"""
@@ -315,10 +287,10 @@ class AnalysisOption(Enum):
         _analysis_option_map[label] = AnalysisOptionFuncWrapper(len(_analysis_option_map) + 1)
 
 class ImportOptionsDialog(wx.Dialog):
-    """Create surface import options selection. This includes specifying scale/complexity sensitivity,
-    the type of surface analysis being done, as well as the directory for saving the analysis data.
-    It can then be used to return these selected options wrapped within interactive functions designed
-    for Digital Surf's MountainsMap application."""
+    """Create surface import options selection. This includes specifying the type of surface analysis
+    being done, as well as the directory for saving the analysis data. It can then be used to return
+    these selected options wrapped within interactive functions designed for Digital Surf's MountainsMap 
+    application."""
 
     def __init__(self, parent, file_paths):
         """@param file_paths - List of surface file paths that will be analyzed into result files."""
@@ -339,29 +311,17 @@ class ImportOptionsDialog(wx.Dialog):
         analysis_label = wx.StaticText(self.options_panel, wx.ID_ANY, label="Analysis Type:")
         self.analysis_combo = self.getTypeCombo(AnalysisOption)
 
-        # Sensitivity Type Selection
-        sensitivity_label = wx.StaticText(self.options_panel, wx.ID_ANY, label="Sensitivity Type:")
-        self.sensitivity_combo = self.getTypeCombo(SensitivityOption)
-
         # Initialize sizer for both combo boxes
         combo_sizer = wx.BoxSizer(wx.HORIZONTAL)
         analysis_sizer = wx.BoxSizer(wx.VERTICAL)
-        sensitivity_sizer = wx.BoxSizer(wx.VERTICAL)
         # Initialize Analyasis sizer
         analysis_sizer.AddStretchSpacer()
         analysis_sizer.Add(analysis_label, flag=wx.ALIGN_LEFT)
         analysis_sizer.Add(self.analysis_combo, flag=wx.ALIGN_LEFT)
         analysis_sizer.AddStretchSpacer()
-        # Initialize Sensitivity sizer
-        sensitivity_sizer.AddStretchSpacer()
-        sensitivity_sizer.Add(sensitivity_label, flag=wx.ALIGN_LEFT)
-        sensitivity_sizer.Add(self.sensitivity_combo, flag=wx.ALIGN_LEFT)
-        sensitivity_sizer.AddStretchSpacer()
         # Layout combo sizers
         combo_sizer.AddStretchSpacer()
         combo_sizer.Add(analysis_sizer, flag=wx.CENTER)
-        combo_sizer.AddStretchSpacer()
-        combo_sizer.Add(sensitivity_sizer, flag=wx.CENTER)
         combo_sizer.AddStretchSpacer()
 
         # Results folder selection button handling
@@ -416,11 +376,10 @@ class ImportOptionsDialog(wx.Dialog):
             else: # Create new directory to save files, directory accepted
                 os.mkdir(selected_results_dir)
 
-            sensitive_func = _sensitivity_option_map[self.sensitivity_combo.GetStringSelection()]
             analysis_func = _analysis_option_map[self.analysis_combo.GetStringSelection()]
             # Build new file path based on given surface files and results dir
             new_file_paths, temp_file_paths, new_mountains_processes = \
-                get_results_data(self.file_paths, selected_results_dir, sensitive_func, analysis_func)
+                get_results_data(self.file_paths, selected_results_dir, analysis_func)
 
             # Possibly overwrite check was requested
             already_exists = []
