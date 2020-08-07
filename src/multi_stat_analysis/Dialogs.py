@@ -1330,7 +1330,7 @@ class R2byScaleDialog(wx.Frame):
 # class for the dialog which allows the user to set the x-regression values based on the opened data sets
 class XRValuesDialog(wx.Dialog):
     # Dynamic UI stuff
-    def __init__(self, parent, x):
+    def __init__(self, parent, regress_vals:list):
         wx.Dialog.__init__(self, parent, wx.ID_ANY, "X-Axis Regression Values", size=(450, 350))
         self.main_panel = wx.Panel(self, wx.ID_ANY)
 
@@ -1348,9 +1348,8 @@ class XRValuesDialog(wx.Dialog):
         self.sizer.Add(self.lblxvals, 1, wx.ALL, 5)
 
         self.txt_ctrl = []
-        # dynamically add a new textbox for each file that is opened
-        for value in x:
-            # default textbox value is the name of the file
+        # dynamically add a new textbox for each value that is given in the list
+        for value in regress_vals:
             txt = wx.TextCtrl(self.scroll_panel, value=str(value), pos=(140, 20), size=(250, -1))
             self.txt_ctrl.append(txt)
             self.sizer.Add(txt, 0, wx.ALL, 5)
@@ -1358,27 +1357,23 @@ class XRValuesDialog(wx.Dialog):
         self.ok = wx.Button(self.btn_panel, id=wx.ID_OK, label="OK", pos=(240, 0))
         self.cancel = wx.Button(self.btn_panel, id=wx.ID_CANCEL, label="Cancel", pos=(335, 0))
 
-        self.xvals_txt = ''
+        self.regress_vals = ''
         self.scroll_panel.SetSizer(self.sizer)
         self.scroll_panel.Layout()
         self.scroll_panel.Fit()
+
     # function for closing the dialog
     def OnQuit(self, event):
-
         self.Destroy()
+
     # function to save the user input values
     def SaveString(self):
-
-        vals = []
-
+        new_regress_vals = []
         for values in self.get_txtctrl():
+            new_regress_vals.append(float(values.GetValue()))
+        self.regress_vals = new_regress_vals
 
-            vals.append(float(values.GetValue()))
-
-        self.set_xvals(vals)
-
-    def get_xvals(self): return self.xvals_txt
-    def set_xvals(self, x): self.xvals_txt = x
+    def get_regress_vals(self): return self.regress_vals
     def get_txtctrl(self): return self.txt_ctrl
 
 class HHPlotDialog(wx.Frame):

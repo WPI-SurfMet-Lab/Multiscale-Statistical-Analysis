@@ -1,16 +1,16 @@
-
+from MultiscaleData import MultiscaleCollection
 import wx.grid
-
 
 class Workbook(wx.grid.GridTableBase):
 
-    def __init__(self, data:dict, name:str, rows:int, columns:int):
-        wx.grid.GridTableBase.__init__(self)
-        self.data = data
+    def __init__(self, dataset, name:str, rows:int, columns:int):
+        super().__init__()
         self.name = name
-        self.rows = rows
-        self.columns = columns
-        self.IsSaved = False
+        self._dataset = dataset
+        self._table_data = {}
+        self._rows = rows
+        self._columns = columns
+        self._IsSaved = False
 
     def GetNumberRows(self):
         return self.get_rows()
@@ -19,23 +19,30 @@ class Workbook(wx.grid.GridTableBase):
         return self.get_cols()
 
     def IsEmptyCell(self, row, col):
-        return self.data.get((row, col)) is not None
+        return self._table_data.get((row, col)) is not None
 
     def GetValue(self, row, col):
-        value = self.data.get((row, col))
+        value = self._table_data.get((row, col))
         if value is not None:
             return value
         else:
             return ''
 
     def SetValue(self, row, col, value):
-        self.data[(row, col)] = value
+        self._table_data[(row, col)] = value
 
-    def get_name(self): return self.name
-    def set_name(self, name): self.name = name
-    def get_data(self): return self.data
-    def set_data(self, data): self.data = data
-    def get_rows(self): return self.rows
-    def get_cols(self): return self.columns
-    def get_IsSaved(self): return self.IsSaved
-    def set_IsSaved(self, saved): self.IsSaved = saved
+    def get_dataset(self): return self._dataset
+    def append_data(self, data):
+        """Append data to the dataset."""
+        self._dataset.append_data(data)
+        self._table_data = self._dataset.build_table_data()
+
+    def get_relative_area(self): return self._dataset.get_relative_area()
+    def get_complexity(self): return self._dataset.get_complexity()
+
+    def get_table_data(self): return self._table_data
+    def set_table_data(self, data): self._table_data = data
+    def get_rows(self): return self._rows
+    def get_cols(self): return self._columns
+    def get_IsSaved(self): return self._IsSaved
+    def set_IsSaved(self, saved): self._IsSaved = saved

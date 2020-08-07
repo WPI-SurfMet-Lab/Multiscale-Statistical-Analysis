@@ -6,32 +6,7 @@ from wx import TextCtrl, TreeCtrl
 from wx.grid import Grid
 from Workbook import Workbook
 from MountainsImporter.Importer import import_surfaces
-from .MultiscaleData import MulticaleDataset, MultiscaleCollection
-
-class MultiscaleImporter:
-
-    def __init__(self, error_text:TextCtrl, grid:Grid, wb:Workbook):
-
-        # the error text object which allows for errors to be logged in the main window.
-        self.error_text = error_text
-        self.wb = wb
-
-    def get_relative_area(self): return self.relative_area
-    def get_results_scale(self): return self.results_scale
-    def get_legend_txt(self): return self.legend_text
-    def get_regress_sets(self): return self.regress_sets
-    def get_x_regress(self): return self.x_regress
-    def set_x_regress(self, xrvals): self.x_regress = xrvals
-    def set_results_scale(self, sclres): self.results_scale = sclres
-    def set_relative_area(self, rarea): self.relative_area = rarea
-    def set_regress_sets(self, rsets): self.regress_sets = rsets
-    def set_legend_text(self, ltxt): self.legend_text = ltxt
-    def get_error_text(self): return self.error_text
-    def get_complexity(self): return self.complexity
-    def set_complexity(self, comp): self.complexity = comp
-    def get_grid(self): return self.grid
-    def get_strings(self): return self.strings
-    def set_strings(self, string): self.strings = string
+from MultiscaleData import MulticaleDataset, MultiscaleCollection
 
 def open_sfrax(file_paths) -> list:
     """Opens .csv files from Sfrax using a list of file paths.
@@ -43,7 +18,7 @@ def open_sfrax(file_paths) -> list:
 
     # iterate over each file in the file path
     for file in file_paths:
-        scales - []
+        scales = []
         area_vals = []
         complex_vals = []
         row_labels = []
@@ -84,7 +59,7 @@ def open_results_file(file_paths) -> list:
 
     # iterate over each file to open each file and read the data
     for file in file_paths:
-        scales - []
+        scales = []
         area_vals = []
         complex_vals = []
         row_labels = []
@@ -120,7 +95,7 @@ def open_results_file(file_paths) -> list:
                 except ValueError as e:
                     if dataFound:
                         __main__.error_txt.AppendText("Open (" + openfile.name + ":" + str(lineNum) + "): " + str(e) + '\n')
-                    else:
+                    elif not row_labels and len(line) >= 3:
                         row_labels = [line[1], line[2]]
         # Create dataset and add to return list
         datasets.append(MulticaleDataset(os.path.basename(file), scales, area_vals, complex_vals, row_labels))

@@ -35,7 +35,7 @@ class FtestDialog(wx.Dialog):
         #                               "The default assumption is that the variance of group 1 ≠ variance of group 2",
         #                               pos=(115, 50))
 
-        self.group_selection = GroupSelection(self.panel, self.get_data(), 110)
+        self.group_selection = GroupSelection(self.panel, self.data, 110)
 
         # self.tails_txt = wx.StaticText(self.panel, wx.ID_ANY, 'Tails: ', pos=(15, 340))
         self.tails_choices = ['two (σ1 = σ2)', 'left (σ1 ≥ σ2)', 'right (σ1 ≤ σ2)']
@@ -54,7 +54,7 @@ class FtestDialog(wx.Dialog):
 
         self.range_txt = wx.StaticText(self.panel, wx.ID_ANY, 'Scale: ', pos=(480, 340))
 
-        self.range_choices = list(map(str, self.get_data().get_results_scale()))
+        self.range_choices = list(map(str, self.data.get_results_scale()))
 
         self.range_min_select = wx.Choice(self.panel, wx.ID_ANY, pos=(520, 337), choices=self.range_choices)
         self.to = wx.StaticText(self.panel, wx.ID_ANY, ' to ', pos=(635, 340))
@@ -102,8 +102,8 @@ class FtestDialog(wx.Dialog):
 
                 d = self.get_f_data1()
 
-                # print(self.get_data().get_results_scale()[self.get_data().get_results_scale().index(float(self.get_range_min())):
-                #       self.get_data().get_results_scale().index(float(self.get_range_max()))+1])
+                # print(self.data.get_results_scale()[self.data.get_results_scale().index(float(self.get_range_min())):
+                #       self.data.get_results_scale().index(float(self.get_range_max()))+1])
 
                 if tails == 'two (σ1 = σ2)':
                     self.F_TwoTail(alpha, d, len(d))
@@ -130,12 +130,12 @@ class FtestDialog(wx.Dialog):
                                 self.get_flist().insert(index, 0)
                                 self.get_flist().remove(i)
 
-                    x = np.array(self.get_data().get_results_scale()[self.get_data().get_results_scale().index(float(self.get_range_min())):
-                                                            self.get_data().get_results_scale().index(float(self.get_range_max()))+1])
+                    x = np.array(self.data.get_results_scale()[self.data.get_results_scale().index(float(self.get_range_min())):
+                                                            self.data.get_results_scale().index(float(self.get_range_max()))+1])
 
                     plot = ScatterDialog(self.get_parent(), 'Two Tail F-test Results', x,
                                          self.get_flist(), self.get_tree_menu(), self.get_root(), 'F-Value by Scale',
-                                         'Scale (um^2)', 'F-Value', self.get_data(), self.get_res_list())
+                                         'Scale (um^2)', 'F-Value', self.data, self.get_res_list())
                     plot.graphmenu.Remove(plot.annotate)
                     statsmenu = plot.menuBar.FindMenu('Statistics')
                     if statsmenu >= 0:
@@ -157,13 +157,13 @@ class FtestDialog(wx.Dialog):
                                 self.get_flist().remove(i)
 
                     # needs log plot
-                    x = np.array(self.get_data().get_results_scale()[
-                                        self.get_data().get_results_scale().index(float(self.get_range_min())):
-                                        self.get_data().get_results_scale().index(float(self.get_range_max())) + 1])
+                    x = np.array(self.data.get_results_scale()[
+                                        self.data.get_results_scale().index(float(self.get_range_min())):
+                                        self.data.get_results_scale().index(float(self.get_range_max())) + 1])
 
                     plot = ScatterDialog(self.get_parent(), 'Left Tail F-test Results', x,
                                          self.get_flist(), self.get_tree_menu(), self.get_root(), 'F-Value by Scale',
-                                         'Scale (um^2)', 'F-Value', self.get_data(), self.get_res_list())
+                                         'Scale (um^2)', 'F-Value', self.data, self.get_res_list())
                     plot.statsmenu.Remove(plot.confidence)
                     plot.get_graph().draw_scatter()
                     self.get_tree_menu().AppendItem(self.get_root(), "Left Tail F-test Results", data=plot)
@@ -181,13 +181,13 @@ class FtestDialog(wx.Dialog):
                                 self.get_flist().insert(index, 0)
                                 self.get_flist().remove(i)
                     # needs log plot
-                    x = np.array(self.get_data().get_results_scale()[
-                                        self.get_data().get_results_scale().index(float(self.get_range_min())):
-                                        self.get_data().get_results_scale().index(float(self.get_range_max())) + 1])
+                    x = np.array(self.data.get_results_scale()[
+                                        self.data.get_results_scale().index(float(self.get_range_min())):
+                                        self.data.get_results_scale().index(float(self.get_range_max())) + 1])
 
                     plot = ScatterDialog(self.get_parent(), 'Right Tail F-test Results', x,
                                          self.get_flist(), self.get_tree_menu(), self.get_root(), 'F-Value by Scale',
-                                         'Scale (um^2)', 'F-Value', self.get_data(), self.get_res_list())
+                                         'Scale (um^2)', 'F-Value', self.data, self.get_res_list())
                     plot.get_graph().draw_scatter()
                     self.get_tree_menu().AppendItem(self.get_root(), "Right Tail F-test Results", data=plot)
                     self.get_results_txt().AppendText('See graph.')
@@ -221,13 +221,13 @@ class FtestDialog(wx.Dialog):
 
         f_data = []
 
-        d1 = self.get_data().get_relative_area()[self.get_data().get_legend_txt().index(*self.get_group_selection().get_group1_choices()[0])]
-        d2 = self.get_data().get_relative_area()[self.get_data().get_legend_txt().index(*self.get_group_selection().get_group2_choices()[0])]
+        d1 = self.data.get_relative_area()[self.data.get_legend_txt().index(*self.get_group_selection().get_group1_choices()[0])]
+        d2 = self.data.get_relative_area()[self.data.get_legend_txt().index(*self.get_group_selection().get_group2_choices()[0])]
 
-        d1 = d1[self.get_data().get_results_scale().index(float(self.get_range_min())):
-                  self.get_data().get_results_scale().index(float(self.get_range_max()))+1]
-        d2 = d2[self.get_data().get_results_scale().index(float(self.get_range_min())):
-                  self.get_data().get_results_scale().index(float(self.get_range_max()))+1]
+        d1 = d1[self.data.get_results_scale().index(float(self.get_range_min())):
+                  self.data.get_results_scale().index(float(self.get_range_max()))+1]
+        d2 = d2[self.data.get_results_scale().index(float(self.get_range_min())):
+                  self.data.get_results_scale().index(float(self.get_range_max()))+1]
 
         f_data.append(d1)
         f_data.append(d2)
@@ -243,11 +243,11 @@ class FtestDialog(wx.Dialog):
         # create the groups to do the F-test based on the selected data choices
         for data_set in self.get_group_selection().get_group1_choices():
 
-            d1.append(self.get_data().get_relative_area()[self.get_data().get_legend_txt().index(*data_set)])
+            d1.append(self.data.get_relative_area()[self.data.get_legend_txt().index(*data_set)])
 
         for data_set in self.get_group_selection().get_group2_choices():
 
-            d2.append(self.get_data().get_relative_area()[self.get_data().get_legend_txt().index(*data_set)])
+            d2.append(self.data.get_relative_area()[self.data.get_legend_txt().index(*data_set)])
 
         g1 = []
         g2 = []
@@ -264,8 +264,8 @@ class FtestDialog(wx.Dialog):
 
             f_data.append(list(d))
         # get the groups only for the specified range
-        f_data = f_data[self.get_data().get_results_scale().index(float(self.get_range_min())):
-                  self.get_data().get_results_scale().index(float(self.get_range_max()))+1]
+        f_data = f_data[self.data.get_results_scale().index(float(self.get_range_min())):
+                  self.data.get_results_scale().index(float(self.get_range_max()))+1]
 
         return f_data
 
@@ -434,7 +434,7 @@ class TtestDialog(wx.Dialog):
 
         self.range_txt = wx.StaticText(self.panel, wx.ID_ANY, 'Scale: ', pos=(480, 340))
 
-        self.range_choices = list(map(str, self.get_data().get_results_scale()))
+        self.range_choices = list(map(str, self.data.get_results_scale()))
 
         self.range_min_select = wx.Choice(self.panel, wx.ID_ANY, pos=(520, 337), choices=self.range_choices)
         self.to = wx.StaticText(self.panel, wx.ID_ANY, ' to ', pos=(635, 340))
@@ -482,8 +482,8 @@ class TtestDialog(wx.Dialog):
 
                 d = self.get_f_data1()
 
-                # print(self.get_data().get_results_scale()[self.get_data().get_results_scale().index(float(self.get_range_min())):
-                #       self.get_data().get_results_scale().index(float(self.get_range_max()))+1])
+                # print(self.data.get_results_scale()[self.data.get_results_scale().index(float(self.get_range_min())):
+                #       self.data.get_results_scale().index(float(self.get_range_max()))+1])
 
                 # if tails == 'two (σ1 = σ2)':
                 #     self.WelchsTTest(alpha, d, len(d))
@@ -510,12 +510,12 @@ class TtestDialog(wx.Dialog):
                             self.get_tlist().insert(index, 0)
                             self.get_tlist().remove(i)
                 # needs log plot
-                x = np.array(self.get_data().get_results_scale()[self.get_data().get_results_scale().index(float(self.get_range_min())):
-                                                        self.get_data().get_results_scale().index(float(self.get_range_max()))+1])
+                x = np.array(self.data.get_results_scale()[self.data.get_results_scale().index(float(self.get_range_min())):
+                                                        self.data.get_results_scale().index(float(self.get_range_max()))+1])
 
                 plot = ScatterDialog(self.get_parent(), "Welch\'s T-test Results", x,
                                      self.get_tlist(), self.get_tree_menu(), self.get_root(), 'T-Value by Scale',
-                                     'Scale (um^2)', 'T-Value', self.get_data(), self.get_res_list())
+                                     'Scale (um^2)', 'T-Value', self.data, self.get_res_list())
                 plot.graphmenu.Remove(plot.annotate)
                 statsmenu = plot.menuBar.FindMenu('Statistics')
                 if statsmenu >= 0:
@@ -538,12 +538,12 @@ class TtestDialog(wx.Dialog):
                 #                 self.get_tlist().insert(index, 0)
                 #                 self.get_tlist().remove(i)
                 #     # needs log plot
-                #     x = np.array(self.get_data().get_results_scale()[self.get_data().get_results_scale().index(float(self.get_range_min())):
-                #                                             self.get_data().get_results_scale().index(float(self.get_range_max()))+1])
+                #     x = np.array(self.data.get_results_scale()[self.data.get_results_scale().index(float(self.get_range_min())):
+                #                                             self.data.get_results_scale().index(float(self.get_range_max()))+1])
                 #
                 #     plot = ScatterDialog(self.get_parent(), 'Two Tail T-test Results', x,
                 #                          self.get_tlist(), self.get_tree_menu(), self.get_root(), 'T-Value by Scale',
-                #                          'Scale (um^2)', 'T-Value', self.get_data(), self.get_res_list())
+                #                          'Scale (um^2)', 'T-Value', self.data, self.get_res_list())
                 #     plot.statsmenu.Remove(plot.confidence)
                 #     plot.get_graph().draw_scatter()
                 #     self.get_tree_menu().AppendItem(self.get_root(), "Two Tail T-test Results", data=plot)
@@ -561,13 +561,13 @@ class TtestDialog(wx.Dialog):
                 #                 self.get_tlist().remove(i)
                 #
                 #     # needs log plot
-                #     x = np.array(self.get_data().get_results_scale()[
-                #                         self.get_data().get_results_scale().index(float(self.get_range_min())):
-                #                         self.get_data().get_results_scale().index(float(self.get_range_max())) + 1])
+                #     x = np.array(self.data.get_results_scale()[
+                #                         self.data.get_results_scale().index(float(self.get_range_min())):
+                #                         self.data.get_results_scale().index(float(self.get_range_max())) + 1])
                 #
                 #     plot = ScatterDialog(self.get_parent(), 'Left Tail T-test Results', x,
                 #                          self.get_tlist(), self.get_tree_menu(), self.get_root(), 'T-Value by Scale',
-                #                          'Scale (um^2)', 'T-Value', self.get_data(), self.get_res_list())
+                #                          'Scale (um^2)', 'T-Value', self.data, self.get_res_list())
                 #     plot.statsmenu.Remove(plot.confidence)
                 #     plot.get_graph().draw_scatter()
                 #     self.get_tree_menu().AppendItem(self.get_root(), "Left Tail T-test Results", data=plot)
@@ -584,13 +584,13 @@ class TtestDialog(wx.Dialog):
                 #                 self.get_tlist().insert(index, 0)
                 #                 self.get_tlist().remove(i)
                 #     # needs log plot
-                #     x = np.array(self.get_data().get_results_scale()[
-                #                         self.get_data().get_results_scale().index(float(self.get_range_min())):
-                #                         self.get_data().get_results_scale().index(float(self.get_range_max())) + 1])
+                #     x = np.array(self.data.get_results_scale()[
+                #                         self.data.get_results_scale().index(float(self.get_range_min())):
+                #                         self.data.get_results_scale().index(float(self.get_range_max())) + 1])
                 #
                 #     plot = ScatterDialog(self.get_parent(), 'Right Tail T-test Results', x,
                 #                          self.get_tlist(), self.get_tree_menu(), self.get_root(), 'T-Value by Scale',
-                #                          'Scale (um^2)', 'T-Value', self.get_data(), self.get_res_list())
+                #                          'Scale (um^2)', 'T-Value', self.data, self.get_res_list())
                 #     plot.statsmenu.Remove(plot.confidence)
                 #     plot.get_graph().draw_scatter()
                 #     self.get_tree_menu().AppendItem(self.get_root(), "Right Tail T-test Results", data=plot)
@@ -619,13 +619,13 @@ class TtestDialog(wx.Dialog):
 
         f_data = []
 
-        d1 = self.get_data().get_relative_area()[self.get_data().get_legend_txt().index(*self.get_group_selection().get_group1_choices()[0])]
-        d2 = self.get_data().get_relative_area()[self.get_data().get_legend_txt().index(*self.get_group_selection().get_group2_choices()[0])]
+        d1 = self.data.get_relative_area()[self.data.get_legend_txt().index(*self.get_group_selection().get_group1_choices()[0])]
+        d2 = self.data.get_relative_area()[self.data.get_legend_txt().index(*self.get_group_selection().get_group2_choices()[0])]
 
-        d1 = d1[self.get_data().get_results_scale().index(float(self.get_range_min())):
-                  self.get_data().get_results_scale().index(float(self.get_range_max()))+1]
-        d2 = d2[self.get_data().get_results_scale().index(float(self.get_range_min())):
-                  self.get_data().get_results_scale().index(float(self.get_range_max()))+1]
+        d1 = d1[self.data.get_results_scale().index(float(self.get_range_min())):
+                  self.data.get_results_scale().index(float(self.get_range_max()))+1]
+        d2 = d2[self.data.get_results_scale().index(float(self.get_range_min())):
+                  self.data.get_results_scale().index(float(self.get_range_max()))+1]
 
         f_data.append(d1)
         f_data.append(d2)
@@ -641,11 +641,11 @@ class TtestDialog(wx.Dialog):
 
         for data_set in self.get_group_selection().get_group1_choices():
 
-            d1.append(self.get_data().get_relative_area()[self.get_data().get_legend_txt().index(*data_set)])
+            d1.append(self.data.get_relative_area()[self.data.get_legend_txt().index(*data_set)])
 
         for data_set in self.get_group_selection().get_group2_choices():
 
-            d2.append(self.get_data().get_relative_area()[self.get_data().get_legend_txt().index(*data_set)])
+            d2.append(self.data.get_relative_area()[self.data.get_legend_txt().index(*data_set)])
 
         g1 = []
         g2 = []
@@ -662,8 +662,8 @@ class TtestDialog(wx.Dialog):
 
             f_data.append(list(d))
 
-        f_data = f_data[self.get_data().get_results_scale().index(float(self.get_range_min())):
-                  self.get_data().get_results_scale().index(float(self.get_range_max()))+1]
+        f_data = f_data[self.data.get_results_scale().index(float(self.get_range_min())):
+                  self.data.get_results_scale().index(float(self.get_range_max()))+1]
 
         return f_data
 
@@ -789,7 +789,7 @@ class ANOVAtestDialog(wx.Dialog):
         #                               "The default assumption is that the variance of group 1 ≠ variance of group 2",
         #                               pos=(115, 50))
 
-        self.group_selection = GroupSelection(self.panel, self.get_data(), 110)
+        self.group_selection = GroupSelection(self.panel, self.data, 110)
 
         # self.tails_txt = wx.StaticText(self.panel, wx.ID_ANY, 'Tails: ', pos=(15, 340))
         # self.tails_choices = ['two (σ1 = σ2)', 'left (σ1 ≥ σ2)', 'right (σ1 ≤ σ2)']
@@ -803,7 +803,7 @@ class ANOVAtestDialog(wx.Dialog):
 
         self.range_txt = wx.StaticText(self.panel, wx.ID_ANY, 'Scale: ', pos=(180, 340))
 
-        self.range_choices = list(map(str, self.get_data().get_results_scale()))
+        self.range_choices = list(map(str, self.data.get_results_scale()))
 
         self.range_min_select = wx.Choice(self.panel, wx.ID_ANY, pos=(220, 337), choices=self.range_choices)
         self.to = wx.StaticText(self.panel, wx.ID_ANY, ' to ', pos=(335, 340))
@@ -877,17 +877,17 @@ class ANOVAtestDialog(wx.Dialog):
                 #             self.get_flist().insert(index, 0)
                 #             self.get_flist().remove(i)
 
-                x = self.get_data().get_results_scale()[
-                                    self.get_data().get_results_scale().index(float(self.get_range_min())):
-                                    self.get_data().get_results_scale().index(float(self.get_range_max())) + 1]
+                x = self.data.get_results_scale()[
+                                    self.data.get_results_scale().index(float(self.get_range_min())):
+                                    self.data.get_results_scale().index(float(self.get_range_max())) + 1]
                 # needs log plot
-                xlog = np.array(self.get_data().get_results_scale()[
-                                    self.get_data().get_results_scale().index(float(self.get_range_min())):
-                                    self.get_data().get_results_scale().index(float(self.get_range_max())) + 1])
+                xlog = np.array(self.data.get_results_scale()[
+                                    self.data.get_results_scale().index(float(self.get_range_min())):
+                                    self.data.get_results_scale().index(float(self.get_range_max())) + 1])
 
                 plot = ScatterDialog(self.get_parent(), 'ANOVA Results', xlog,
                                      self.get_flist(), self.get_tree_menu(), self.get_root(), 'MSR by Scale',
-                                     'Scale (um^2)', 'MSR', self.get_data(), self.get_res_list())
+                                     'Scale (um^2)', 'MSR', self.data, self.get_res_list())
                 plot.get_graph().set_min_msr(MSR_min)
                 plot.get_graph().draw_scatter()
                 plot.get_graph().draw_line(x, MSR_min)
@@ -930,15 +930,15 @@ class ANOVAtestDialog(wx.Dialog):
 
         f_data = []
 
-        d1 = self.get_data().get_relative_area()[
-            self.get_data().get_legend_txt().index(*self.get_group_selection().get_group1_choices()[0])]
-        d2 = self.get_data().get_relative_area()[
-            self.get_data().get_legend_txt().index(*self.get_group_selection().get_group2_choices()[0])]
+        d1 = self.data.get_relative_area()[
+            self.data.get_legend_txt().index(*self.get_group_selection().get_group1_choices()[0])]
+        d2 = self.data.get_relative_area()[
+            self.data.get_legend_txt().index(*self.get_group_selection().get_group2_choices()[0])]
 
-        d1 = d1[self.get_data().get_results_scale().index(float(self.get_range_min())):
-                self.get_data().get_results_scale().index(float(self.get_range_max())) + 1]
-        d2 = d2[self.get_data().get_results_scale().index(float(self.get_range_min())):
-                self.get_data().get_results_scale().index(float(self.get_range_max())) + 1]
+        d1 = d1[self.data.get_results_scale().index(float(self.get_range_min())):
+                self.data.get_results_scale().index(float(self.get_range_max())) + 1]
+        d2 = d2[self.data.get_results_scale().index(float(self.get_range_min())):
+                self.data.get_results_scale().index(float(self.get_range_max())) + 1]
 
         f_data.append(d1)
         f_data.append(d2)
@@ -953,10 +953,10 @@ class ANOVAtestDialog(wx.Dialog):
         d2 = []
 
         for data_set in self.get_group_selection().get_group1_choices():
-            d1.append(self.get_data().get_relative_area()[self.get_data().get_legend_txt().index(*data_set)])
+            d1.append(self.data.get_relative_area()[self.data.get_legend_txt().index(*data_set)])
 
         for data_set in self.get_group_selection().get_group2_choices():
-            d2.append(self.get_data().get_relative_area()[self.get_data().get_legend_txt().index(*data_set)])
+            d2.append(self.data.get_relative_area()[self.data.get_legend_txt().index(*data_set)])
 
         g1 = []
         g2 = []
@@ -970,8 +970,8 @@ class ANOVAtestDialog(wx.Dialog):
         for d in zip(g1, g2):
             f_data.append(list(d))
 
-        f_data = f_data[self.get_data().get_results_scale().index(float(self.get_range_min())):
-                        self.get_data().get_results_scale().index(float(self.get_range_max())) + 1]
+        f_data = f_data[self.data.get_results_scale().index(float(self.get_range_min())):
+                        self.data.get_results_scale().index(float(self.get_range_max())) + 1]
 
         return f_data
 
@@ -1083,7 +1083,7 @@ class GroupSelection:
         self.data_selection1.SetBackgroundColour('#f0f0f0')
         self.data_selection1.InsertColumn(0, "0", width=130)
         self.data_choices1 = []
-        [self.data_choices1.append([data_set]) for data_set in self.get_data().get_legend_txt()]
+        [self.data_choices1.append([data_set]) for data_set in self.data.get_legend_txt()]
         [self.data_selection1.Append(item) for item in self.get_data_choices1()]
 
         self.group1_box = wx.StaticBox(self.panel, wx.ID_ANY, 'Group 1', pos=(230, y), size=(150, 200))
@@ -1116,7 +1116,7 @@ class GroupSelection:
         self.data_selection2.SetBackgroundColour('#f0f0f0')
         self.data_selection2.InsertColumn(0, "0", width=130)
         self.data_choices2 = []
-        [self.data_choices2.append([data_set]) for data_set in self.get_data().get_legend_txt()]
+        [self.data_choices2.append([data_set]) for data_set in self.data.get_legend_txt()]
         [self.data_selection2.Append(item) for item in self.get_data_choices2()]
 
         self.group2_box = wx.StaticBox(self.panel, wx.ID_ANY, 'Group 2', pos=(630, y), size=(150, 200))
@@ -1320,10 +1320,10 @@ class ScatterPlot(wx.Panel):
                         pos = self.get_scatter_plot().get_offsets()[ind["ind"][0]]
 
                         scale = pos[0]
-                        index = self.get_data().get_results_scale().index(scale)
+                        index = self.data.get_results_scale().index(scale)
                         # print("Scale: {}".format(scale))
                         # print("Pos: {}".format(pos))
-                        # print('Scale List: {}'.format(self.get_data().get_results_scale()))
+                        # print('Scale List: {}'.format(self.data.get_results_scale()))
                         # print('Index: {}'.format(index))
                         # print('Results List: {}'.format(self.get_res_list()))
                         results = self.get_res_list()[index]
