@@ -229,7 +229,7 @@ def OnSelection(event):
     selected = tree_menu.GetItemData(tree_menu.GetSelection())
 
     if isinstance(selected, Workbook):
-        error_txt.AppendText("Wb: Switching to -- " + selected.get_name() + "\n")
+        error_txt.AppendText("Wb: Switching to -- " + selected.name + "\n")
         grid.SetTable(selected)
         grid.AutoSizeColumns()
         grid.Refresh()
@@ -242,6 +242,10 @@ def OnRename(event):
     selectedID = tree_menu.GetSelection()
     selected = tree_menu.GetItemData(selectedID)
     newName = event.GetLabel()
+
+    # Name was not changed, or is changed to something invalid. Leave event call early.
+    if not newName:
+        return
 
     if isinstance(selected, Workbook):
         error_txt.AppendText("Wb: Renaming `" + selected.name + "` to `" + newName + "`\n")
