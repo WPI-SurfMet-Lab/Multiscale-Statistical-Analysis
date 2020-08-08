@@ -357,6 +357,11 @@ def OnOpen(event):
 
             # Handle the opening and reading of the selected files
             datasets = choices[selection_index][1](filepath)
+
+            # Check if no files were opened (or terminated early)
+            if datasets is None or not datasets:
+                return
+
             wb.append_data(datasets)
             grid.AutoSize()
             MergeFileNameCells(wb.get_dataset().get_size())

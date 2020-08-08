@@ -430,6 +430,7 @@ class ImportInfoDialog(wx.MessageDialog):
     tool_information = \
     "Please follow these requirements in order to have the most optimal/functional experience with" \
     "the surface import tool:\n\n" \
+    "  - To recieve reliable results, the means of measuring and equipment used should be identical between surfaces\n"\
     "  - Do not move your mouse or use the keyboard during the import process\n" \
     "  - Enable the MountainsMap product configuration startup window\n" \
     "  - Verify that last usage of MountainsMap did not terminate unexpectedly\n" \
