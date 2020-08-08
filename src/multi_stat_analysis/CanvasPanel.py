@@ -540,7 +540,7 @@ class RegressionPlot(wx.Panel):
 # TODO: rename the class name
 class SclbyAreaPlot(wx.Panel):
 
-    _X_AXIS_LABEL = "Scale-sensitive fractal analysis"
+    _X_AXIS_LABEL = "Scale-sensitive multiscale analysis"
 
     def __init__(self, parent, x, y, data):
         # gets the Panel properties

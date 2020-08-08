@@ -290,7 +290,7 @@ def OnRename(event):
 def OnAbout(event):
     version = 'v' + __version__
     description = 'An Open-Source, Python-Based application to perform multi-scale \n' \
-                  'regression and discrimination analysis using results from Surfract\n' \
+                  'regression and discrimination analysis using results from Sfrax\n' \
                   'and MountainsMap. Developed in collaboration with Christopher A.\n' \
                   'Brown, Ph.D., PE, and the WPI Surface Metrology Lab. Contact\n' \
                   'mespofford@wpi.edu for details. You can support the development of this\n' \

@@ -11,7 +11,7 @@ class MulticaleDataset:
     
     def __init__(self, name="",
                  scales=[], relative_area=[], complexity=[],
-                 row_labels=["Relative Area", "Fractal complexity"]):
+                 row_labels=["Relative Area", "Multiscale complexity"]):
         """Generate MultiscaleDataset using given values."""
         self.name = name
         self.regress_val = self.name

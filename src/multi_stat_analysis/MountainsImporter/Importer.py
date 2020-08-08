@@ -138,7 +138,7 @@ class MntsImporter:
             if self.is_init:
                 self.init_mnts()
 
-            # Generate results file from scale-sensitive fractal analysis
+            # Generate results file from scale-sensitive multiscale analysis
             self.option_select_export_func()
             # Throw exception if the results file was not correctly generated
             if not os.path.exists(self.result_file_path):
