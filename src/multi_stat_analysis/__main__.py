@@ -537,10 +537,10 @@ if __name__ == "__main__":
     graphmenu = wx.Menu()
     area_scale = graphmenu.Append(wx.ID_ANY, 'Area - Scale Plot', 'Area - Scale Plot')
     comp_scale = graphmenu.Append(wx.ID_ANY, 'Complexity - Scale Plot', 'Complexity - Scale Plot')
-    HHplot = graphmenu.Append(wx.ID_ANY, 'Height-Height Plot', 'Height-Height Plot')
+    #HHplot = graphmenu.Append(wx.ID_ANY, 'Height-Height Plot', 'Height-Height Plot')
     frame.Bind(wx.EVT_MENU, OnAreaPlot, area_scale)
     frame.Bind(wx.EVT_MENU, OnComplexityPlot, comp_scale)
-    frame.Bind(wx.EVT_MENU, OnHHPlot, HHplot)
+    #frame.Bind(wx.EVT_MENU, OnHHPlot, HHplot)
 
     menuBar = wx.MenuBar()
     menuBar.Append(filemenu, 'File')
