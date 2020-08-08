@@ -224,18 +224,51 @@ def OnHHPlot(event):
     resid = gdlg19.Show()
     tree_menu.Refresh()
 
+_curr_merged_cell_count = 0
+_merge_length = 2
+def MergeFileNameCells(cell_count:int):
+    global _curr_merged_cell_count, _merge_length
+    # Merging does not need to be done if no change has been made
+    if _curr_merged_cell_count == cell_count:
+        return
+
+    # Difference between modified cells
+    diff = cell_count - _curr_merged_cell_count
+    step = -_merge_length
+    merge_length = _merge_length
+    largest_count = cell_count
+
+    # Determine if cells need to be merged or unmerged
+    # Determine largest cell count
+    if diff < 0:
+        largest_count = _curr_merged_cell_count
+        merge_length = 1
+
+    # Located at the tail of the cells being changed
+    start = (largest_count * 2) - 1
+    # Located right after where last change will occur
+    end = start - (abs(diff) * 2)
+
+    # Merge the cells within the calculated range
+    for col in range(start, end, step):
+        grid.SetCellSize(0, col, 1, merge_length)
+
+    # Define new cell count to be merged
+    _curr_merged_cell_count = cell_count
+
 # function to get selected graph on left side of main screen
 def OnSelection(event):
-    selected = tree_menu.GetItemData(tree_menu.GetSelection())
+    wb = tree_menu.GetItemData(tree_menu.GetSelection())
 
-    if isinstance(selected, Workbook):
-        error_txt.AppendText("Wb: Switching to -- " + selected.name + "\n")
-        grid.SetTable(selected)
-        grid.AutoSizeColumns()
+    if isinstance(wb, Workbook):
+        error_txt.AppendText("Wb: Switching to -- " + wb.name + "\n")
+        grid.SetTable(wb)
+        grid.AutoSize()
+        MergeFileNameCells(wb.get_dataset().get_size())
         grid.Refresh()
     else:
-        selected.CenterOnScreen()
-        selected.Show()
+        wb.CenterOnScreen()
+        wb.Show()
 
 # function to rename selected graphs/workbooks
 def OnRename(event):
@@ -325,11 +358,12 @@ def OnOpen(event):
             # Handle the opening and reading of the selected files
             datasets = choices[selection_index][1](filepath)
             wb.append_data(datasets)
-            grid.AutoSizeColumns()
+            grid.AutoSize()
+            MergeFileNameCells(wb.get_dataset().get_size())
             grid.Refresh()
             output = True
         elif result == wx.ID_CANCEL:
-            output = False
+            pass
     except (Exception) as e:
         error_txt.AppendText("File Open: " + str(e) + '\n')
         if __debug__:
@@ -347,7 +381,8 @@ def OnNewWB(event):
     grid.ClearGrid()
     new_wb = Workbook(MultiscaleCollection(), 'workbook{}'.format(wb_counter), grid.GetNumberRows(), grid.GetNumberCols())
     grid.SetTable(new_wb)
-    grid.AutoSizeColumns()
+    MergeFileNameCells(0)
+    grid.AutoSize()
     grid.Refresh()
 
     item = tree_menu.AppendItem(root, new_wb.name, data=new_wb)
@@ -575,6 +610,7 @@ if __name__ == "__main__":
     main_sizer.Add(grid, 1, wx.EXPAND)
     main_panel.SetSizer(main_sizer)
     grid.CreateGrid(1000, 100)
+    grid.EnableEditing(False)
 
     OnNewWB(wx.EVT_ACTIVATE_APP)
 

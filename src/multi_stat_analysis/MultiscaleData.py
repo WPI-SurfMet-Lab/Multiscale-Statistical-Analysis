@@ -38,7 +38,7 @@ class DatasetAppendOptions(Enum):
 
 class MultiscaleDisjointCollectionException(Exception):
     def __init__(self, dataset:MulticaleDataset):
-        super().__init__("The dataset" + dataset.name + " being added to MultiscaleCollection has disjoint scale values.")
+        super().__init__("The dataset " + dataset.name + " being added has disjoint scale values.")
 
 _TABLE_SCALE_COLUMN_LABEL = "Scale of Analysis"
 
@@ -200,6 +200,7 @@ class MultiscaleCollection:
 
         return data_dict
 
+    def get_size(self): return len(self._datasets)
     def get_results_scale(self): return self._scales_list
     def get_legend_txt(self): return self._names
     def get_row_labels(self): return self._row_labels

@@ -6,7 +6,7 @@ from wx import TextCtrl, TreeCtrl
 from wx.grid import Grid
 from Workbook import Workbook
 from MountainsImporter.Importer import import_surfaces
-from MultiscaleData import MulticaleDataset, MultiscaleCollection
+from MultiscaleData import MulticaleDataset, MultiscaleCollection, MultiscaleDisjointCollectionException
 
 def open_sfrax(file_paths) -> list:
     """Opens .csv files from Sfrax using a list of file paths.
@@ -25,7 +25,6 @@ def open_sfrax(file_paths) -> list:
 
         # open the file as 'openfile'
         with open(file) as openfile:
-
             # create a reader for the .csv file and read each line to find required data
             reader = csv.reader(openfile, dialect='excel')
             for row in reader:
@@ -43,7 +42,11 @@ def open_sfrax(file_paths) -> list:
                 except (ValueError, IndexError) as e:
                     __main__.error_txt.AppendText("Open: " + str(e) + '\n')
         # Create dataset and add to return list
-        datasets.append(MulticaleDataset(os.path.basename(file), scales, area_vals, complex_vals))
+        try:
+            datasets.append(MulticaleDataset(os.path.basename(file), scales, area_vals, complex_vals))
+        except (MultiscaleDisjointCollectionException) as e:
+            __main__.error_txt.AppendText(e)
+            continue
 
     __main__.error_txt.AppendText("Done." + '\n')
     return datasets
@@ -114,4 +117,4 @@ def open_sur(file_paths) -> list :
     if not result_file_paths:
         return
     # Open generated result text files
-    return self.open_results_file(result_file_paths)
+    return open_results_file(result_file_paths)
