@@ -9,7 +9,7 @@ import MultiscaleImporter
 import MountainsImporter.ImportUtils as ImportUtils
 
 from MultiscaleImporter import *
-from MultiscaleData import MultiscaleCollection
+from MultiscaleData import MultiscaleDataset, DatasetAppendOutput
 from Workbook import Workbook
 from scipy.optimize import OptimizeWarning
 from Dialogs import RegressionDialog
@@ -183,8 +183,8 @@ class ScalePlots:
     [2] - Function for creating the dialogs
     [3] - Tree menu label string
     [4] - Graph y-axis label"""
-    Area = ("Area-Scale Graph:", "Scale by Relative Area", MultiscaleCollection.get_relative_area, "Relative Area - Scale", None)
-    Complexity = ("Complexity-Scale Graph:", "Scale by Complexity", MultiscaleCollection.get_complexity, "Complexity - Scale", "Complexity")
+    Area = ("Area-Scale Graph:", "Scale by Relative Area", MultiscaleDataset.get_relative_area, "Relative Area - Scale", None)
+    Complexity = ("Complexity-Scale Graph:", "Scale by Complexity", MultiscaleDataset.get_complexity, "Complexity - Scale", "Complexity")
 
 def OnScalePlot(plot_choice):
     selectedID = getWorkbookID()
@@ -362,7 +362,19 @@ def OnOpen(event):
             if datasets is None or not datasets:
                 return
 
-            wb.append_data(datasets)
+            append_output = wb.append_data(datasets)
+            # Handle errors thrown when appending data
+            if not append_output:
+                output_val = append_output.get_value()
+                # Handle scales being ignored
+                if append_output == DatasetAppendOutput.SCALES_IGNORED_ERROR:
+                    list_str = [data.name for data in output_val]
+                    error_txt.AppendText("Dataset: Scales were ignored when adding " + ", ".join(list_str) + '\n')
+                # Handle general error
+                else:
+                    error_txt.AppendText("Dataset: Issue with adding to dataset ")
+                    if output_val: error_txt.AppendText(output_val)
+
             grid.AutoSize()
             MergeFileNameCells(wb.get_dataset().get_size())
             grid.Refresh()
@@ -384,7 +396,7 @@ def OnNewWB(event):
     global root
 
     grid.ClearGrid()
-    new_wb = Workbook(MultiscaleCollection(), 'workbook{}'.format(wb_counter), grid.GetNumberRows(), grid.GetNumberCols())
+    new_wb = Workbook(MultiscaleDataset(), 'workbook{}'.format(wb_counter), grid.GetNumberRows(), grid.GetNumberCols())
     grid.SetTable(new_wb)
     MergeFileNameCells(0)
     grid.AutoSize()

@@ -6,13 +6,13 @@ from wx import TextCtrl, TreeCtrl
 from wx.grid import Grid
 from Workbook import Workbook
 from MountainsImporter.Importer import import_surfaces
-from MultiscaleData import MulticaleDataset, MultiscaleCollection, MultiscaleDisjointCollectionException
+from MultiscaleData import MultiscaleData, MultiscaleDisjointDatasetException
 
 def open_sfrax(file_paths) -> list:
     """Opens .csv files from Sfrax using a list of file paths.
     @param file_paths - given file paths
     @return list of generated datasets"""
-    datasets = []
+    dataset = []
     # logs opening in the window
     __main__.error_txt.AppendText("Opening..." + '\n')
 
@@ -43,19 +43,19 @@ def open_sfrax(file_paths) -> list:
                     __main__.error_txt.AppendText("Open: " + str(e) + '\n')
         # Create dataset and add to return list
         try:
-            datasets.append(MulticaleDataset(os.path.basename(file), scales, area_vals, complex_vals))
+            dataset.append(MultiscaleData(os.path.basename(file), scales, area_vals, complex_vals))
         except (MultiscaleDisjointCollectionException) as e:
             __main__.error_txt.AppendText(e)
             continue
 
     __main__.error_txt.AppendText("Done." + '\n')
-    return datasets
+    return dataset
 
 def open_results_file(file_paths) -> list:
     """Open .txt result files from mountainsmap
     @param file_paths - given file paths
     @return list of generated datasets"""
-    datasets = []
+    dataset = []
     __main__.error_txt.AppendText("Opening..." + '\n')
 
     file_info_strs = []
@@ -101,10 +101,10 @@ def open_results_file(file_paths) -> list:
                     elif not row_labels and len(line) >= 3:
                         row_labels = [line[1], line[2]]
         # Create dataset and add to return list
-        datasets.append(MulticaleDataset(os.path.basename(file), scales, area_vals, complex_vals, row_labels))
+        dataset.append(MultiscaleData(os.path.basename(file), scales, area_vals, complex_vals, row_labels))
 
     __main__.error_txt.AppendText("Done." + '\n')
-    return datasets
+    return dataset
 
 def open_sur(file_paths) -> list :
     """Using the given surface files, use the MountainsMap Importer tool to generate

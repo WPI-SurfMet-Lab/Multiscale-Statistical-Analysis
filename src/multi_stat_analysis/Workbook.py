@@ -1,4 +1,4 @@
-from MultiscaleData import MultiscaleCollection
+from MultiscaleData import MultiscaleDataset, MultiscaleData, DatasetAppendOutput
 import wx.grid
 
 class Workbook(wx.grid.GridTableBase):
@@ -32,10 +32,11 @@ class Workbook(wx.grid.GridTableBase):
         self._table_data[(row, col)] = value
 
     def get_dataset(self): return self._dataset
-    def append_data(self, data):
+    def append_data(self, data:MultiscaleData) -> DatasetAppendOutput:
         """Append data to the dataset."""
-        self._dataset.append_data(data)
+        output = self._dataset.append_data(data)
         self._table_data = self._dataset.build_table_data()
+        return output
 
     def get_relative_area(self): return self._dataset.get_relative_area()
     def get_complexity(self): return self._dataset.get_complexity()
