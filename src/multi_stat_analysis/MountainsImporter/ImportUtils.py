@@ -4,10 +4,9 @@ import subprocess
 from typing import Optional
 from ctypes import wintypes, windll, create_unicode_buffer, pointer
 
-_DEFAULT_TIMEOUT = 60.0
-_resource_paths = {}
-
 class ResourceFiles:
+    DIRECTORY = "resources"
+
     SSFA_TEMPLATE = "ssfa-template.mnt"
 
     START_MNTS_BTN = "start-mountains.png"
@@ -24,6 +23,15 @@ def append_to_path(end_str, prefix=os.getcwd()):
     """Joins the given end string to the end of the file path prefix."""
     return os.path.join(os.sep, prefix, end_str)
 
+_DEFAULT_TIMEOUT = 60.0
+_resource_paths = {}
+# Find base path for resources
+try:
+    # PyInstaller creates a temp folder and stores path in _MEIPASS
+    _resource_base_path = append_to_path(ResourceFiles.DIRECTORY, sys._MEIPASS)
+except Exception:
+    _resource_base_path = append_to_path(ResourceFiles.DIRECTORY)
+
 def resource_abs_path(relative_path):
     """Get absolute path to resources, works for normal file handling and for PyInstaller.
     Based on answer from stackoverflow page: 
@@ -34,13 +42,8 @@ def resource_abs_path(relative_path):
     if relative_path in _resource_paths:
         return _resource_paths[relative_path]
 
-    try:
-        # PyInstaller creates a temp folder and stores path in _MEIPASS
-        base_path = sys._MEIPASS
-    except Exception:
-        base_path = append_to_path("resources")
-
-    path = append_to_path(relative_path, base_path)
+    global _resource_base_path
+    path = append_to_path(relative_path, _resource_base_path)
     if not os.path.exists(path):
         raise FileNotFoundError("Could not find resource " + path)
     _resource_paths[relative_path] = path

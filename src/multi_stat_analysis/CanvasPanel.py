@@ -98,9 +98,9 @@ class R2byScalePlot(wx.Panel):
                         pos = self.get_scatter_plot().get_offsets()[ind["ind"][0]]
                         scale = pos[0]
 
-                        index = self.get_data().get_results_scale().index(scale)
+                        index = self.data.get_results_scale().index(scale)
                         xregress = self.get_save_xr()
-                        yregress = self.get_data().get_regress_sets()[index]
+                        yregress = self.data.get_regress_sets()[index]
                         # checks the given id to perform the correct regression using the data determined above
                         # this needs error exceptions still
                         regression_choices = \
@@ -285,7 +285,7 @@ class RegressionPlot(wx.Panel):
         wx.Panel.__init__(self, parent, size=wx.Size(640, 480), style=wx.SIMPLE_BORDER)
 
         self.tree_menu = tree
-        self.workbook = self.tree_menu.GetItemData(swb).get_wb()
+        self.workbook = self.tree_menu.GetItemData(swb)
         self.swb = swb
         self.figure = figure()
         # defines the plot
@@ -540,6 +540,8 @@ class RegressionPlot(wx.Panel):
 # TODO: rename the class name
 class SclbyAreaPlot(wx.Panel):
 
+    _X_AXIS_LABEL = "Scale-sensitive multiscale analysis"
+
     def __init__(self, parent, x, y, data):
         # gets the Panel properties
         wx.Panel.__init__(self, parent, size=wx.Size(640, 530), style=wx.SIMPLE_BORDER)
@@ -642,8 +644,8 @@ class SclbyAreaPlot(wx.Panel):
 
         self.set_y(newy)
         self.get_axes().set_title('')
-        self.get_axes().set_xlabel(self.data.get_strings()[3][0] + ' ' + self.data.get_strings()[4][0])
-        self.get_axes().set_ylabel(self.data.get_strings()[3][1])
+        self.get_axes().set_xlabel(SclbyAreaPlot._X_AXIS_LABEL)
+        self.get_axes().set_ylabel(self.data.get_row_labels()[0][0])
         self.set_scatter_plot(scatterList)
         # set the x-scale to log plot
         self.get_axes().set_xscale('log')
@@ -681,8 +683,8 @@ class SclbyAreaPlot(wx.Panel):
             scatterList.append(self.get_axes().scatter(self.get_x(), np.log10(yvals), marker="o", s=8))
 
         self.get_axes().set_title('')
-        self.get_axes().set_xlabel(self.data.get_strings()[3][0] + ' ' + self.data.get_strings()[4][0])
-        self.get_axes().set_ylabel(self.data.get_strings()[3][2] + ' log10 scale')
+        self.get_axes().set_xlabel(SclbyAreaPlot._X_AXIS_LABEL)
+        self.get_axes().set_ylabel(self.data.get_row_labels()[0][1] + ' log10 scale')
         self.set_scatter_plot(scatterList)
         # set x-axis to log scale
         self.get_axes().set_xscale('log')

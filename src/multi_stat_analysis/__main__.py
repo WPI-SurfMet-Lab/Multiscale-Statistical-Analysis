@@ -5,8 +5,11 @@ import wx
 import wx.adv
 import wx.grid
 import openpyxl
+import MultiscaleImporter
 import MountainsImporter.ImportUtils as ImportUtils
 
+from MultiscaleImporter import *
+from MultiscaleData import MultiscaleDataset, DatasetAppendOutput
 from Workbook import Workbook
 from scipy.optimize import OptimizeWarning
 from Dialogs import RegressionDialog
@@ -15,7 +18,6 @@ from Dialogs import R2byScaleDialog
 from Dialogs import SclbyAreaDialog
 from Dialogs import XRValuesDialog
 from Dialogs import HHPlotDialog
-from PlotData import PlotData
 from CanvasPanel import RegressionPlot as RP
 from CanvasPanel import R2byScalePlot as R2
 from StatsTestsUI import FtestDialog
@@ -32,6 +34,7 @@ __url__ = 'https://github.com/MatthewSpofford/Multiscale-Statistical-Analysis'
 wb_counter = 1
 wb_list = []
 frame = None
+error_txt = None
 app = None
 
 _MOUNTAINS_INSTALLED = None
@@ -39,12 +42,12 @@ _MOUNTAINS_INSTALLED = None
 # function for show the curve fit dialog and get regression graphs
 def OnRegression(event):
 
-    selectedID = getPlotDataID()
-    data = tree_menu.GetItemData(selectedID)
+    selectedID = getWorkbookID()
+    dataset = tree_menu.GetItemData(selectedID).get_dataset()
 
     warnings.simplefilter("error", OptimizeWarning)
     try:
-        rsdlg = GraphSelectDialog(frame, data.get_results_scale(), data.get_x_regress(), data.get_regress_sets(),
+        rsdlg = GraphSelectDialog(frame, dataset.get_results_scale(), dataset.get_x_regress(), dataset.get_regress_sets(),
                                   error_txt)
         rsdlg.CenterOnScreen()
         resid = rsdlg.ShowModal()
@@ -102,10 +105,10 @@ def OnRegression(event):
                     try:
                         # Generate either R^2 or Regression dialog depending on selection
                         if isR2:
-                            gdlg = R2byScaleDialog(frame, title, data, error_txt, tree_menu, selectedID, id)
+                            gdlg = R2byScaleDialog(frame, title, dataset, error_txt, tree_menu, selectedID, id)
                         else:
-                            gdlg = RegressionDialog(frame, title, data.get_results_scale(), data.get_x_regress(),
-                                                        data.get_regress_sets(), selectedID, tree_menu)
+                            gdlg = RegressionDialog(frame, title, dataset.get_results_scale(), dataset.get_x_regress(),
+                                                        dataset.get_regress_sets(), selectedID, tree_menu)
                         fit_func(gdlg.get_graph())
                         tree_menu.AppendItem(selectedID, menu_label, data=gdlg)
                         break
@@ -124,15 +127,15 @@ def OnRegression(event):
 
 # function to get the x-regression values
 def OnData(event):
-    data = tree_menu.GetItemData(getPlotDataID())
+    dataset = tree_menu.GetItemData(getWorkbookID()).get_dataset()
 
-    datadialog = XRValuesDialog(frame, data.get_x_regress())
+    datadialog = XRValuesDialog(frame, dataset.get_x_regress())
     datadialog.CenterOnScreen()
     result = datadialog.ShowModal()
 
     if result == wx.ID_OK:
         datadialog.SaveString()
-        data.set_x_regress(datadialog.get_xvals())
+        dataset.set_x_regress(datadialog.get_regress_vals())
 
 class DiscrimTests:
     """Contains list of discrimination test dialog properties
@@ -145,11 +148,11 @@ class DiscrimTests:
 def OnDiscrimTests(test_choice):
     selected_test_func, test_str = test_choice
 
-    selectedID = getPlotDataID()
-    data = tree_menu.GetItemData(selectedID)
+    selectedID = getWorkbookID()
+    dataset = tree_menu.GetItemData(selectedID).get_dataset()
 
     try:
-        dlg = selected_test_func(frame, data, error_txt, tree_menu, selectedID)
+        dlg = selected_test_func(frame, dataset, error_txt, tree_menu, selectedID)
     except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
         error_txt.AppendText(test_str + " " + str(e) + '\n')
         if __debug__:
@@ -180,20 +183,20 @@ class ScalePlots:
     [2] - Function for creating the dialogs
     [3] - Tree menu label string
     [4] - Graph y-axis label"""
-    Area = ("Area-Scale Graph:", "Scale by Relative Area", PlotData.get_relative_area, "Relative Area - Scale", None)
-    Complexity = ("Complexity-Scale Graph:", "Scale by Complexity", PlotData.get_complexity, "Complexity - Scale", "Complexity")
+    Area = ("Area-Scale Graph:", "Scale by Relative Area", MultiscaleDataset.get_relative_area, "Relative Area - Scale", None)
+    Complexity = ("Complexity-Scale Graph:", "Scale by Complexity", MultiscaleDataset.get_complexity, "Complexity - Scale", "Complexity")
 
 def OnScalePlot(plot_choice):
-    selectedID = getPlotDataID()
-    data = tree_menu.GetItemData(selectedID)
+    selectedID = getWorkbookID()
+    wb = tree_menu.GetItemData(selectedID)
     plot_str, title, scale_func, menu_text, y_label = plot_choice
 
-    if data is None :
-        error_txt.AppendText(plot_str + " No data given\n")
+    if wb is None :
+        error_txt.AppendText(plot_str + " No workbook given\n")
 
-    gdlg = SclbyAreaDialog(frame, title, data.get_results_scale(),
-                             scale_func(data),
-                             data.get_legend_txt(), data)
+    gdlg = SclbyAreaDialog(frame, title, wb.get_dataset().get_results_scale(),
+                             scale_func(wb.get_dataset()),
+                             wb.get_dataset().get_legend_txt(), wb.get_dataset())
     if not y_label == None:
         gdlg.get_graph().get_axes().set_ylabel(y_label)
 
@@ -221,19 +224,51 @@ def OnHHPlot(event):
     resid = gdlg19.Show()
     tree_menu.Refresh()
 
+_curr_merged_cell_count = 0
+_merge_length = 2
+def MergeFileNameCells(cell_count:int):
+    global _curr_merged_cell_count, _merge_length
+    # Merging does not need to be done if no change has been made
+    if _curr_merged_cell_count == cell_count:
+        return
+
+    # Difference between modified cells
+    diff = cell_count - _curr_merged_cell_count
+    step = -_merge_length
+    merge_length = _merge_length
+    largest_count = cell_count
+
+    # Determine if cells need to be merged or unmerged
+    # Determine largest cell count
+    if diff < 0:
+        largest_count = _curr_merged_cell_count
+        merge_length = 1
+
+    # Located at the tail of the cells being changed
+    start = (largest_count * 2) - 1
+    # Located right after where last change will occur
+    end = start - (abs(diff) * 2)
+
+    # Merge the cells within the calculated range
+    for col in range(start, end, step):
+        grid.SetCellSize(0, col, 1, merge_length)
+
+    # Define new cell count to be merged
+    _curr_merged_cell_count = cell_count
+
 # function to get selected graph on left side of main screen
 def OnSelection(event):
-    selected = tree_menu.GetItemData(tree_menu.GetSelection())
+    wb = tree_menu.GetItemData(tree_menu.GetSelection())
 
-    if isinstance(selected, PlotData):
-        selectedWb = selected.get_wb()
-        selected.get_error_text().AppendText("Wb: Switching to -- " + selectedWb.get_name() + "\n")
-        grid.SetTable(selectedWb)
-        grid.AutoSizeColumns()
+    if isinstance(wb, Workbook):
+        error_txt.AppendText("Wb: Switching to -- " + wb.name + "\n")
+        grid.SetTable(wb)
+        grid.AutoSize()
+        MergeFileNameCells(wb.get_dataset().get_size())
         grid.Refresh()
     else:
-        selected.CenterOnScreen()
-        selected.Show()
+        wb.CenterOnScreen()
+        wb.Show()
 
 # function to rename selected graphs/workbooks
 def OnRename(event):
@@ -241,9 +276,13 @@ def OnRename(event):
     selected = tree_menu.GetItemData(selectedID)
     newName = event.GetLabel()
 
-    if isinstance(selected, PlotData):
-        error_txt.AppendText("Wb: Renaming `" + selected.get_wb().get_name() + "` to `" + newName + "`\n")
-        selected.get_wb().set_name(newName)
+    # Name was not changed, or is changed to something invalid. Leave event call early.
+    if not newName:
+        return
+
+    if isinstance(selected, Workbook):
+        error_txt.AppendText("Wb: Renaming `" + selected.name + "` to `" + newName + "`\n")
+        selected.name = newName
     else:
         pass
 
@@ -251,7 +290,7 @@ def OnRename(event):
 def OnAbout(event):
     version = 'v' + __version__
     description = 'An Open-Source, Python-Based application to perform multi-scale \n' \
-                  'regression and discrimination analysis using results from Surfract\n' \
+                  'regression and discrimination analysis using results from Sfrax\n' \
                   'and MountainsMap. Developed in collaboration with Christopher A.\n' \
                   'Brown, Ph.D., PE, and the WPI Surface Metrology Lab. Contact\n' \
                   'mespofford@wpi.edu for details. You can support the development of this\n' \
@@ -295,13 +334,13 @@ def OnOpen(event):
     output = False
     try:
         # File dialog choices
-        data = tree_menu.GetItemData(getPlotDataID())
-        choices = [("MountainsMap Results Text Files (*.txt)|*.txt", data.open_file2),
-                   ("Sfrax CSV Results - UTF-8 (*.csv)|*.csv", data.open_file)]
+        wb = tree_menu.GetItemData(getWorkbookID())
+        choices = [("MountainsMap Results Text Files (*.txt)|*.txt", MultiscaleImporter.open_results_file),
+                   ("Sfrax CSV Results - UTF-8 (*.csv)|*.csv", MultiscaleImporter.open_sfrax)]
 
         # Add surface file import as an option
         if not isinstance(ImportUtils.find_mountains_map(), ImportUtils.MountainsNotFound):
-            choices.insert(1, ("MountainsMap Surface Files|*", data.open_sur))
+            choices.insert(1, ("MountainsMap Surface Files|*", MultiscaleImporter.open_sur))
 
         # create the open file dialog
         openFileDialog = wx.FileDialog(frame, "Open",
@@ -317,11 +356,31 @@ def OnOpen(event):
             filepath = openFileDialog.GetPaths()
 
             # Handle the opening and reading of the selected files
-            choices[selection_index][1](filepath)
-            output = True
+            datasets = choices[selection_index][1](filepath)
 
+            # Check if no files were opened (or terminated early)
+            if datasets is None or not datasets:
+                return
+
+            append_output = wb.append_data(datasets)
+            # Handle errors thrown when appending data
+            if not append_output:
+                output_val = append_output.get_value()
+                # Handle scales being ignored
+                if append_output == DatasetAppendOutput.SCALES_IGNORED_ERROR:
+                    list_str = [data.name for data in output_val]
+                    error_txt.AppendText("Dataset: Scales were ignored when adding " + ", ".join(list_str) + '\n')
+                # Handle general error
+                else:
+                    error_txt.AppendText("Dataset: Issue with adding to dataset ")
+                    if output_val: error_txt.AppendText(output_val)
+
+            grid.AutoSize()
+            MergeFileNameCells(wb.get_dataset().get_size())
+            grid.Refresh()
+            output = True
         elif result == wx.ID_CANCEL:
-            output = False
+            pass
     except (Exception) as e:
         error_txt.AppendText("File Open: " + str(e) + '\n')
         if __debug__:
@@ -337,25 +396,26 @@ def OnNewWB(event):
     global root
 
     grid.ClearGrid()
-    d = {}
-    table = Workbook(d, 'workbook{}'.format(wb_counter), grid.GetNumberRows(), grid.GetNumberCols())
-    data = PlotData(error_txt, grid, table)
-    grid.SetTable(table)
+    new_wb = Workbook(MultiscaleDataset(), 'workbook{}'.format(wb_counter), grid.GetNumberRows(), grid.GetNumberCols())
+    grid.SetTable(new_wb)
+    MergeFileNameCells(0)
+    grid.AutoSize()
+    grid.Refresh()
 
-    item = tree_menu.AppendItem(root, table.name, data=data)
+    item = tree_menu.AppendItem(root, new_wb.name, data=new_wb)
     tree_menu.SelectItem(item)
 
-    error_txt.AppendText('Wb: New Workbook Created -- ' + table.name + '\n')
+    error_txt.AppendText('Wb: New Workbook Created -- ' + new_wb.name + '\n')
     wb_counter += 1
 
-def getPlotDataID() :
+def getWorkbookID() :
     global tree_menu
     selectedID = tree_menu.GetSelection()
     selected = tree_menu.GetItemData(selectedID)
 
     # Check if currently selected node is not plot data
-    # If plotdata is not found, go up the tree
-    while not isinstance(selected, PlotData) :
+    # If workbook is not found, go up the tree
+    while not isinstance(selected, Workbook) :
         selectedID = tree_menu.GetItemParent(selectedID)
         selected = tree_menu.GetItemData(selectedID)
 
@@ -365,8 +425,8 @@ def OnSave(event):
     frame.EnableCloseButton(False)
     output = False
     try:
-        selectedID = getPlotDataID()
-        selectedWorkbook = tree_menu.GetItemData(selectedID).get_wb()
+        selectedID = getWorkbookID()
+        selectedWorkbook = tree_menu.GetItemData(selectedID)
 
         saveFileDialog = wx.FileDialog(frame, "Save", selectedWorkbook.name, "xlsx (*.xlsx)|*.xlsx", style=wx.FD_SAVE)
         saveFileDialog.CenterOnScreen()
@@ -377,8 +437,8 @@ def OnSave(event):
             # gets the file path
             filepath = saveFileDialog.GetPath()
 
-            cells = selectedWorkbook.get_data().keys()
-            values = selectedWorkbook.get_data().values()
+            cells = selectedWorkbook.get_table_data().keys()
+            values = selectedWorkbook.get_table_data().values()
 
             file = openpyxl.Workbook()
             sheet = file.worksheets[0]
@@ -489,10 +549,10 @@ if __name__ == "__main__":
     graphmenu = wx.Menu()
     area_scale = graphmenu.Append(wx.ID_ANY, 'Area - Scale Plot', 'Area - Scale Plot')
     comp_scale = graphmenu.Append(wx.ID_ANY, 'Complexity - Scale Plot', 'Complexity - Scale Plot')
-    HHplot = graphmenu.Append(wx.ID_ANY, 'Height-Height Plot', 'Height-Height Plot')
+    #HHplot = graphmenu.Append(wx.ID_ANY, 'Height-Height Plot', 'Height-Height Plot')
     frame.Bind(wx.EVT_MENU, OnAreaPlot, area_scale)
     frame.Bind(wx.EVT_MENU, OnComplexityPlot, comp_scale)
-    frame.Bind(wx.EVT_MENU, OnHHPlot, HHplot)
+    #frame.Bind(wx.EVT_MENU, OnHHPlot, HHplot)
 
     menuBar = wx.MenuBar()
     menuBar.Append(filemenu, 'File')
@@ -567,6 +627,7 @@ if __name__ == "__main__":
     main_sizer.Add(grid, 1, wx.EXPAND)
     main_panel.SetSizer(main_sizer)
     grid.CreateGrid(1000, 100)
+    grid.EnableEditing(False)
 
     OnNewWB(wx.EVT_ACTIVATE_APP)
 
