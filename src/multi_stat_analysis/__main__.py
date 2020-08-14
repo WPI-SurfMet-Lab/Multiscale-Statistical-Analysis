@@ -25,7 +25,7 @@ from StatsTestsUI import TtestDialog
 from StatsTestsUI import ANOVAtestDialog
 
 name = 'Multiscale Statisitcal Analysis'
-__version__ = '0.4.1'
+__version__ = '0.5.0'
 __license__ = 'MIT'
 __author__ = 'Matthew Spofford, Nathaniel Rutkowski'
 __author_email__ = 'mespofford@wpi.edu'

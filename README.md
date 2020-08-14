@@ -10,4 +10,6 @@ A list of dependencies will need to be installed in order to use the application
 
 More information on how to use the application can be found [here](https://github.com/MatthewSpofford/Multiscale-Statistical-Analysis/blob/master/Multiscale%20Statistical%20Analysis%20Manual.pdf).
 ## Similar Projects
-In order to integrate directly with the MountainsMap® software, a similar addon application was being worked on. However, this project has been abandoned as a result of limitations with MountainsMap®. The project can be found [here](https://github.com/MatthewSpofford/Mountains-Statistical-Addons).
+A similar standalone application is currently being developed for multiscale analysis using curvature. The app can be found [here](https://github.com/MatthewSpofford/Multiscale-Curvature-Analysis).
+
+In order to integrate directly with the MountainsMap® software, a similar addon application was also being worked on. However, this project has been abandoned as a result of limitations with MountainsMap®. The project can be found [here](https://github.com/MatthewSpofford/Mountains-Statistical-Addons).
