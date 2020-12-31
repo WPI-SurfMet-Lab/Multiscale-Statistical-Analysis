@@ -1,14 +1,15 @@
 from enum import Enum, unique
 
+
 class MultiscaleData:
     """Maintains the multiscale data for relative area and complexity"""
-    
+
     def set_vals_at_scale(self, scale, relative_area, complexity):
         """Assign relative area & complexity values at the given scale."""
         self._scales.add(scale)
         self._area_map[scale] = relative_area
         self._complexity_map[scale] = complexity
-    
+
     def __init__(self, name="",
                  scales=[], relative_area=[], complexity=[],
                  row_labels=["Relative Area", "Multiscale complexity"]):
@@ -25,21 +26,27 @@ class MultiscaleData:
             self.set_vals_at_scale(scale, relative_area[i], complexity[i])
 
     def get_scales(self): return self._scales
+
     def get_relative_area(self, scale): return self._area_map.get(scale)
+
     def get_complexity(self, scale): return self._complexity_map.get(scale)
 
+
 class MultiscaleDisjointDatasetException(Exception):
-    def __init__(self, dataset:MultiscaleData):
+    def __init__(self, dataset: MultiscaleData):
         super().__init__("The dataset " + dataset.name + " being added has disjoint scale values.")
 
+
 _SUCCESS = 0
+
+
 class DatasetAppendOutput:
     """Stores output values and flags from appending functions.
     By default is a success flag and no output."""
     # Used to define various outputs that are returns by the append function.
-    SUCCESS = _SUCCESS          # SUCCESS - Has no output values
-    SCALES_IGNORED_ERROR = -2   # SCALES_IGNORED - Outputs list of MulticaleDatasets that had ignored scales
-    ERROR = -1                  # ERROR - A general error has occured
+    SUCCESS = _SUCCESS  # SUCCESS - Has no output values
+    SCALES_IGNORED_ERROR = -2  # SCALES_IGNORED - Outputs list of MulticaleDatasets that had ignored scales
+    ERROR = -1  # ERROR - A general error has occured
 
     def __init__(self, flag=_SUCCESS, output=None):
         """Output for MultiscaleDataset append function.
@@ -47,6 +54,7 @@ class DatasetAppendOutput:
         @param output - Value of output. If SUCCESS, output None."""
         self._value = output
         self._flag = flag
+
     def __eq__(self, other):
         """Can be used to compare against itself or against AppendOutputEnums."""
         if isinstance(other, DatasetAppendOutput):
@@ -55,14 +63,17 @@ class DatasetAppendOutput:
             return other == self._flag
         else:
             return False
+
     def __bool__(self):
         """Can be used to check if an append was successful."""
         return self._flag == _SUCCESS
+
     def get_value(self):
         """Get value of output."""
         return self._value
 
-def _multiscaledataset_append_ignore_unaligned_scales(self, dataset:MultiscaleData) -> DatasetAppendOutput:
+
+def _multiscaledataset_append_ignore_unaligned_scales(self, dataset: MultiscaleData) -> DatasetAppendOutput:
     """Add new result data to dataset. Ignores unaligned scales.
     @param scale_data - scale data to be inserted. Cannot be none."""
     # if the dataset is unusable (scales are disjoint) do not continue
@@ -101,7 +112,7 @@ def _multiscaledataset_append_ignore_unaligned_scales(self, dataset:MultiscaleDa
         # at the current index. For relative area and complexity.
         #   [0] = List to be changed
         #   [1] = Item to be added
-        replacable_lists = [(self._areas, new_areas), 
+        replacable_lists = [(self._areas, new_areas),
                             (self._complexities, new_complexities)]
         # Replace currently selected dataset lists for area and complexity
         for curr_list, new_item in replacable_lists:
@@ -118,9 +129,12 @@ def _multiscaledataset_append_ignore_unaligned_scales(self, dataset:MultiscaleDa
     self._regress_sets = self.build_regress_sets()
 
     # Output SCALES_IGNORED_ERROR if scales were in-fact ignored
-    if scales_changed: return DatasetAppendOutput(DatasetAppendOutput.SCALES_IGNORED_ERROR, [dataset])
+    if scales_changed:
+        return DatasetAppendOutput(DatasetAppendOutput.SCALES_IGNORED_ERROR, [dataset])
     # Otherwise, output successful value
-    else: return DatasetAppendOutput()
+    else:
+        return DatasetAppendOutput()
+
 
 class DatasetAppendOptions(Enum):
     """Used to define the insert function to be used by Dataset.insertData."""
@@ -131,15 +145,19 @@ class DatasetAppendOptions(Enum):
         """Defines enum which stores a function that can be called later."""
         self.append_func = append_func
 
+
 _TABLE_SCALE_COLUMN_LABEL = "Scale of Analysis"
+
+
 class MultiscaleDataset:
     """Maintains the full dataset being used for analysis, and helps with handling scale discrepencies."""
+
     def __init__(self):
         """Creates empty dataset. To add to the dataset, use append_data."""
         # Set of unified scales, used for efficient scale checking
         self._scales = set()
         # List of unified scales, equivalent to scales set but in order
-        self._scales_list = [] 
+        self._scales_list = []
 
         # List of data in dataset
         self._datasets = []
@@ -165,9 +183,7 @@ class MultiscaleDataset:
         else:
             raise ValueError("Argument 'dataset' cannot be of type '" + type(dataset).__name__ + "'.")
 
-        return DatasetAppendOutput(DatasetAppendOutput.ERROR)
-
-    def _append_data_single(self, dataset:MultiscaleData, option:DatasetAppendOptions) -> DatasetAppendOutput:
+    def _append_data_single(self, dataset: MultiscaleData, option: DatasetAppendOptions) -> DatasetAppendOutput:
         """Add data to dataset.
         @param scale_data - scale data to be inserted.
         @param option - Option configuration option for appending data."""
@@ -184,10 +200,10 @@ class MultiscaleDataset:
             self._regress_sets = self.build_regress_sets()
             return DatasetAppendOutput()
         # Add to dataset
-        else: 
+        else:
             return option(self, dataset)
 
-    def _append_data_list(self, dataset_list:list, option:DatasetAppendOptions) -> DatasetAppendOutput:
+    def _append_data_list(self, dataset_list: list, option: DatasetAppendOptions) -> DatasetAppendOutput:
         """Add list of data to dataset.
         @param scale_data - list of scale data to be inserted.
         @param option - Option configuration option for appending data."""
@@ -199,11 +215,13 @@ class MultiscaleDataset:
                 ignore_list += output._value
 
         # If ignore error occured, output error
-        if ignore_list: return DatasetAppendOutput(DatasetAppendOutput.SCALES_IGNORED_ERROR, ignore_list)
+        if ignore_list:
+            return DatasetAppendOutput(DatasetAppendOutput.SCALES_IGNORED_ERROR, ignore_list)
         # Return successful output
-        else: return DatasetAppendOutput()
+        else:
+            return DatasetAppendOutput()
 
-    def _append_ignore_unaligned_scales(self, dataset:MultiscaleData) -> DatasetAppendOutput:
+    def _append_ignore_unaligned_scales(self, dataset: MultiscaleData) -> DatasetAppendOutput:
         """Add new result data to dataset. Ignores unaligned scales.
         @param scale_data - scale data to be inserted. Cannot be none."""
         return _multiscaledataset_append_ignore_unaligned_scales(self, dataset)
@@ -224,60 +242,50 @@ class MultiscaleDataset:
             output_reg_set.append(list(y_values))
         return output_reg_set
 
-    def build_table_data(self):
-        """Builds data to be display on the table.
-        @return Dictionary with (row,column) position tuple as key"""
-        # Start with scale of analysis column label
-        data_dict = {(1,0): _TABLE_SCALE_COLUMN_LABEL}
-        data_column_lists = (self._areas, self._complexities)
+    def get_size(self):
+        return len(self._datasets)
 
-        # Define scale columns
-        data_dict[(1, 0)] = _TABLE_SCALE_COLUMN_LABEL
-        for index in range(len(self._scales_list)):
-            data_dict[(index + 2, 0)] = self._scales_list[index]
-        
-        # Define data columns
-        for col_index in range(1, len(self._datasets) * 2 + 1):
-            # Pre-calculate indexes for later
-            offset_index = col_index - 1
-            data_col_pos = offset_index % 2
-            dataset_index = offset_index // 2
+    def get_results_scale(self):
+        return self._scales_list
 
-            # Write data name labels
-            data_dict[(0,col_index)] = self._names[dataset_index]
-            # Write data column labels
-            data_dict[(1,col_index)] = self._row_labels[dataset_index][data_col_pos]
+    def get_legend_txt(self):
+        return self._names
 
-            # Write data columns
-            selected_data = data_column_lists[data_col_pos][dataset_index]
-            for row in range(len(selected_data)):
-                data_dict[(row + 2), col_index] = selected_data[row]
+    def get_row_labels(self):
+        return self._row_labels
 
-        return data_dict
+    def get_x_regress(self):
+        return self._regress_vals
 
-    def get_size(self): return len(self._datasets)
-    def get_results_scale(self): return self._scales_list
-    def get_legend_txt(self): return self._names
-    def get_row_labels(self): return self._row_labels
-    def get_x_regress(self): return self._regress_vals
-    def set_x_regress(self, new_regress_vals): self._regress_vals = new_regress_vals
-    def get_relative_area(self): return self._areas
-    def get_complexity(self): return self._complexities
-    def get_regress_sets(self): return self._regress_sets
+    def set_x_regress(self, new_regress_vals):
+        self._regress_vals = new_regress_vals
+
+    def get_relative_area(self):
+        return self._areas
+
+    def get_complexity(self):
+        return self._complexities
+
+    def get_regress_sets(self):
+        return self._regress_sets
+
 
 @unique
 class DatasetAppendOptions(Enum):
     """Used to define the insert function to be used by Dataset.insertData."""
+
     # --- Functions MUST be redefined/reassigned later ---
     @staticmethod
-    def ignore_unaligned_append(self, dataset:MultiscaleData) -> DatasetAppendOutput: pass
+    def ignore_unaligned_append(self, dataset: MultiscaleData) -> DatasetAppendOutput: pass
 
     # --- Should use above functions are defined further down ---
     IgnoreUnaligned = (ignore_unaligned_append)
 
     def __init__(self, insert_func):
         self.append_data = insert_func
+
     def __repr__(self): return self
+
 
 # Define functions for DatasetAppendOptions
 DatasetAppendOptions.IgnoreUnaligned.append_func = MultiscaleDataset._append_ignore_unaligned_scales
