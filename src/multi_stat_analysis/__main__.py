@@ -1,6 +1,6 @@
+import sys
+import traceback
 import warnings
-
-warnings.simplefilter("error", RuntimeWarning)
 
 import wx
 import wx.adv
@@ -23,6 +23,8 @@ from StatsTestsUI import FtestDialog
 from StatsTestsUI import TtestDialog
 from StatsTestsUI import ANOVAtestDialog
 
+warnings.simplefilter("error", RuntimeWarning)
+
 name = 'Multiscale Statisitcal Analysis'
 __version__ = '0.5.0'
 __license__ = 'MIT'
@@ -40,6 +42,13 @@ app = None
 # Waits for the message dialog to close, prevents accesing parent frame
 def errorMsg(title, msg):
     dialog = wx.MessageDialog(frame, msg, title, style=wx.ICON_ERROR | wx.OK);
+    dialog.ShowModal()
+
+
+# Displays error message dialog
+# Waits for the message dialog to close, prevents accesing parent frame
+def warnMsg(title, msg):
+    dialog = wx.MessageDialog(frame, msg, title, style=wx.ICON_WARNING | wx.OK);
     dialog.ShowModal()
 
 
@@ -385,14 +394,16 @@ def OnOpen(event):
                     errorMsg("Dataset", "Scales were ignored when adding " + ", ".join(list_str) + '\n')
                 # Handle general error
                 else:
-                    error_txt.AppendText("Dataset: Issue with adding to dataset ")
-                    if output_val: error_txt.AppendText(output_val)
+                    error_str = "Issue with adding to dataset "
+                    if output_val:
+                        error_str += output_val
+                    errorMsg("Dataset Error", error_str)
 
             output = True
         elif result == wx.ID_CANCEL:
             pass
     except Exception as e:
-        error_txt.AppendText("File Open: " + str(e) + '\n')
+        errorMsg("File Open Error", str(e))
         if __debug__:
             import traceback
             traceback.print_exc()
@@ -406,11 +417,8 @@ def OnNewWB(event):
     global root
 
     new_wb = Workbook('workbook{}'.format(wb_counter))
-
     item = tree_menu.AppendItem(root, new_wb.name, data=new_wb)
     tree_menu.SelectItem(item)
-
-    error_txt.AppendText('Wb: New Workbook Created -- ' + new_wb.name + '\n')
     wb_counter += 1
 
 
@@ -435,7 +443,8 @@ def OnSave(event):
         selected_id = getWorkbookID()
         selected_workbook = tree_menu.GetItemData(selected_id)
 
-        save_file_dialog = wx.FileDialog(frame, "Save", selected_workbook.name, "xlsx (*.xlsx)|*.xlsx", style=wx.FD_SAVE)
+        save_file_dialog = wx.FileDialog(frame, "Save", selected_workbook.name, "xlsx (*.xlsx)|*.xlsx",
+                                         style=wx.FD_SAVE)
         save_file_dialog.CenterOnScreen()
         # shows the dialog on screen when pushes button
         result = save_file_dialog.ShowModal()
@@ -458,7 +467,7 @@ def OnSave(event):
         elif result == wx.ID_CANCEL:
             output = False
     except e:
-        error_txt.AppendText("File Save: " + str(e) + '\n')
+        errorMsg("File Save Error", str(e))
     finally:
         frame.EnableCloseButton(True)
         return output
@@ -502,6 +511,21 @@ def OnExit(event):
         frame.EnableCloseButton(True)
         exitdialog.Destroy()
         return False
+
+
+def exceptionHandler(etype, value, trace):
+    """
+    Handler for all unhandled exceptions.
+    :param `etype`: the exception type (`SyntaxError`, `ZeroDivisionError`, etc...);
+    :type `etype`: `Exception`
+    :param string `value`: the exception error message;
+    :param string `trace`: the traceback header, if any (otherwise, it prints the
+     standard Python header: ``Traceback (most recent call last)``.
+    """
+    tmp = traceback.format_exception(etype, value, trace)
+    exception = "".join(tmp)
+
+    errorMsg(str(etype), exception)
 
 
 if __name__ == "__main__":
@@ -554,36 +578,36 @@ if __name__ == "__main__":
     frame.Bind(wx.EVT_MENU, OnTtest, ttest)
     frame.Bind(wx.EVT_MENU, OnANOVA, anova)
 
-    graphmenu = wx.Menu()
-    area_scale = graphmenu.Append(wx.ID_ANY, 'Area - Scale Plot', 'Area - Scale Plot')
-    comp_scale = graphmenu.Append(wx.ID_ANY, 'Complexity - Scale Plot', 'Complexity - Scale Plot')
-    # HHplot = graphmenu.Append(wx.ID_ANY, 'Height-Height Plot', 'Height-Height Plot')
+    graph_menu = wx.Menu()
+    area_scale = graph_menu.Append(wx.ID_ANY, 'Area - Scale Plot', 'Area - Scale Plot')
     frame.Bind(wx.EVT_MENU, OnAreaPlot, area_scale)
+
+    comp_scale = graph_menu.Append(wx.ID_ANY, 'Complexity - Scale Plot', 'Complexity - Scale Plot')
     frame.Bind(wx.EVT_MENU, OnComplexityPlot, comp_scale)
+
+    # HHplot = graphmenu.Append(wx.ID_ANY, 'Height-Height Plot', 'Height-Height Plot')
     # frame.Bind(wx.EVT_MENU, OnHHPlot, HHplot)
 
     menuBar = wx.MenuBar()
     menuBar.Append(filemenu, 'File')
     menuBar.Append(regres_menu, 'Regression')
     menuBar.Append(discrim_menu, 'Discrimination')
-    menuBar.Append(graphmenu, 'Graphs')
+    menuBar.Append(graph_menu, 'Graphs')
     frame.SetMenuBar(menuBar)
     frame.Bind(wx.EVT_MENU, OnOpen, openfile)
     frame.Bind(wx.EVT_MENU, OnExit, exitprogram)
     frame.Bind(wx.EVT_CLOSE, OnExit)
     frame.Bind(wx.EVT_MENU, OnAbout, about)
 
-    # splits the main window into 3 sections, main empty space, side bar with graphs, error logging window
+    # splits the main window into 2 sections: side bar with , side bar with datasets, and graph window
     vsplitter = wx.SplitterWindow(frame)
     vsplitter.SetBackgroundColour('#ffffff')
-    hsplitter = wx.SplitterWindow(vsplitter)
 
-    # -------------------------------------------------------------------------------------------------------
     v_sizer = wx.BoxSizer(wx.VERTICAL)
     h_sizer = wx.BoxSizer(wx.VERTICAL)
 
     # main panel with workbook view
-    main_panel = wx.Panel(hsplitter, style=wx.SIMPLE_BORDER)
+    main_panel = wx.Panel(vsplitter, style=wx.SIMPLE_BORDER)
     main_panel.SetBackgroundColour('#ffffff')
 
     main_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -593,11 +617,7 @@ if __name__ == "__main__":
     main_panel.Layout()
     main_panel.SetSizerAndFit(main_sizer)
 
-    # error panel for error logging
-    error_panel = wx.Panel(hsplitter, style=wx.BORDER_SUNKEN)
-
     # ------------------------------------------------------------------------------------------------------
-    h_sizer.Add(error_panel, 1, wx.EXPAND)
 
     # left panel for holding workbook trees on left
     left_panel = wx.Panel(vsplitter, style=wx.SIMPLE_BORDER)
@@ -606,14 +626,7 @@ if __name__ == "__main__":
     v_sizer.Add(left_panel, 1, wx.EXPAND)
 
     # create the error text box which displays the text for errors
-    error_sizer = wx.BoxSizer(wx.VERTICAL)
-    error_txt = wx.TextCtrl(error_panel, style=wx.TE_READONLY | wx.TE_MULTILINE)
-    error_txt.SetBackgroundColour('#000000')
-    error_txt.SetForegroundColour('#ff8d00')
-    error_sizer.Add(error_txt, 1, wx.EXPAND)
-    error_panel.SetSizer(error_sizer)
-    hsplitter.SplitHorizontally(main_panel, error_panel, sashPosition=580)
-    vsplitter.SplitVertically(left_panel, hsplitter, sashPosition=200)
+    vsplitter.SplitVertically(left_panel, main_panel, sashPosition=200)
     sizer = wx.BoxSizer(wx.VERTICAL)
     sizer.Add(vsplitter, 1, wx.EXPAND)
     # tree which contains the graphs when created, names can be editted
@@ -629,7 +642,7 @@ if __name__ == "__main__":
     main_sizer.Clear()
     main_sizer.Layout()
 
-    #main_sizer.Add(grid, 1, wx.EXPAND)
+    # main_sizer.Add(grid, 1, wx.EXPAND)
     main_panel.SetSizer(main_sizer)
 
     OnNewWB(wx.EVT_ACTIVATE_APP)
@@ -640,11 +653,14 @@ if __name__ == "__main__":
     frame.SetSizer(sizer)
     frame.Show()
 
+    # Assign exception handler
+    sys.excepthook = exceptionHandler
+
     # Check the existence of MountainsMap
     try:
         ImportUtils.find_mountains_map()
     except (FileNotFoundError, Exception) as e:
-        error_txt.AppendText("Warning: MountainsMap installation could not be found.")
+        warnMsg("MountainsMap Warning", "MountainsMap installation could not be found.")
 
     # Run Multiscale Analysis App
     app.MainLoop()
