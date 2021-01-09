@@ -9,7 +9,7 @@ class Workbook:
         self.name = name
         self._dataset = MultiscaleDataset()
 
-    def get_dataset(self):
+    def get_dataset(self) -> MultiscaleDataset:
         return self._dataset
 
     def get_relative_area(self):
