@@ -269,6 +269,8 @@ class MultiscaleDataset:
     def get_regress_sets(self):
         return self._regress_sets
 
+    def empty(self) -> bool:
+        return self.get_size() == 0
 
 @unique
 class DatasetAppendOptions(Enum):

@@ -1,6 +1,6 @@
 from multi_stat_analysis.__main__ import frame
 import multi_stat_analysis.MountainsImporter.ImportUtils as ImportUtils
-from multi_stat_analysis.MountainsImporter.ImportUtils import ResourceFiles, TEMP_PATH
+from .ImportUtils import ResourceFiles, TEMP_PATH
 import wx, os, time, shutil
 import pyautogui
 from enum import Enum

@@ -11,17 +11,10 @@ import MountainsImporter.ImportUtils as ImportUtils
 from MultiscaleData import MultiscaleDataset, DatasetAppendOutput
 from Workbook import Workbook
 from scipy.optimize import OptimizeWarning
-from Dialogs import RegressionDialog
-from Dialogs import GraphSelectDialog
-from Dialogs import R2byScaleDialog
-from Dialogs import SclbyAreaDialog
-from Dialogs import XRValuesDialog
-from Dialogs import HHPlotDialog
+from Dialogs import RegressionDialog, GraphSelectDialog, R2byScaleDialog, SclbyAreaDialog, XRValuesDialog, HHPlotDialog
 from CanvasPanel import RegressionPlot as RP
 from CanvasPanel import R2byScalePlot as R2
-from StatsTestsUI import FtestDialog
-from StatsTestsUI import TtestDialog
-from StatsTestsUI import ANOVAtestDialog
+from StatsTestsUI import FtestDialog, TtestDialog, ANOVAtestDialog
 
 warnings.simplefilter("error", RuntimeWarning)
 
@@ -32,30 +25,34 @@ __author__ = 'Matthew Spofford, Nathaniel Rutkowski'
 __author_email__ = 'mespofford@wpi.edu'
 __url__ = 'https://github.com/MatthewSpofford/Multiscale-Statistical-Analysis'
 
+
 wb_counter = 1
 wb_list = []
 frame = None
+main_panel = None
 app = None
 
+_selected_wb_ID = None
+_selected_surfaces_ID = None
+_selected_results_ID = None
 
 # Displays error message dialog
 # Waits for the message dialog to close, prevents accesing parent frame
 def errorMsg(title, msg):
-    dialog = wx.MessageDialog(frame, msg, title, style=wx.ICON_ERROR | wx.OK);
+    dialog = wx.MessageDialog(frame, msg, title, style=wx.ICON_ERROR | wx.OK)
     dialog.ShowModal()
 
 
 # Displays error message dialog
 # Waits for the message dialog to close, prevents accesing parent frame
 def warnMsg(title, msg):
-    dialog = wx.MessageDialog(frame, msg, title, style=wx.ICON_WARNING | wx.OK);
+    dialog = wx.MessageDialog(frame, msg, title, style=wx.ICON_WARNING | wx.OK)
     dialog.ShowModal()
 
 
 # function for show the curve fit dialog and get regression graphs
 def OnRegression(event):
-    selectedID = getWorkbookID()
-    dataset = tree_menu.GetItemData(selectedID).get_dataset()
+    dataset = tree_menu.GetItemData(_selected_wb_ID).get_dataset()
 
     warnings.simplefilter("error", OptimizeWarning)
     try:
@@ -143,12 +140,12 @@ def OnRegression(event):
                     try:
                         # Generate either R^2 or Regression dialog depending on selection
                         if isR2:
-                            gdlg = R2byScaleDialog(frame, title, dataset, tree_menu, selectedID, id)
+                            gdlg = R2byScaleDialog(frame, title, dataset, tree_menu, _selected_results_ID, id)
                         else:
                             gdlg = RegressionDialog(frame, title, dataset.get_results_scale(), dataset.get_x_regress(),
-                                                    dataset.get_regress_sets(), selectedID, tree_menu)
+                                                    dataset.get_regress_sets(), _selected_results_ID, tree_menu)
                         fit_func(gdlg.get_graph())
-                        tree_menu.AppendItem(selectedID, menu_label, data=gdlg)
+                        tree_menu.AppendItem(_selected_results_ID, menu_label, data=gdlg)
                         break
                     except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning,
                             OptimizeWarning) as e:
@@ -167,7 +164,7 @@ def OnRegression(event):
 
 # function to get the x-regression values
 def OnData(event):
-    dataset = tree_menu.GetItemData(getWorkbookID()).get_dataset()
+    dataset = tree_menu.GetItemData(_selected_wb_ID).get_dataset()
 
     datadialog = XRValuesDialog(frame, dataset.get_x_regress())
     datadialog.CenterOnScreen()
@@ -189,12 +186,10 @@ class DiscrimTests:
 
 def OnDiscrimTests(test_choice):
     selected_test_func, test_str = test_choice
-
-    selectedID = getWorkbookID()
-    dataset = tree_menu.GetItemData(selectedID).get_dataset()
+    dataset = tree_menu.GetItemData(_selected_wb_ID).get_dataset()
 
     try:
-        dlg = selected_test_func(frame, dataset, tree_menu, selectedID)
+        dlg = selected_test_func(frame, dataset, tree_menu, _selected_wb_ID)
     except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
         errorMsg(test_str, str(e))
         if __debug__:
@@ -238,23 +233,23 @@ class ScalePlots:
 
 
 def OnScalePlot(plot_choice):
-    selectedID = getWorkbookID()
-    wb = tree_menu.GetItemData(selectedID)
+    wb = tree_menu.GetItemData(_selected_wb_ID)
     plot_str, title, scale_func, menu_text, y_label = plot_choice
 
-    if wb is None:
+    if wb is None or wb.get_dataset().empty():
         errorMsg(plot_str, "No workbook given")
+        return
 
     gdlg = SclbyAreaDialog(frame, title, wb.get_dataset().get_results_scale(),
                            scale_func(wb.get_dataset()),
                            wb.get_dataset().get_legend_txt(), wb.get_dataset())
+
     if y_label is not None:
         gdlg.get_graph().get_axes().set_ylabel(y_label)
 
     try:
-        gdlg.get_graph().draw_plot()
-        tree_menu.AppendItem(parent=selectedID, text=menu_text, data=gdlg)
-        tree_menu.Refresh()
+        main_panel.DestroyChildren()
+        main_panel.AddChild(gdlg)
     except (RuntimeError, ZeroDivisionError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
         errorMsg(plot_str, str(e))
         if __debug__:
@@ -281,14 +276,16 @@ def OnHHPlot(event):
 
 # function to get selected graph on left side of main screen
 def OnSelection(event):
-    wb = tree_menu.GetItemData(tree_menu.GetSelection())
+    selected = tree_menu.GetItemData(tree_menu.GetSelection())
 
-    if isinstance(wb, Workbook):
+    if isinstance(selected, Workbook):
         # Define what this should do now
         pass
+    elif selected is None:
+        pass
     else:
-        wb.CenterOnScreen()
-        wb.Show()
+        selected.CenterOnScreen()
+        selected.Show()
 
 
 # function to rename selected graphs/workbooks
@@ -356,7 +353,7 @@ def OnOpen(event):
     output = False
     try:
         # File dialog choices
-        wb = tree_menu.GetItemData(getWorkbookID())
+        wb = tree_menu.GetItemData(_selected_wb_ID)
         choices = [("MountainsMap Results Text Files (*.txt)|*.txt", MultiscaleImporter.open_results_file),
                    ("Sfrax CSV Results - UTF-8 (*.csv)|*.csv", MultiscaleImporter.open_sfrax)]
 
@@ -384,7 +381,7 @@ def OnOpen(event):
             if datasets is None or not datasets:
                 return
 
-            append_output = wb.append_data(datasets)
+            append_output = wb.get_dataset().append_data(datasets)
             # Handle errors thrown when appending data
             if not append_output:
                 output_val = append_output.get_value()
@@ -412,36 +409,26 @@ def OnOpen(event):
         return output
 
 
+_wkbk_tree_results = "Results"
+_wkbk_tree_surfaces = "Surfaces"
+
 def OnNewWB(event):
-    global wb_counter
-    global root
+    global wb_counter, root, _selected_wb_ID, _selected_surfaces_ID, _selected_results_ID
 
     new_wb = Workbook('workbook{}'.format(wb_counter))
-    item = tree_menu.AppendItem(root, new_wb.name, data=new_wb)
-    tree_menu.SelectItem(item)
+    _selected_wb_ID = tree_menu.AppendItem(root, new_wb.name, data=new_wb)
+    _selected_surfaces_ID = tree_menu.AppendItem(_selected_wb_ID, _wkbk_tree_results, data=None)
+    _selected_results_ID = tree_menu.AppendItem(_selected_wb_ID, _wkbk_tree_surfaces, data=None)
+
+    tree_menu.SelectItem(_selected_wb_ID)
     wb_counter += 1
-
-
-def getWorkbookID():
-    global tree_menu
-    selectedID = tree_menu.GetSelection()
-    selected = tree_menu.GetItemData(selectedID)
-
-    # Check if currently selected node is not plot data
-    # If workbook is not found, go up the tree
-    while not isinstance(selected, Workbook):
-        selectedID = tree_menu.GetItemParent(selectedID)
-        selected = tree_menu.GetItemData(selectedID)
-
-    return selectedID
 
 
 def OnSave(event):
     frame.EnableCloseButton(False)
     output = False
     try:
-        selected_id = getWorkbookID()
-        selected_workbook = tree_menu.GetItemData(selected_id)
+        selected_workbook = tree_menu.GetItemData(_selected_wb_ID)
 
         save_file_dialog = wx.FileDialog(frame, "Save", selected_workbook.name, "xlsx (*.xlsx)|*.xlsx",
                                          style=wx.FD_SAVE)
@@ -537,7 +524,7 @@ if __name__ == "__main__":
     width = screen[0]
     height = screen[1]
 
-    frame = wx.Frame(None, title='Multiscale Analysis')
+    frame = wx.Frame(None, title='Multiscale Statistical Analysis')
     frame.SetSize(0, 0, width, height, sizeFlags=wx.SIZE_AUTO)
     frame.SetBackgroundColour('#ffffff')
     frame.EnableCloseButton(enable=True)
@@ -551,9 +538,9 @@ if __name__ == "__main__":
     openfile = filemenu.Append(openitem)
     new_wb = filemenu.Append(wx.ID_ANY, 'New Workbook', 'New Workbook')
     frame.Bind(wx.EVT_MENU, OnNewWB, new_wb)
-    save = wx.MenuItem(filemenu, wx.ID_SAVEAS, 'Save As')
-    frame.Bind(wx.EVT_MENU, OnSave, save)
-    filemenu.Append(save)
+    # save = wx.MenuItem(filemenu, wx.ID_SAVEAS, 'Save As')
+    # frame.Bind(wx.EVT_MENU, OnSave, save)
+    # filemenu.Append(save)
     # bind functions to menu objects
     about = wx.MenuItem(filemenu, wx.ID_ABOUT, 'About')
     filemenu.Append(about)
@@ -601,21 +588,20 @@ if __name__ == "__main__":
 
     # splits the main window into 2 sections: side bar with , side bar with datasets, and graph window
     vsplitter = wx.SplitterWindow(frame)
-    vsplitter.SetBackgroundColour('#ffffff')
+    vsplitter.SetBackgroundColour('#DCDCDC')
 
     v_sizer = wx.BoxSizer(wx.VERTICAL)
     h_sizer = wx.BoxSizer(wx.VERTICAL)
 
     # main panel with workbook view
     main_panel = wx.Panel(vsplitter, style=wx.SIMPLE_BORDER)
-    main_panel.SetBackgroundColour('#ffffff')
-
+    main_panel.Layout()
     main_sizer = wx.BoxSizer(wx.VERTICAL)
+    main_panel.SetSizerAndFit(main_sizer)
+
 
     # --------------------------------------------------------------------------------------------------
     h_sizer.Add(main_panel, 1, wx.EXPAND)
-    main_panel.Layout()
-    main_panel.SetSizerAndFit(main_sizer)
 
     # ------------------------------------------------------------------------------------------------------
 
@@ -632,7 +618,7 @@ if __name__ == "__main__":
     # tree which contains the graphs when created, names can be editted
     tree_sizer = wx.BoxSizer(wx.VERTICAL)
     tree_menu = wx.TreeCtrl(left_panel, style=wx.TR_HAS_BUTTONS | wx.TR_HIDE_ROOT | wx.TR_LINES_AT_ROOT | wx.TR_SINGLE |
-                                              wx.TR_FULL_ROW_HIGHLIGHT | wx.TR_EDIT_LABELS)
+                                              wx.TR_FULL_ROW_HIGHLIGHT)
     root = tree_menu.AddRoot("graphs-root")
     tree_sizer.Add(tree_menu, 1, wx.EXPAND)
     left_panel.SetSizer(tree_sizer)
@@ -642,7 +628,6 @@ if __name__ == "__main__":
     main_sizer.Clear()
     main_sizer.Layout()
 
-    # main_sizer.Add(grid, 1, wx.EXPAND)
     main_panel.SetSizer(main_sizer)
 
     OnNewWB(wx.EVT_ACTIVATE_APP)

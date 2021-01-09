@@ -12,7 +12,6 @@ def open_sfrax(file_paths) -> list:
     @return list of generated datasets"""
     dataset = []
     # logs opening in the window
-    __main__.error_txt.AppendText("Opening..." + '\n')
 
     # iterate over each file in the file path
     for file in file_paths:
@@ -29,25 +28,19 @@ def open_sfrax(file_paths) -> list:
                 # the first value in the row is always either text, empty, of a value for the scale
                 # in this line the value is converted to a float() if it is text it will throw an error and skip
                 # to the next line. However a number can be converted to a float and will not throw an error
-                try:
-                    # Appends the value of the scale rounded to 4 decimal places to the list of scales
-                    scales.append(np.round_(float(row[0]), 4))
-                    # the second value in the row is always relative area (or length) which is rounded and appended
-                    # to tempList.
-                    area_vals.append(np.round_(float(row[1]), 4))
-                    # the third value in the row is always complexity which is rounded and appended to complexList
-                    complex_vals.append(np.round_(float(row[2]), 4))
-                # catch and log errors prints them to main window
-                except (ValueError, IndexError) as e:
-                    __main__.error_txt.AppendText("Open: " + str(e) + '\n')
-        # Create dataset and add to return list
-        try:
-            dataset.append(MultiscaleData(os.path.basename(file), scales, area_vals, complex_vals))
-        except MultiscaleDisjointDatasetException as e:
-            __main__.error_txt.AppendText(e)
-            continue
 
-    __main__.error_txt.AppendText("Done." + '\n')
+                # Appends the value of the scale rounded to 4 decimal places to the list of scales
+                scales.append(np.round_(float(row[0]), 4))
+                # the second value in the row is always relative area (or length) which is rounded and appended
+                # to tempList.
+                area_vals.append(np.round_(float(row[1]), 4))
+                # the third value in the row is always complexity which is rounded and appended to complexList
+                complex_vals.append(np.round_(float(row[2]), 4))
+            # catch and log errors prints them to main window
+
+        # Create dataset and add to return list
+        dataset.append(MultiscaleData(os.path.basename(file), scales, area_vals, complex_vals))
+
     return dataset
 
 
@@ -56,9 +49,6 @@ def open_results_file(file_paths) -> list:
     @param file_paths - given file paths
     @return list of generated datasets"""
     dataset = []
-    __main__.error_txt.AppendText("Opening..." + '\n')
-
-    file_info_strs = []
 
     # iterate over each file to open each file and read the data
     for file in file_paths:
@@ -97,14 +87,12 @@ def open_results_file(file_paths) -> list:
                 # throw and log errors
                 except ValueError as e:
                     if dataFound:
-                        __main__.error_txt.AppendText(
-                            "Open (" + openfile.name + ":" + str(lineNum) + "): " + str(e) + '\n')
+                        raise e
                     elif not row_labels and len(line) >= 3:
                         row_labels = [line[1], line[2]]
         # Create dataset and add to return list
         dataset.append(MultiscaleData(os.path.basename(file), scales, area_vals, complex_vals, row_labels))
 
-    __main__.error_txt.AppendText("Done." + '\n')
     return dataset
 
 

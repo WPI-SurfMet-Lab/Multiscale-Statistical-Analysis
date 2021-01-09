@@ -19,7 +19,7 @@ use('WXAgg')
 # Class for the R^2 by scale plots to generate the graphs
 class R2byScalePlot(wx.Panel):
 
-    def __init__(self, parent, data, error_txt, tree_menu, root, id):
+    def __init__(self, parent, data, tree_menu, root, id):
         # gets the Panel properties
         wx.Panel.__init__(self, parent, size=wx.Size(640, 480), style=wx.SIMPLE_BORDER)
         # id corresponding to regression curve type
@@ -55,7 +55,6 @@ class R2byScalePlot(wx.Panel):
         self.get_axes().set_title(self.get_titlelabel())
         self.get_axes().set_xlabel(self.get_xlabel())
         self.get_axes().set_ylabel(self.get_ylabel())
-        self.error_txt = error_txt
         # ------------------------- HOVER ANNOTATE -------------------------------
         self.scatter_plot = None
         self.annot = self.get_axes().annotate("", xy=(0, 0), xytext=(0.025, 0.025), textcoords="axes fraction",
@@ -172,7 +171,6 @@ class R2byScalePlot(wx.Panel):
                 # calculate R^2 values
                 r2 = CurveFit.r_squared(np.array(y_values), fit_func(np.array(self.get_xr()), *popt))
             except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
-                self.get_error_txt().AppendText(error_str + str(e) + '\n')
                 # if error R^2 value is set to 0. error is likely due to not being able to find the functional correlation
                 r2 = 0
             # append R^2 value to the y values to be plotted
@@ -254,7 +252,6 @@ class R2byScalePlot(wx.Panel):
     def set_legendLoc(self, loc): self.legendLoc = loc
     def get_xr(self): return self.xr
     def get_y_plot(self): return self.y_plot
-    def get_error_txt(self): return self.error_txt
     def get_scatter_plot(self): return self.scatter_plot
     def set_scatter_plot(self, scatter): self.scatter_plot = scatter
     def get_annot(self): return self.annot
@@ -536,6 +533,8 @@ class RegressionPlot(wx.Panel):
     def get_tree_menu(self): return self.tree_menu
     def get_popt(self): return self.popt
     def set_popt(self, popt): self.popt = popt
+
+
 # Class for the Scale by area plot as well as complexity by scale
 # TODO: rename the class name
 class SclbyAreaPlot(wx.Panel):
@@ -714,6 +713,7 @@ class SclbyAreaPlot(wx.Panel):
     def get_xlin(self): return self.xlin
     def get_ylin(self): return self.ylin
     def get_annot(self): return self.annot
+
 
 # --------------------- SCALE SELECTED REGRESSION PLOT ----------------------------------
 # Class to produce the regression plots when selecting the R^2 values on the R^2 by scale plot

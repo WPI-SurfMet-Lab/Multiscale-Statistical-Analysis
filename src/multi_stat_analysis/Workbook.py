@@ -1,5 +1,4 @@
-from MultiscaleData import MultiscaleDataset, MultiscaleData, DatasetAppendOutput
-import wx.grid
+from MultiscaleData import MultiscaleDataset
 
 
 class Workbook:
@@ -8,6 +7,7 @@ class Workbook:
         super().__init__()
         self.name = name
         self._dataset = MultiscaleDataset()
+        self.graph_panel = None
 
     def get_dataset(self) -> MultiscaleDataset:
         return self._dataset
