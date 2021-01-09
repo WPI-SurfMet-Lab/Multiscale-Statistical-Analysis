@@ -8,6 +8,7 @@ class Workbook:
         self.name = name
         self._dataset = MultiscaleDataset()
         self.graph_panel = None
+        self.results = []
 
     def get_dataset(self) -> MultiscaleDataset:
         return self._dataset

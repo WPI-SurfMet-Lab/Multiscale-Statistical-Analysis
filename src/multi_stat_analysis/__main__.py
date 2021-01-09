@@ -33,8 +33,14 @@ main_panel = None
 app = None
 
 _selected_wb_ID = None
-_selected_surfaces_ID = None
 _selected_results_ID = None
+_selected_surfaces_ID = None
+
+_wkbk_ID_pairs = {}
+class WkbkSurfResultsIDPair:
+    def __init__(self, surfaces_id, results_id):
+        self.surfaces_id = surfaces_id
+        self.results_id = results_id
 
 # Displays error message dialog
 # Waits for the message dialog to close, prevents accesing parent frame
@@ -232,6 +238,13 @@ class ScalePlots:
         "Complexity")
 
 
+def display_graph_frame(graph_panel):
+    """Remove currently displayed graph if necessary, and display given graph in main panel."""
+    if graph_panel is not None:
+        main_panel.DestroyChildren()
+        main_panel.AddChild(graph_panel)
+
+
 def OnScalePlot(plot_choice):
     wb = tree_menu.GetItemData(_selected_wb_ID)
     plot_str, title, scale_func, menu_text, y_label = plot_choice
@@ -240,21 +253,15 @@ def OnScalePlot(plot_choice):
         errorMsg(plot_str, "No workbook given")
         return
 
-    gdlg = SclbyAreaDialog(frame, title, wb.get_dataset().get_results_scale(),
+    main_panel.DestroyChildren()
+    gdlg = SclbyAreaDialog(main_panel, title, wb.get_dataset().get_results_scale(),
                            scale_func(wb.get_dataset()),
                            wb.get_dataset().get_legend_txt(), wb.get_dataset())
 
     if y_label is not None:
         gdlg.get_graph().get_axes().set_ylabel(y_label)
 
-    try:
-        main_panel.DestroyChildren()
-        main_panel.AddChild(gdlg)
-    except (RuntimeError, ZeroDivisionError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
-        errorMsg(plot_str, str(e))
-        if __debug__:
-            import traceback
-            traceback.print_exc()
+    gdlg.get_graph().draw_plot()
 
 
 # function to create the scale area plot
@@ -274,13 +281,20 @@ def OnHHPlot(event):
     tree_menu.Refresh()
 
 
-# function to get selected graph on left side of main screen
 def OnSelection(event):
-    selected = tree_menu.GetItemData(tree_menu.GetSelection())
+    """Handles on click event for sidebar."""
+    selected_id = tree_menu.GetSelection()
+    selected = tree_menu.GetItemData(selected_id)
 
     if isinstance(selected, Workbook):
-        # Define what this should do now
-        pass
+        global _selected_wb_ID, _selected_surfaces_ID, _selected_results_ID
+        pair = _wkbk_ID_pairs[selected_id]
+        _selected_wb_ID = selected_id
+        _selected_surfaces_ID = pair.surfaces_id
+        _selected_results_ID = pair.results_id
+
+        display_graph_frame(selected.graph_panel)
+
     elif selected is None:
         pass
     else:
@@ -350,7 +364,7 @@ def OnAbout(event):
 # function to open the data files
 def OnOpen(event):
     frame.EnableCloseButton(False)
-    output = False
+
     try:
         # File dialog choices
         wb = tree_menu.GetItemData(_selected_wb_ID)
@@ -396,7 +410,6 @@ def OnOpen(event):
                         error_str += output_val
                     errorMsg("Dataset Error", error_str)
 
-            output = True
         elif result == wx.ID_CANCEL:
             pass
     except Exception as e:
@@ -406,7 +419,12 @@ def OnOpen(event):
             traceback.print_exc()
     finally:
         frame.EnableCloseButton(True)
-        return output
+
+    # Remove currently results in tree, and add updated datasets to list
+    tree_menu.DeleteChildren(_selected_surfaces_ID)
+    for data in wb.get_dataset()._datasets:
+        tree_menu.AppendItem(_selected_surfaces_ID, data.name, data=None)
+    tree_menu.Expand(_selected_surfaces_ID)
 
 
 _wkbk_tree_results = "Results"
@@ -417,10 +435,15 @@ def OnNewWB(event):
 
     new_wb = Workbook('workbook{}'.format(wb_counter))
     _selected_wb_ID = tree_menu.AppendItem(root, new_wb.name, data=new_wb)
-    _selected_surfaces_ID = tree_menu.AppendItem(_selected_wb_ID, _wkbk_tree_results, data=None)
-    _selected_results_ID = tree_menu.AppendItem(_selected_wb_ID, _wkbk_tree_surfaces, data=None)
+    _selected_surfaces_ID = tree_menu.AppendItem(_selected_wb_ID, _wkbk_tree_surfaces, data=None)
+    _selected_results_ID = tree_menu.AppendItem(_selected_wb_ID, _wkbk_tree_results, data=None)
+
+    _wkbk_ID_pairs[_selected_wb_ID] = WkbkSurfResultsIDPair(_selected_surfaces_ID, _selected_results_ID)
+
+    main_panel.DestroyChildren()
 
     tree_menu.SelectItem(_selected_wb_ID)
+    tree_menu.Expand(_selected_wb_ID)
     wb_counter += 1
 
 
@@ -538,9 +561,11 @@ if __name__ == "__main__":
     openfile = filemenu.Append(openitem)
     new_wb = filemenu.Append(wx.ID_ANY, 'New Workbook', 'New Workbook')
     frame.Bind(wx.EVT_MENU, OnNewWB, new_wb)
+
     # save = wx.MenuItem(filemenu, wx.ID_SAVEAS, 'Save As')
     # frame.Bind(wx.EVT_MENU, OnSave, save)
     # filemenu.Append(save)
+
     # bind functions to menu objects
     about = wx.MenuItem(filemenu, wx.ID_ABOUT, 'About')
     filemenu.Append(about)
