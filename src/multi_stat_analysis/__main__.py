@@ -1,6 +1,7 @@
 import sys
 import traceback
 import warnings
+from enum import Enum
 
 import wx
 import wx.adv
@@ -11,8 +12,8 @@ import MountainsImporter.ImportUtils as ImportUtils
 from MultiscaleData import MultiscaleDataset, DatasetAppendOutput
 from Workbook import Workbook
 from scipy.optimize import OptimizeWarning
-from Dialogs import RegressionDialog, GraphSelectDialog, R2byScaleDialog, SclbyAreaDialog, XRValuesDialog, HHPlotDialog
-from CanvasPanel import RegressionPlot as RP
+from Dialogs import RegressionDialog, GraphSelectDialog, R2byScaleDialog, XRValuesDialog, HHPlotDialog
+from CanvasPanel import RegressionPlot as RP, SclbyAreaPlot
 from CanvasPanel import R2byScalePlot as R2
 from StatsTestsUI import FtestDialog, TtestDialog, ANOVAtestDialog
 
@@ -25,28 +26,24 @@ __author__ = 'Matthew Spofford, Nathaniel Rutkowski'
 __author_email__ = 'mespofford@wpi.edu'
 __url__ = 'https://github.com/MatthewSpofford/Multiscale-Statistical-Analysis'
 
-
 wb_counter = 1
 wb_list = []
 frame = None
-main_panel = None
 app = None
 
+_main_panel = None
+
+_selected_wb = None
 _selected_wb_ID = None
 _selected_results_ID = None
 _selected_surfaces_ID = None
-
 _wkbk_ID_pairs = {}
+
+
 class WkbkSurfResultsIDPair:
     def __init__(self, surfaces_id, results_id):
         self.surfaces_id = surfaces_id
         self.results_id = results_id
-
-# Displays error message dialog
-# Waits for the message dialog to close, prevents accesing parent frame
-def errorMsg(title, msg):
-    dialog = wx.MessageDialog(frame, msg, title, style=wx.ICON_ERROR | wx.OK)
-    dialog.ShowModal()
 
 
 # Displays error message dialog
@@ -58,7 +55,7 @@ def warnMsg(title, msg):
 
 # function for show the curve fit dialog and get regression graphs
 def OnRegression(event):
-    dataset = tree_menu.GetItemData(_selected_wb_ID).get_dataset()
+    dataset = _selected_wb.get_dataset()
 
     warnings.simplefilter("error", OptimizeWarning)
     try:
@@ -170,7 +167,7 @@ def OnRegression(event):
 
 # function to get the x-regression values
 def OnData(event):
-    dataset = tree_menu.GetItemData(_selected_wb_ID).get_dataset()
+    dataset = _selected_wb.get_dataset()
 
     datadialog = XRValuesDialog(frame, dataset.get_x_regress())
     datadialog.CenterOnScreen()
@@ -192,7 +189,7 @@ class DiscrimTests:
 
 def OnDiscrimTests(test_choice):
     selected_test_func, test_str = test_choice
-    dataset = tree_menu.GetItemData(_selected_wb_ID).get_dataset()
+    dataset = _selected_wb.get_dataset()
 
     try:
         dlg = selected_test_func(frame, dataset, tree_menu, _selected_wb_ID)
@@ -223,7 +220,7 @@ def OnANOVA(event):
     OnDiscrimTests(DiscrimTests.Anova)
 
 
-class ScalePlots:
+class ScalePlots(Enum):
     """Contains list of scale plot dialog properties
     [0] - Error dialog label string
     [1] - Dialog title string
@@ -231,37 +228,43 @@ class ScalePlots:
     [3] - Tree menu label string
     [4] - Graph y-axis label"""
     Area = (
-        "Area-Scale Graph", "Scale by Relative Area", MultiscaleDataset.get_relative_area, "Relative Area - Scale",
-        None)
+        "Area-Scale Graph", "Scale by Relative Area", MultiscaleDataset.get_relative_area, SclbyAreaPlot.draw_plot,
+        "Relative Area - Scale", None)
     Complexity = (
-        "Complexity-Scale Graph", "Scale by Complexity", MultiscaleDataset.get_complexity, "Complexity - Scale",
-        "Complexity")
+        "Complexity-Scale Graph", "Scale by Complexity", MultiscaleDataset.get_complexity,
+        SclbyAreaPlot.draw_complexity_plot, "Complexity - Scale", "Complexity")
 
 
 def display_graph_frame(graph_panel):
     """Remove currently displayed graph if necessary, and display given graph in main panel."""
     if graph_panel is not None:
-        main_panel.DestroyChildren()
-        main_panel.AddChild(graph_panel)
+        _main_panel.DestroyChildren()
+        _main_panel.AddChild(graph_panel)
 
 
-def OnScalePlot(plot_choice):
-    wb = tree_menu.GetItemData(_selected_wb_ID)
-    plot_str, title, scale_func, menu_text, y_label = plot_choice
+def OnScalePlot(plot_choice: ScalePlots):
+    plot_str, title, scale_func, draw_func, menu_text, y_label = plot_choice.value
 
-    if wb is None or wb.get_dataset().empty():
-        errorMsg(plot_str, "No workbook given")
+    if _selected_wb is None or _selected_wb.get_dataset().empty():
+        errorMsg(plot_str, "No surfaces given.")
         return
 
-    main_panel.DestroyChildren()
-    gdlg = SclbyAreaDialog(main_panel, title, wb.get_dataset().get_results_scale(),
-                           scale_func(wb.get_dataset()),
-                           wb.get_dataset().get_legend_txt(), wb.get_dataset())
+    if _selected_wb.graph_panel is not None:
+        _selected_wb.graph_panel.Destroy()
 
-    if y_label is not None:
-        gdlg.get_graph().get_axes().set_ylabel(y_label)
+    try:
+        dataset = _selected_wb.get_dataset()
+        _selected_wb.graph_panel = SclbyAreaPlot(_main_panel, dataset.get_results_scale(), scale_func(dataset), dataset)
 
-    gdlg.get_graph().draw_plot()
+        if y_label is not None:
+            _selected_wb.graph_panel.get_axes().set_ylabel(y_label)
+
+        draw_func(_selected_wb.graph_panel)
+        _selected_wb.graph_panel.Show()
+    except Exception as e:
+        if _selected_wb.graph_panel is not None:
+            _main_panel.RemoveChild(_selected_wb.graph_panel)
+        raise e
 
 
 # function to create the scale area plot
@@ -283,17 +286,30 @@ def OnHHPlot(event):
 
 def OnSelection(event):
     """Handles on click event for sidebar."""
+    global _selected_wb
     selected_id = tree_menu.GetSelection()
     selected = tree_menu.GetItemData(selected_id)
 
     if isinstance(selected, Workbook):
         global _selected_wb_ID, _selected_surfaces_ID, _selected_results_ID
-        pair = _wkbk_ID_pairs[selected_id]
+
+        if selected is _selected_wb:
+            return  # Skip the rest of the function, user clicked on current workbook
+
+        # Hide current graph being displayed
+        if _selected_wb.graph_panel is not None:
+            _selected_wb.graph_panel.Hide()
+
+        _selected_wb = selected
         _selected_wb_ID = selected_id
+
+        pair = _wkbk_ID_pairs[selected_id]
         _selected_surfaces_ID = pair.surfaces_id
         _selected_results_ID = pair.results_id
 
-        display_graph_frame(selected.graph_panel)
+        # Potentially show new graph for selected panel
+        if _selected_wb.graph_panel is not None:
+            _selected_wb.graph_panel.Show()
 
     elif selected is None:
         pass
@@ -367,7 +383,6 @@ def OnOpen(event):
 
     try:
         # File dialog choices
-        wb = tree_menu.GetItemData(_selected_wb_ID)
         choices = [("MountainsMap Results Text Files (*.txt)|*.txt", MultiscaleImporter.open_results_file),
                    ("Sfrax CSV Results - UTF-8 (*.csv)|*.csv", MultiscaleImporter.open_sfrax)]
 
@@ -395,7 +410,7 @@ def OnOpen(event):
             if datasets is None or not datasets:
                 return
 
-            append_output = wb.get_dataset().append_data(datasets)
+            append_output = _selected_wb.get_dataset().append_data(datasets)
             # Handle errors thrown when appending data
             if not append_output:
                 output_val = append_output.get_value()
@@ -422,7 +437,7 @@ def OnOpen(event):
 
     # Remove currently results in tree, and add updated datasets to list
     tree_menu.DeleteChildren(_selected_surfaces_ID)
-    for data in wb.get_dataset()._datasets:
+    for data in _selected_wb.get_dataset()._datasets:
         tree_menu.AppendItem(_selected_surfaces_ID, data.name, data=None)
     tree_menu.Expand(_selected_surfaces_ID)
 
@@ -430,17 +445,23 @@ def OnOpen(event):
 _wkbk_tree_results = "Results"
 _wkbk_tree_surfaces = "Surfaces"
 
-def OnNewWB(event):
-    global wb_counter, root, _selected_wb_ID, _selected_surfaces_ID, _selected_results_ID
 
-    new_wb = Workbook('workbook{}'.format(wb_counter))
-    _selected_wb_ID = tree_menu.AppendItem(root, new_wb.name, data=new_wb)
+def OnNewWB(event):
+    global wb_counter, root, _selected_wb, _selected_wb_ID, _selected_surfaces_ID, _selected_results_ID
+
+    try:
+        if _selected_wb.graph_panel is not None:
+            _selected_wb.graph_panel.Hide()
+    except AttributeError:
+        pass
+        # _selected_wb will be None when application starts up
+
+    _selected_wb = Workbook('workbook{}'.format(wb_counter))
+    _selected_wb_ID = tree_menu.AppendItem(root, _selected_wb.name, data=_selected_wb)
     _selected_surfaces_ID = tree_menu.AppendItem(_selected_wb_ID, _wkbk_tree_surfaces, data=None)
     _selected_results_ID = tree_menu.AppendItem(_selected_wb_ID, _wkbk_tree_results, data=None)
 
     _wkbk_ID_pairs[_selected_wb_ID] = WkbkSurfResultsIDPair(_selected_surfaces_ID, _selected_results_ID)
-
-    main_panel.DestroyChildren()
 
     tree_menu.SelectItem(_selected_wb_ID)
     tree_menu.Expand(_selected_wb_ID)
@@ -451,9 +472,7 @@ def OnSave(event):
     frame.EnableCloseButton(False)
     output = False
     try:
-        selected_workbook = tree_menu.GetItemData(_selected_wb_ID)
-
-        save_file_dialog = wx.FileDialog(frame, "Save", selected_workbook.name, "xlsx (*.xlsx)|*.xlsx",
+        save_file_dialog = wx.FileDialog(frame, "Save", _selected_wb.name, "xlsx (*.xlsx)|*.xlsx",
                                          style=wx.FD_SAVE)
         save_file_dialog.CenterOnScreen()
         # shows the dialog on screen when pushes button
@@ -463,8 +482,8 @@ def OnSave(event):
             # gets the file path
             filepath = save_file_dialog.GetPath()
 
-            cells = selected_workbook.get_table_data().keys()
-            values = selected_workbook.get_table_data().values()
+            cells = _selected_wb.get_table_data().keys()
+            values = _selected_wb.get_table_data().values()
 
             file = openpyxl.Workbook()
             sheet = file.worksheets[0]
@@ -523,19 +542,22 @@ def OnExit(event):
         return False
 
 
-def exceptionHandler(etype, value, trace):
+def errorMsg(title, msg):
     """
-    Handler for all unhandled exceptions.
-    :param `etype`: the exception type (`SyntaxError`, `ZeroDivisionError`, etc...);
-    :type `etype`: `Exception`
-    :param string `value`: the exception error message;
-    :param string `trace`: the traceback header, if any (otherwise, it prints the
-     standard Python header: ``Traceback (most recent call last)``.
+    Displays error message dialog. Waits for the message dialog to close, prevents accessing parent frame.
     """
-    tmp = traceback.format_exception(etype, value, trace)
-    exception = "".join(tmp)
+    # Print to stderr
+    print(msg, file=sys.stderr)
+    # Create error dialog
+    dialog = wx.MessageDialog(frame, msg, title, style=wx.ICON_ERROR | wx.OK)
+    dialog.ShowModal()
 
-    errorMsg(str(etype), exception)
+
+def exceptionHandler(etype, value, trace):
+    trace = traceback.format_exception(etype, value, trace)
+    msg = "".join(trace)
+
+    errorMsg(etype.__name__ + " Error", msg)
 
 
 if __name__ == "__main__":
@@ -619,14 +641,13 @@ if __name__ == "__main__":
     h_sizer = wx.BoxSizer(wx.VERTICAL)
 
     # main panel with workbook view
-    main_panel = wx.Panel(vsplitter, style=wx.SIMPLE_BORDER)
-    main_panel.Layout()
+    _main_panel = wx.Panel(vsplitter, style=wx.SIMPLE_BORDER)
+    _main_panel.Layout()
     main_sizer = wx.BoxSizer(wx.VERTICAL)
-    main_panel.SetSizerAndFit(main_sizer)
-
+    _main_panel.SetSizerAndFit(main_sizer)
 
     # --------------------------------------------------------------------------------------------------
-    h_sizer.Add(main_panel, 1, wx.EXPAND)
+    h_sizer.Add(_main_panel, 1, wx.EXPAND)
 
     # ------------------------------------------------------------------------------------------------------
 
@@ -637,7 +658,7 @@ if __name__ == "__main__":
     v_sizer.Add(left_panel, 1, wx.EXPAND)
 
     # create the error text box which displays the text for errors
-    vsplitter.SplitVertically(left_panel, main_panel, sashPosition=200)
+    vsplitter.SplitVertically(left_panel, _main_panel, sashPosition=200)
     sizer = wx.BoxSizer(wx.VERTICAL)
     sizer.Add(vsplitter, 1, wx.EXPAND)
     # tree which contains the graphs when created, names can be editted
@@ -653,7 +674,7 @@ if __name__ == "__main__":
     main_sizer.Clear()
     main_sizer.Layout()
 
-    main_panel.SetSizer(main_sizer)
+    _main_panel.SetSizer(main_sizer)
 
     OnNewWB(wx.EVT_ACTIVATE_APP)
 

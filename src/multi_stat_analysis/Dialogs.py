@@ -759,25 +759,26 @@ class RegressionDialog(wx.Frame):
 # class for the dialog which contains the area / complexity by scale graphs
 # the functions OnSave, OnLabel, etc... are the same as described in class RegressionSelectDialog
 # This repetitive code is a possible place to generalize and simplify / reduce code
-class SclbyAreaDialog(wx.Frame):
+class SclbyAreaDialog(wx.Panel):
 
     def __init__(self, parent, title, x, y, legend_txt, data):
         # wx.Dialog.__init__(self, parent, wx.ID_ANY, "Graph", size=(640, 480))
-        wx.Frame.__init__(self, parent, title=title, size=(640, 530), style=wx.DEFAULT_FRAME_STYLE | wx.STAY_ON_TOP)
+        wx.Frame.__init__(self, parent)
         self.graph = SclbyAreaPlot(self, x, y, data)
         self.legend_txt = legend_txt
         self.parent = parent
         self.title = title
 
         # ----------------------------------- MENU STUFF -----------------------------------------------------
+        # TODO: How to replace menu bar for plot dialog?
         # 'file' sub menu on menu bar
-        self.filemenu = wx.Menu()
-        self.save = self.filemenu.Append(wx.ID_SAVE, 'Save', 'Save')
-        self.close = self.filemenu.Append(wx.ID_EXIT, 'Close', 'Close')
-        self.Bind(wx.EVT_MENU, self.OnSave, self.save)
-        self.Bind(wx.EVT_MENU, self.OnClose, self.close)
-        self.Bind(wx.EVT_CLOSE, self.OnClose, self)
-        self.Bind(wx.EVT_MENU_CLOSE, self.OnClose, self)
+        # self.filemenu = wx.Menu()
+        # self.save = self.filemenu.Append(wx.ID_SAVE, 'Save', 'Save')
+        # self.close = self.filemenu.Append(wx.ID_EXIT, 'Close', 'Close')
+        # self.Bind(wx.EVT_MENU, self.OnSave, self.save)
+        # self.Bind(wx.EVT_MENU, self.OnClose, self.close)
+        # self.Bind(wx.EVT_CLOSE, self.OnClose, self)
+        # self.Bind(wx.EVT_MENU_CLOSE, self.OnClose, self)
 
         # 'graph' sub menu on menu bar
         self.graphmenu = wx.Menu()
@@ -791,10 +792,11 @@ class SclbyAreaDialog(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnGrid, self.grid)
 
         # creates the menu bar and adds the tab to the top of the page
-        self.menuBar = wx.MenuBar()
-        self.menuBar.Append(self.filemenu, 'File')
-        self.menuBar.Append(self.graphmenu, 'Graph')
-        self.SetMenuBar(self.menuBar)
+        # TODO: How to replace menu bar for plot dialog?
+        # self.menuBar = wx.MenuBar()
+        # self.menuBar.Append(self.filemenu, 'File')
+        # self.menuBar.Append(self.graphmenu, 'Graph')
+        # self.SetMenuBar(self.menuBar)
 
         self.annotated = False
         self.isGrid = False
