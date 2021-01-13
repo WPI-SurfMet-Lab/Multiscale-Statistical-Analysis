@@ -28,24 +28,28 @@ __author__ = 'Matthew Spofford, Nathaniel Rutkowski'
 __author_email__ = 'mespofford@wpi.edu'
 __url__ = 'https://github.com/MatthewSpofford/Multiscale-Statistical-Analysis'
 
-wb_counter = 1
-wb_list = []
 frame = None
 app = None
 
+_wb_counter = 1
+_wb_set = set()
 _main_panel = None
 
 _selected_wb = None
 _selected_wb_ID = None
 _selected_results_ID = None
 _selected_surfaces_ID = None
-_wkbk_ID_pairs = {}
 
 
-class WkbkSurfResultsIDPair:
-    def __init__(self, surfaces_id, results_id):
+class WorkbookIDs:
+    def __init__(self, wb_id, surfaces_id, results_id):
+        self.wb_id = wb_id
         self.surfaces_id = surfaces_id
         self.results_id = results_id
+
+
+# Key is Workbook; Value is WorkbookIDs
+_workbook_ID_map = {}
 
 
 # Displays error message dialog
@@ -57,7 +61,7 @@ def warnMsg(title, msg):
 
 # function for show the curve fit dialog and get regression graphs
 def OnRegression(event):
-    dataset = _selected_wb.get_dataset()
+    dataset = _selected_wb.dataset
 
     warnings.simplefilter("error", OptimizeWarning)
     try:
@@ -169,7 +173,7 @@ def OnRegression(event):
 
 # function to get the x-regression values
 def OnData(event):
-    dataset = _selected_wb.get_dataset()
+    dataset = _selected_wb.dataset
 
     datadialog = XRValuesDialog(frame, dataset.get_x_regress())
     datadialog.CenterOnScreen()
@@ -191,7 +195,7 @@ class DiscrimTests:
 
 def OnDiscrimTests(test_choice):
     selected_test_func, test_str = test_choice
-    dataset = _selected_wb.get_dataset()
+    dataset = _selected_wb.dataset
 
     try:
         dlg = selected_test_func(frame, dataset, tree_menu, _selected_wb_ID)
@@ -247,7 +251,7 @@ def display_graph_frame(graph_panel):
 def OnScalePlot(plot_choice: ScalePlots):
     plot_str, title, scale_func, draw_func, menu_text, y_label = plot_choice.value
 
-    if _selected_wb is None or _selected_wb.get_dataset().empty():
+    if _selected_wb is None or _selected_wb.dataset.is_empty():
         errorMsg(plot_str, "No surfaces given.")
         return
 
@@ -255,7 +259,7 @@ def OnScalePlot(plot_choice: ScalePlots):
         _selected_wb.graph_panel.Destroy()
 
     try:
-        dataset = _selected_wb.get_dataset()
+        dataset = _selected_wb.dataset
         _selected_wb.graph_panel = SclbyAreaPlot(_main_panel, dataset.get_results_scale(), scale_func(dataset), dataset)
 
         if y_label is not None:
@@ -309,7 +313,7 @@ class TreeMenu(wx.Menu):
 
 
 class TreeMenuWorkbook(TreeMenu):
-    def __init__(self, item):
+    def __init__(self, item: Workbook):
         super().__init__(item)
 
         self._clear_btn = wx.MenuItem(self, wx.ID_ANY, "Empty Results/Surfaces")
@@ -323,20 +327,44 @@ class TreeMenuWorkbook(TreeMenu):
         pass
 
     def _on_delete(self, event: wx.MenuEvent):
-        pass
+        # Remove selected workbook from set
+        _wb_set.remove(self._item)
+
+        # Update UI
+        tree_menu.Delete(_workbook_ID_map[self._item].wb_id)
+
+        if self._item.graph_panel is not None:
+            self._item.graph_panel.Destroy()
+
+        global _selected_wb, _selected_wb_ID, _selected_results_ID, _selected_surfaces_ID
+        _selected_wb = None
+        _selected_wb_ID = None
+        _selected_results_ID = None
+        _selected_surfaces_ID = None
+
+        # Create new workbook if no workbooks left
+        if len(_wb_set) <= 0:
+            OnNewWB(None)
 
     def _on_clear(self, event: wx.MenuEvent):
-        pass
+        # Update UI
+        if self._item.graph_panel is not None:
+            self._item.graph_panel.Destroy()
+        tree_menu.DeleteChildren(_selected_surfaces_ID)
+        tree_menu.DeleteChildren(_selected_results_ID)
+
+        # Update workbook
+        self._item.dataset.clear()
+        self._item.results.clear()
 
 
 def activate_tree_menu(event: wx.TreeEvent):
-    selected_id = tree_menu.GetSelection()
     selected_item = tree_menu.GetItemData(event.GetItem())
 
     if isinstance(selected_item, Workbook):
-        frame.PopupMenu(TreeMenuWorkbook(frame), event.GetPoint())
+        frame.PopupMenu(TreeMenuWorkbook(selected_item), event.GetPoint())
     if isinstance(selected_item, MultiscaleData):
-        frame.PopupMenu(TreeMenu(frame), event.GetPoint())
+        frame.PopupMenu(TreeMenu(selected_item), event.GetPoint())
     else:
         pass  # Do nothing otherwise
 
@@ -360,9 +388,9 @@ def OnSelection(event):
         _selected_wb = selected
         _selected_wb_ID = selected_id
 
-        pair = _wkbk_ID_pairs[selected_id]
-        _selected_surfaces_ID = pair.surfaces_id
-        _selected_results_ID = pair.results_id
+        ids = _workbook_ID_map[_selected_wb]
+        _selected_surfaces_ID = ids.surfaces_id
+        _selected_results_ID = ids.results_id
 
         # Potentially show new graph for selected panel
         if _selected_wb.graph_panel is not None:
@@ -375,23 +403,6 @@ def OnSelection(event):
     else:
         selected.CenterOnScreen()
         selected.Show()
-
-
-
-# function to rename selected graphs/workbooks
-def OnRename(event):
-    selectedID = tree_menu.GetSelection()
-    selected = tree_menu.GetItemData(selectedID)
-    newName = event.GetLabel()
-
-    # Name was not changed, or is changed to something invalid. Leave event call early.
-    if not newName:
-        return
-
-    if isinstance(selected, Workbook):
-        selected.name = newName
-    else:
-        pass
 
 
 # function to display dialog about the software
@@ -470,7 +481,7 @@ def OnOpen(event):
             if datasets is None or not datasets:
                 return
 
-            append_output = _selected_wb.get_dataset().append_data(datasets)
+            append_output = _selected_wb.dataset.append_data(datasets)
             # Handle errors thrown when appending data
             if not append_output:
                 output_val = append_output.get_value()
@@ -497,7 +508,7 @@ def OnOpen(event):
 
     # Remove currently results in tree, and add updated datasets to list
     tree_menu.DeleteChildren(_selected_surfaces_ID)
-    for data in _selected_wb.get_dataset()._datasets:
+    for data in _selected_wb.dataset._datasets:
         tree_menu.AppendItem(_selected_surfaces_ID, data.name, data=data)
     tree_menu.Expand(_selected_surfaces_ID)
 
@@ -507,7 +518,7 @@ _wkbk_tree_surfaces = "Surfaces"
 
 
 def OnNewWB(event):
-    global wb_counter, root, _selected_wb, _selected_wb_ID, _selected_surfaces_ID, _selected_results_ID
+    global _wb_counter, root, _selected_wb, _selected_wb_ID, _selected_surfaces_ID, _selected_results_ID
 
     try:
         if _selected_wb.graph_panel is not None:
@@ -516,16 +527,18 @@ def OnNewWB(event):
         pass
         # _selected_wb will be None when application starts up
 
-    _selected_wb = Workbook('workbook{}'.format(wb_counter))
+    _selected_wb = Workbook('workbook{}'.format(_wb_counter))
     _selected_wb_ID = tree_menu.AppendItem(root, _selected_wb.name, data=_selected_wb)
     _selected_surfaces_ID = tree_menu.AppendItem(_selected_wb_ID, _wkbk_tree_surfaces, data=None)
     _selected_results_ID = tree_menu.AppendItem(_selected_wb_ID, _wkbk_tree_results, data=None)
 
-    _wkbk_ID_pairs[_selected_wb_ID] = WkbkSurfResultsIDPair(_selected_surfaces_ID, _selected_results_ID)
+    _workbook_ID_map[_selected_wb] = WorkbookIDs(_selected_wb_ID, _selected_surfaces_ID, _selected_results_ID)
 
     tree_menu.SelectItem(_selected_wb_ID)
     tree_menu.Expand(_selected_wb_ID)
-    wb_counter += 1
+    _wb_counter += 1
+
+    _wb_set.add(_selected_wb)
 
 
 def OnSave(event):
@@ -730,7 +743,6 @@ if __name__ == "__main__":
     left_panel.SetSizer(tree_sizer)
     frame.Bind(wx.EVT_TREE_ITEM_ACTIVATED, OnSelection, tree_menu)
     frame.Bind(wx.EVT_TREE_ITEM_RIGHT_CLICK, activate_tree_menu, tree_menu)
-    frame.Bind(wx.EVT_TREE_END_LABEL_EDIT, OnRename, tree_menu)
 
     main_sizer.Clear()
     main_sizer.Layout()

@@ -269,8 +269,27 @@ class MultiscaleDataset:
     def get_regress_sets(self):
         return self._regress_sets
 
-    def empty(self) -> bool:
+    def is_empty(self) -> bool:
         return self.get_size() == 0
+
+    def clear(self):
+        # Set of unified scales, used for efficient scale checking
+        self._scales = set()
+        # List of unified scales, equivalent to scales set but in order
+        self._scales_list = []
+        # List of data in dataset
+        self._datasets = []
+        # --- Following lists are in corresponding order to _datasets ---
+        self._names = []
+        self._regress_vals = []
+        self._row_labels = []
+        # Unified 2D list of list of area values for each set
+        self._areas = []
+        # Unified 2D list of list of complexity values for each set
+        self._complexities = []
+        # Unified 2D list of list of regression set rows
+        self._regress_sets = []
+
 
 @unique
 class DatasetAppendOptions(Enum):
