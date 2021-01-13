@@ -5,16 +5,14 @@ import CurveFit
 from matplotlib import use
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wx import NavigationToolbar2Wx as NavigationToolbar
-from matplotlib.pyplot import figure, yscale
+from matplotlib.pyplot import figure
+from matplotlib.figure import Figure
 from scipy.optimize import OptimizeWarning
 from GraphDialogs import SymbolDialog
 from GraphDialogs import LegendDialog
 from GraphDialogs import LabelDialog
 
 import __main__
-
-import logging
-import traceback
 
 use('WXAgg')
 
@@ -108,34 +106,34 @@ class R2byScalePlot(wx.Panel):
                         # checks the given id to perform the correct regression using the data determined above
                         # this needs error exceptions still
                         regression_choices = \
-                            {0: ("Proportional Regression Plot", dialog.get_graph().proportional_fit_plot,
+                            {0: ("Proportional Regression Plot", parent.get_graph().proportional_fit_plot,
                                  "Proportional Regression at"),
-                             1: ("Linear Regression Plot", dialog.get_graph().linear_fit_plot, "Linear Regression at"),
-                             2: ("Quadratic Regression Plot", dialog.get_graph().quadratic_fit_plot,
+                             1: ("Linear Regression Plot", parent.get_graph().linear_fit_plot, "Linear Regression at"),
+                             2: ("Quadratic Regression Plot", parent.get_graph().quadratic_fit_plot,
                                  "Quadratic Regression at"),
-                             3: ("Cubic Regression Plot", dialog.get_graph().cubic_fit_plot, "Cubic Regression at"),
+                             3: ("Cubic Regression Plot", parent.get_graph().cubic_fit_plot, "Cubic Regression at"),
                              4: (
-                                 "Quartic Regression Plot", dialog.get_graph().quartic_fit_plot,
+                                 "Quartic Regression Plot", parent.get_graph().quartic_fit_plot,
                                  "Quartic Regression at"),
                              5: (
-                                 "Quintic Regression Plot", dialog.get_graph().quintic_fit_plot,
+                                 "Quintic Regression Plot", parent.get_graph().quintic_fit_plot,
                                  "Quintic Regression at"),
-                             6: ("Power Regression Plot", dialog.get_graph().power_fit_plot, "Power Regression at"),
+                             6: ("Power Regression Plot", parent.get_graph().power_fit_plot, "Power Regression at"),
                              7: (
-                                 "Inverse Regression Plot", dialog.get_graph().inverse_fit_plot,
+                                 "Inverse Regression Plot", parent.get_graph().inverse_fit_plot,
                                  "Inverse Regression at"),
-                             8: ("Inverse Squared Regression Plot", dialog.get_graph().inverse_squared_fit_plot,
+                             8: ("Inverse Squared Regression Plot", parent.get_graph().inverse_squared_fit_plot,
                                  "Inverse Squared Regression at"),
-                             9: ("Natural Exponent Regression Plot", dialog.get_graph().naturalexp_fit_plot,
+                             9: ("Natural Exponent Regression Plot", parent.get_graph().naturalexp_fit_plot,
                                  "Natural Exponent Regression at"),
-                             10: ("Natural Log Regression Plot", dialog.get_graph().loge_fit_plot,
+                             10: ("Natural Log Regression Plot", parent.get_graph().loge_fit_plot,
                                   "Natural Log Regression at"),
-                             11: ("Log10 Regression Plot", dialog.get_graph().log10_fit_plot, "Log10 Regression at"),
-                             12: ("Inverse Exponent Regression Plot", dialog.get_graph().inverseexp_fit_plot,
+                             11: ("Log10 Regression Plot", parent.get_graph().log10_fit_plot, "Log10 Regression at"),
+                             12: ("Inverse Exponent Regression Plot", parent.get_graph().inverseexp_fit_plot,
                                   "Inverse Exponent Regression at"),
-                             13: ("Sin Regression Plot", dialog.get_graph().sin_fit_plot, "Sin Regression at"),
-                             14: ("Cos Regression Plot", dialog.get_graph().cos_fit_plot, "Cos Regression at"),
-                             15: ("Gaussian Regression Plot", dialog.get_graph().gaussian_fit_plot,
+                             13: ("Sin Regression Plot", parent.get_graph().sin_fit_plot, "Sin Regression at"),
+                             14: ("Cos Regression Plot", parent.get_graph().cos_fit_plot, "Cos Regression at"),
+                             15: ("Gaussian Regression Plot", parent.get_graph().gaussian_fit_plot,
                                   "Gaussian Regression at")}
                         title, plot_func, menu_text = regression_choices[self.id]
 
@@ -180,7 +178,8 @@ class R2byScalePlot(wx.Panel):
         # updates the regression plot's label
         self.get_canvas().draw()
 
-    # uses various regression functions to calculate R^2 values same as following functions but with respective curve type
+    # Uses various regression functions to calculate R^2 values same as following functions but with
+    # respective curve type
     def plot_fit(self, data_func, fit_func, error_str):
         warnings.simplefilter('error', OptimizeWarning)
         # iterate over all sets of y-values in regression
@@ -191,7 +190,8 @@ class R2byScalePlot(wx.Panel):
                 # calculate R^2 values
                 r2 = CurveFit.r_squared(np.array(y_values), fit_func(np.array(self.get_xr()), *popt))
             except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
-                # if error R^2 value is set to 0. error is likely due to not being able to find the functional correlation
+                # if error R^2 value is set to 0. error is likely due to not being able to
+                # find the functional correlation
                 r2 = 0
             # append R^2 value to the y values to be plotted
             self.y_plot.append(r2)
@@ -463,6 +463,7 @@ class RegressionPlot(wx.Panel):
         # --------------------- SIZER ---------------------------------
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.sizer.Add(self.canvas, 1, wx.EXPAND)
+        self.toolbar = NavigationToolbar(self.canvas)
         self.add_toolbar()
         self.SetSizer(self.sizer)
         self.Fit()
@@ -471,7 +472,6 @@ class RegressionPlot(wx.Panel):
 
     # function to add the toolbar to the bottom of the plot panel
     def add_toolbar(self):
-        self.toolbar = NavigationToolbar(self.canvas)
         self.toolbar.Realize()
         # By adding toolbar in sizer, we are able to put it at the bottom
         # of the frame - so appearance is closer to GTK version.
@@ -760,11 +760,11 @@ class SclbyAreaPlot(wx.Panel):
         [self.get_x().append(i) for i in x]
         [self.get_y().append(np.array(i)) for i in y]
 
-        self.figure = figure()
+        self.figure = Figure(tight_layout=False)
         # https://stackoverflow.com/questions/6374272/how-to-make-a-figurecanvas-fit-a-panel
         # Last two values state that width and height will expand to fit panel (similar to how the sizer.Add()
         # values work)
-        self.axes = self.figure.add_axes([0, 0, 1, 1])
+        self.axes = self.figure.add_subplot(111)
         self.canvas = FigureCanvas(self, -1, self.get_fig())
 
         self.isSaved = False
@@ -798,6 +798,10 @@ class SclbyAreaPlot(wx.Panel):
         def hover(event):
             vis = self.get_annot().get_visible()
             if event.inaxes == self.get_axes():
+
+                if self.get_scatter_plot() is None:
+                    return  # Ignore hover event if scatter plot is uninitialized
+
                 for plot in self.get_scatter_plot():
                     cont, ind = plot.contains(event)
                     if cont:

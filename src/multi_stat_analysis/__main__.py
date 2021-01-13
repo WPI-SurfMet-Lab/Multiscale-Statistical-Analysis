@@ -6,10 +6,12 @@ from enum import Enum
 import wx
 import wx.adv
 import openpyxl
+from wx import TreeEvent
+
 import MultiscaleImporter
 import MountainsImporter.ImportUtils as ImportUtils
 
-from MultiscaleData import MultiscaleDataset, DatasetAppendOutput
+from MultiscaleData import MultiscaleDataset, DatasetAppendOutput, MultiscaleData
 from Workbook import Workbook
 from scipy.optimize import OptimizeWarning
 from Dialogs import RegressionDialog, GraphSelectDialog, R2byScaleDialog, XRValuesDialog, HHPlotDialog
@@ -284,6 +286,61 @@ def OnHHPlot(event):
     tree_menu.Refresh()
 
 
+class TreeMenu(wx.Menu):
+    def __init__(self, item):
+        super().__init__()
+        self.parent = frame
+        self._item = item
+
+        self._rename_btn = wx.MenuItem(self, wx.ID_ANY, "Rename")
+        self._delete_btn = wx.MenuItem(self, wx.ID_ANY, "Delete")
+
+        self.Append(self._rename_btn)
+        self.Append(self._delete_btn)
+
+        frame.Bind(wx.EVT_MENU, self._on_rename, self._rename_btn)
+        frame.Bind(wx.EVT_MENU, self._on_delete, self._delete_btn)
+
+    def _on_rename(self, event: wx.MenuEvent):
+        pass
+
+    def _on_delete(self, event: wx.MenuEvent):
+        pass
+
+
+class TreeMenuWorkbook(TreeMenu):
+    def __init__(self, item):
+        super().__init__(item)
+
+        self._clear_btn = wx.MenuItem(self, wx.ID_ANY, "Empty Results/Surfaces")
+        self.Append(self._clear_btn)
+        frame.Bind(wx.EVT_MENU, self._on_clear, self._clear_btn)
+
+        frame.Bind(wx.EVT_MENU, self._on_rename, self._rename_btn)
+        frame.Bind(wx.EVT_MENU, self._on_delete, self._delete_btn)
+
+    def _on_rename(self, event: wx.MenuEvent):
+        pass
+
+    def _on_delete(self, event: wx.MenuEvent):
+        pass
+
+    def _on_clear(self, event: wx.MenuEvent):
+        pass
+
+
+def activate_tree_menu(event: wx.TreeEvent):
+    selected_id = tree_menu.GetSelection()
+    selected_item = tree_menu.GetItemData(event.GetItem())
+
+    if isinstance(selected_item, Workbook):
+        frame.PopupMenu(TreeMenuWorkbook(frame), event.GetPoint())
+    if isinstance(selected_item, MultiscaleData):
+        frame.PopupMenu(TreeMenu(frame), event.GetPoint())
+    else:
+        pass  # Do nothing otherwise
+
+
 def OnSelection(event):
     """Handles on click event for sidebar."""
     global _selected_wb
@@ -311,11 +368,14 @@ def OnSelection(event):
         if _selected_wb.graph_panel is not None:
             _selected_wb.graph_panel.Show()
 
+    elif isinstance(selected, MultiscaleData):
+        pass
     elif selected is None:
         pass
     else:
         selected.CenterOnScreen()
         selected.Show()
+
 
 
 # function to rename selected graphs/workbooks
@@ -438,7 +498,7 @@ def OnOpen(event):
     # Remove currently results in tree, and add updated datasets to list
     tree_menu.DeleteChildren(_selected_surfaces_ID)
     for data in _selected_wb.get_dataset()._datasets:
-        tree_menu.AppendItem(_selected_surfaces_ID, data.name, data=None)
+        tree_menu.AppendItem(_selected_surfaces_ID, data.name, data=data)
     tree_menu.Expand(_selected_surfaces_ID)
 
 
@@ -669,6 +729,7 @@ if __name__ == "__main__":
     tree_sizer.Add(tree_menu, 1, wx.EXPAND)
     left_panel.SetSizer(tree_sizer)
     frame.Bind(wx.EVT_TREE_ITEM_ACTIVATED, OnSelection, tree_menu)
+    frame.Bind(wx.EVT_TREE_ITEM_RIGHT_CLICK, activate_tree_menu, tree_menu)
     frame.Bind(wx.EVT_TREE_END_LABEL_EDIT, OnRename, tree_menu)
 
     main_sizer.Clear()
