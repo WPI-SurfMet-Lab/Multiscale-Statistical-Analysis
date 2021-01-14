@@ -1,4 +1,7 @@
 import warnings
+
+from multi_stat_analysis import __main__
+
 warnings.simplefilter("error", RuntimeWarning)
 
 import wx
@@ -14,14 +17,14 @@ from GraphDialogs import LegendDialog
 
 class FTestException(Exception):
     def __init__(self, msg):
-        super.__init__(self, msg)
+        super().__init__(self, msg)
 
 
 # class for the dialog that performs the F-test
 class FtestDialog(wx.Dialog):
     # this is all just GUI stuff
     def __init__(self, parent, data, tree_menu, root):
-        wx.Dialog.__init__(self, parent, wx.ID_ANY, "F-test", size=(840, 680))
+        wx.Dialog.__init__(self, parent, wx.ID_ANY, "F-test", size=(840, 450))
 
         self.parent = parent
         self.tree_menu = tree_menu
@@ -29,6 +32,12 @@ class FtestDialog(wx.Dialog):
 
         self.panel = wx.Panel(self, wx.ID_ANY)
         self.data = data
+
+        self.name = "F-test Results"
+        self.name_txt = wx.StaticText(self.panel, wx.ID_ANY, 'Results Name: ', pos=(180, 45))
+        self.name_box = wx.TextCtrl(self.panel, wx.ID_ANY,
+                                    value=self.name,
+                                    pos=(275, 42), size=(300, 20))
 
         # self.hyp_box = wx.StaticBox(self.panel, wx.ID_ANY, 'Hypotheses', pos=(20,20), size=(600, 80))
         # self.hyp0 = wx.StaticText(self.hyp_box, wx.ID_ANY, "H0: σ1^2 = σ2^2", pos=(15,25))
@@ -68,14 +77,10 @@ class FtestDialog(wx.Dialog):
         self.range_min = ''
         self.range_max = ''
 
-        self.results_box = wx.StaticBox(self.panel, wx.ID_ANY, 'Results', pos=(20, 375), size=(780, 200))
-        self.results_txt = wx.TextCtrl(self.results_box, pos=(15,20), size=(750, 170), style=wx.TE_READONLY | wx.TE_MULTILINE)
-        self.results_txt.SetBackgroundColour('#f0f0f0')
-
-        self.helpbutton = wx.Button(self.panel, wx.ID_HELP, pos=(20, 600))
-        self.okbutton = wx.Button(self.panel, wx.ID_OK, "OK", pos=(630, 600))
+        self.helpbutton = wx.Button(self.panel, wx.ID_HELP, pos=(20, 375))
+        self.okbutton = wx.Button(self.panel, wx.ID_OK, "OK", pos=(630, 375))
         self.Bind(wx.EVT_BUTTON, self.OnOK, self.okbutton)
-        self.cancelbutton = wx.Button(self.panel, wx.ID_CANCEL, "Close", pos=(720, 600))
+        self.cancelbutton = wx.Button(self.panel, wx.ID_CANCEL, "Close", pos=(720, 375))
         self.panel.Fit()
         self.Layout()
 
@@ -84,7 +89,6 @@ class FtestDialog(wx.Dialog):
 
     # when pressing the OK button
     def OnOK(self, event):
-        self.get_results_txt().Clear()
         # self.OnTypeSelect()
         # self.OnTailsSelect()
         self.OnRangeSelect()
@@ -136,7 +140,8 @@ class FtestDialog(wx.Dialog):
                             self.get_flist().remove(i)
 
                 x = np.array(self.data.get_results_scale()[self.data.get_results_scale().index(float(self.get_range_min())):
-                                                        self.data.get_results_scale().index(float(self.get_range_max()))+1])
+                                                           self.data.get_results_scale().index(
+                                                               float(self.get_range_max())) + 1])
 
                 plot = ScatterDialog(self.get_parent(), 'Two Tail F-test Results', x,
                                      self.get_flist(), self.get_tree_menu(), self.get_root(), 'F-Value by Scale',
@@ -146,8 +151,15 @@ class FtestDialog(wx.Dialog):
                 if statsmenu >= 0:
                     plot.menuBar.Remove(statsmenu)
                 plot.get_graph().draw_scatter()
-                self.get_tree_menu().AppendItem(self.get_root(), "Two Tail F-test Results", data=plot)
-                self.get_results_txt().AppendText('See graph.')
+
+                self.name = self.name_box.GetValue()
+                selected_wb = __main__.get_selected_wb()
+
+                if self.name in [result.name for result in selected_wb.results]:
+                    raise TTestException("Result with this name already exists under this workbook.")
+
+                self.get_tree_menu().AppendItem(self.get_root(), self.name, data=plot)
+                self.Close()
             if tails == 'left (σ1 ≥ σ2)':
                 for dset in d:
                     self.F_LeftTail(alpha, dset, len(d))
@@ -163,16 +175,23 @@ class FtestDialog(wx.Dialog):
 
                 # needs log plot
                 x = np.array(self.data.get_results_scale()[
-                                    self.data.get_results_scale().index(float(self.get_range_min())):
-                                    self.data.get_results_scale().index(float(self.get_range_max())) + 1])
+                             self.data.get_results_scale().index(float(self.get_range_min())):
+                             self.data.get_results_scale().index(float(self.get_range_max())) + 1])
 
                 plot = ScatterDialog(self.get_parent(), 'Left Tail F-test Results', x,
                                      self.get_flist(), self.get_tree_menu(), self.get_root(), 'F-Value by Scale',
                                      'Scale (um^2)', 'F-Value', self.data, self.get_res_list())
                 plot.statsmenu.Remove(plot.confidence)
                 plot.get_graph().draw_scatter()
-                self.get_tree_menu().AppendItem(self.get_root(), "Left Tail F-test Results", data=plot)
-                self.get_results_txt().AppendText('See graph.')
+
+                self.name = self.name_box.GetValue()
+                selected_wb = __main__.selected_wb
+
+                if self.name in [result.name for result in selected_wb.results]:
+                    raise TTestException("Result with this name already exists under this workbook.")
+
+                self.get_tree_menu().AppendItem(self.get_root(), self.name, data=plot)
+                self.Close()
             if tails == 'right (σ1 ≤ σ2)':
                 for dset in d:
                     self.F_RightTail(alpha, dset, len(d))
@@ -187,15 +206,22 @@ class FtestDialog(wx.Dialog):
                             self.get_flist().remove(i)
                 # needs log plot
                 x = np.array(self.data.get_results_scale()[
-                                    self.data.get_results_scale().index(float(self.get_range_min())):
-                                    self.data.get_results_scale().index(float(self.get_range_max())) + 1])
+                             self.data.get_results_scale().index(float(self.get_range_min())):
+                             self.data.get_results_scale().index(float(self.get_range_max())) + 1])
 
                 plot = ScatterDialog(self.get_parent(), 'Right Tail F-test Results', x,
                                      self.get_flist(), self.get_tree_menu(), self.get_root(), 'F-Value by Scale',
                                      'Scale (um^2)', 'F-Value', self.data, self.get_res_list())
                 plot.get_graph().draw_scatter()
-                self.get_tree_menu().AppendItem(self.get_root(), "Right Tail F-test Results", data=plot)
-                self.get_results_txt().AppendText('See graph.')
+
+                self.name = self.name_box.GetValue()
+                selected_wb = __main__.selected_wb
+
+                if self.name in [result.name for result in selected_wb.results]:
+                    raise TTestException("Result with this name already exists under this workbook.")
+
+                self.get_tree_menu().AppendItem(self.get_root(), self.name, data=plot)
+                self.Close()
         else:
             raise FTestException('F-test: Groups must be the same size')
 
@@ -350,11 +376,11 @@ class FtestDialog(wx.Dialog):
         # check if the test should be accepted or rejected
         if f1 < f_val < f2:
             if num_data == 2:
-                self.get_results_txt().AppendText(accepted)
+                __main__.errorMsg("F-Test Warning", accepted)
             self.get_res_list().append(['accepted', var1, var2, mean1, mean2, sd1, sd2, p_val, p_val, np.round_(p_val * 100, 3), f_val, p_r, f1, f2])
         else:
             if num_data == 2:
-                self.get_results_txt().AppendText(rejected)
+                __main__.errorMsg("F-Test Warning", rejected)
             self.get_res_list().append(['rejected', var1, var2, mean1, mean2, sd1, sd2, p_val, p_val,np.round_(p_val * 100, 3), f_val, p_r, f1, f2])
 
     def F_TwoTail(self, alpha, data, num_data):
@@ -396,7 +422,6 @@ class FtestDialog(wx.Dialog):
     # def get_tails_select(self): return self.tails_select
     def get_tails_choices(self): return self.tails_choices
 
-    def get_results_txt(self): return self.results_txt
     def get_flist(self): return self.flist
     def set_flist(self, flist): self.flist = flist
     def get_parent(self): return self.parent
@@ -408,14 +433,14 @@ class FtestDialog(wx.Dialog):
 
 class TTestException(Exception):
     def __init__(self, msg):
-        super.__init__(self, msg)
+        super().__init__(self, msg)
 
 
 # class for the dialog that performs the Welch's t-test
 class TtestDialog(wx.Dialog):
     # again more GUI stuff for the dialog
     def __init__(self, parent, data, tree_menu, root):
-        wx.Dialog.__init__(self, parent, wx.ID_ANY, "T-test", size=(840, 680))
+        wx.Dialog.__init__(self, parent, wx.ID_ANY, "T-test", size=(840, 450))
 
         self.parent = parent
         self.tree_menu = tree_menu
@@ -423,6 +448,12 @@ class TtestDialog(wx.Dialog):
 
         self.panel = wx.Panel(self, wx.ID_ANY)
         self.data = data
+
+        self.name = "T-test Results"
+        self.name_txt = wx.StaticText(self.panel, wx.ID_ANY, 'Results Name: ', pos=(180, 45))
+        self.name_box = wx.TextCtrl(self.panel, wx.ID_ANY,
+                                    value=self.name,
+                                    pos=(190, 45), size=(100, 20))
 
         self.group_selection = GroupSelection(self.panel, self.data, 110)
 
@@ -447,15 +478,10 @@ class TtestDialog(wx.Dialog):
         self.range_min = ''
         self.range_max = ''
 
-        self.results_box = wx.StaticBox(self.panel, wx.ID_ANY, 'Results', pos=(20, 375), size=(780, 200))
-        self.results_txt = wx.TextCtrl(self.results_box, pos=(15, 20), size=(750, 170),
-                                       style=wx.TE_READONLY | wx.TE_MULTILINE)
-        self.results_txt.SetBackgroundColour('#f0f0f0')
-
-        self.helpbutton = wx.Button(self.panel, wx.ID_HELP, pos=(20, 600))
-        self.okbutton = wx.Button(self.panel, wx.ID_OK, "OK", pos=(630, 600))
+        self.helpbutton = wx.Button(self.panel, wx.ID_HELP, pos=(20, 375))
+        self.okbutton = wx.Button(self.panel, wx.ID_OK, "OK", pos=(630, 375))
         self.Bind(wx.EVT_BUTTON, self.OnOK, self.okbutton)
-        self.cancelbutton = wx.Button(self.panel, wx.ID_CANCEL, "Close", pos=(720, 600))
+        self.cancelbutton = wx.Button(self.panel, wx.ID_CANCEL, "Close", pos=(720, 375))
         self.panel.Fit()
         self.Layout()
 
@@ -468,7 +494,6 @@ class TtestDialog(wx.Dialog):
 
     # functions here are identical to the ones described in the F-test dialog but with T-test statistics
     def OnOK(self, event):
-        self.get_results_txt().Clear()
         # self.OnTypeSelect()
         # self.OnTailsSelect()
         self.OnRangeSelect()
@@ -514,7 +539,8 @@ class TtestDialog(wx.Dialog):
                         self.get_tlist().remove(i)
             # needs log plot
             x = np.array(self.data.get_results_scale()[self.data.get_results_scale().index(float(self.get_range_min())):
-                                                    self.data.get_results_scale().index(float(self.get_range_max()))+1])
+                                                       self.data.get_results_scale().index(
+                                                           float(self.get_range_max())) + 1])
 
             plot = ScatterDialog(self.get_parent(), "Welch\'s T-test Results", x,
                                  self.get_tlist(), self.get_tree_menu(), self.get_root(), 'T-Value by Scale',
@@ -524,9 +550,15 @@ class TtestDialog(wx.Dialog):
             if statsmenu >= 0:
                 plot.menuBar.Remove(statsmenu)
             plot.get_graph().draw_scatter()
-            self.get_tree_menu().AppendItem(self.get_root(), "Welch\'s T-test Results", data=plot)
 
-            self.get_results_txt().AppendText('See graph.')
+            self.name = self.name_box.GetValue()
+            selected_wb = __main__.selected_wb
+
+            if self.name in [result.name for result in selected_wb.results]:
+                raise TTestException("Result with this name already exists under this workbook.")
+
+            self.get_tree_menu().AppendItem(self.get_root(), self.name, data=plot)
+            self.Close()
 
             # if tails == 'two (σ1 = σ2)':
             #     for dset in d:
@@ -725,7 +757,7 @@ class TtestDialog(wx.Dialog):
         Confidence: {}%""".format(N, var1, var2, avg1, avg2, std1, std2, t_score, Lpval, Rpval, pval, confidence)
 
         if num_data == 2:
-            self.get_results_txt().AppendText(results_text)
+            __main__.errorMsg("T-test Warning", results_text)
 
         self.get_res_list().append([var1, var2, avg1, avg2, std1, std2, t_score, pval, Lpval, Rpval, confidence])
 
@@ -753,7 +785,6 @@ class TtestDialog(wx.Dialog):
     def get_range_min_select(self): return self.range_min_select
     def get_range_max_select(self): return self.range_max_select
 
-    def get_results_txt(self): return self.results_txt
     def get_tlist(self): return self.tlist
     def set_tlist(self, tlist): self.tlist = tlist
     def get_parent(self): return self.parent
@@ -765,7 +796,7 @@ class TtestDialog(wx.Dialog):
 
 class ANOVAException(Exception):
     def __init__(self, msg):
-        super.__init__(self, msg)
+        super().__init__(self, msg)
 
 
 # class for the dialog that performs the ANOVA test
@@ -773,7 +804,7 @@ class ANOVAException(Exception):
 class ANOVAtestDialog(wx.Dialog):
 
     def __init__(self, parent, data, tree_menu, root):
-        wx.Dialog.__init__(self, parent, wx.ID_ANY, "ANOVA", size=(840, 680))
+        wx.Dialog.__init__(self, parent, wx.ID_ANY, "ANOVA", size=(840, 450))
 
         self.parent = parent
         self.tree_menu = tree_menu
@@ -781,6 +812,12 @@ class ANOVAtestDialog(wx.Dialog):
 
         self.panel = wx.Panel(self, wx.ID_ANY)
         self.data = data
+
+        self.name = "ANOVA Test Results"
+        self.name_txt = wx.StaticText(self.panel, wx.ID_ANY, 'Results Name: ', pos=(180, 45))
+        self.name_box = wx.TextCtrl(self.panel, wx.ID_ANY,
+                                    value=self.name,
+                                    pos=(190, 45), size=(100, 20))
 
         # self.hyp_box = wx.StaticBox(self.panel, wx.ID_ANY, 'Hypotheses', pos=(20, 20), size=(600, 80))
         # self.hyp0 = wx.StaticText(self.hyp_box, wx.ID_ANY, "H0: σ1^2 = σ2^2", pos=(15, 25))
@@ -799,36 +836,26 @@ class ANOVAtestDialog(wx.Dialog):
         # self.tails_select = wx.Choice(self.panel, wx.ID_ANY, pos=(45, 337), choices=self.tails_choices)
         # self.selectedTail = ''
 
-        self.alpha_txt = wx.StaticText(self.panel, wx.ID_ANY, 'Alpha: ', pos=(30, 340))
-        self.alpha_select = wx.TextCtrl(self.panel, wx.ID_ANY, '', pos=(70, 337), size=(50, 20))
+        self.alpha_txt = wx.StaticText(self.panel, wx.ID_ANY, 'Alpha: ', pos=(200, 340))
+        self.alpha_select = wx.TextCtrl(self.panel, wx.ID_ANY, '', pos=(240, 337), size=(50, 20))
         self.selectedAlpha = ''
         self.Bind(wx.EVT_TEXT, self.OnAlphaSelect, self.alpha_select)
 
-        self.range_txt = wx.StaticText(self.panel, wx.ID_ANY, 'Scale: ', pos=(180, 340))
+        self.range_txt = wx.StaticText(self.panel, wx.ID_ANY, 'Scale: ', pos=(480, 340))
 
         self.range_choices = list(map(str, self.data.get_results_scale()))
 
-        self.range_min_select = wx.Choice(self.panel, wx.ID_ANY, pos=(220, 337), choices=self.range_choices)
-        self.to = wx.StaticText(self.panel, wx.ID_ANY, ' to ', pos=(335, 340))
-        self.range_max_select = wx.Choice(self.panel, wx.ID_ANY, pos=(360, 337), choices=self.range_choices)
+        self.range_min_select = wx.Choice(self.panel, wx.ID_ANY, pos=(520, 337), choices=self.range_choices)
+        self.to = wx.StaticText(self.panel, wx.ID_ANY, ' to ', pos=(635, 340))
+        self.range_max_select = wx.Choice(self.panel, wx.ID_ANY, pos=(660, 337), choices=self.range_choices)
 
         self.range_min = ''
         self.range_max = ''
 
-        self.results_box = wx.StaticBox(self.panel, wx.ID_ANY, 'Results', pos=(20, 375), size=(780, 200))
-        self.results_txt = wx.TextCtrl(self.results_box, pos=(15, 20), size=(750, 170),
-                                       style=wx.TE_READONLY | wx.TE_MULTILINE)
-        self.results_txt.SetBackgroundColour('#f0f0f0')
-
-        # self.outlier_txt = wx.StaticText(self.panel, wx.ID_ANY, 'Max F-Val: ', pos=(650, 25))
-        # self.outlier_select = wx.TextCtrl(self.panel, wx.ID_ANY, '', pos=(720, 25), size=(50, 20))
-        # self.selectedOutlier = ''
-        # self.Bind(wx.EVT_TEXT, self.OnOutlierSelect, self.outlier_select)
-
-        self.helpbutton = wx.Button(self.panel, wx.ID_HELP, pos=(20, 600))
-        self.okbutton = wx.Button(self.panel, wx.ID_OK, "OK", pos=(630, 600))
+        self.helpbutton = wx.Button(self.panel, wx.ID_HELP, pos=(20, 375))
+        self.okbutton = wx.Button(self.panel, wx.ID_OK, "OK", pos=(630, 375))
         self.Bind(wx.EVT_BUTTON, self.OnOK, self.okbutton)
-        self.cancelbutton = wx.Button(self.panel, wx.ID_CANCEL, "Close", pos=(720, 600))
+        self.cancelbutton = wx.Button(self.panel, wx.ID_CANCEL, "Close", pos=(720, 375))
         self.panel.Fit()
         self.Layout()
 
@@ -836,7 +863,6 @@ class ANOVAtestDialog(wx.Dialog):
         self.res_list = []
 
     def OnOK(self, event):
-        self.get_results_txt().Clear()
         # self.OnTypeSelect()
         # self.OnTailsSelect()
         self.OnRangeSelect()
@@ -895,10 +921,16 @@ class ANOVAtestDialog(wx.Dialog):
             plot.get_graph().draw_line(x, MSR_min)
             plot.get_graph().set_df1(dfn)
             plot.get_graph().set_df2(dfd)
-            plot.get_graph().set_alpha(1-alpha)
-            self.get_tree_menu().AppendItem(self.get_root(), "Two Tail ANOVA test Results", data=plot)
+            plot.get_graph().set_alpha(1 - alpha)
 
-            self.get_results_txt().AppendText('See graph.')
+            self.name = self.name_box.GetValue()
+            selected_wb = __main__.selected_wb
+
+            if self.name in [result.name for result in selected_wb.results]:
+                raise ANOVAException("Result with this name already exists under this workbook.")
+
+            self.get_tree_menu().AppendItem(self.get_root(), self.name, data=plot)
+            self.Close()
 
         else:
             raise ANOVAException('Anova: Groups must be the same size')
@@ -1020,7 +1052,7 @@ class ANOVAtestDialog(wx.Dialog):
         self.get_res_list().append([MSR, MSR_min, (1-alpha)*100, dfn, dfd])
 
         if num_data == 2:
-            self.get_results_txt().AppendText(res_txt)
+            __main__.errorMsg("ANOVA Test Warning", res_txt)
 
         self.get_flist().append(MSR)
 
@@ -1050,7 +1082,6 @@ class ANOVAtestDialog(wx.Dialog):
     # def get_tails_select(self): return self.tails_select
     # def get_tails_choices(self): return self.tails_choices
 
-    def get_results_txt(self): return self.results_txt
     def get_flist(self): return self.flist
     def set_flist(self, flist): self.flist = flist
 

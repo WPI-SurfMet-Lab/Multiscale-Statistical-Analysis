@@ -35,7 +35,7 @@ _wb_counter = 1
 _wb_set = set()
 _main_panel = None
 
-_selected_wb = None
+selected_wb = None
 _selected_wb_ID = None
 _selected_results_ID = None
 _selected_surfaces_ID = None
@@ -52,6 +52,10 @@ class WorkbookIDs:
 _workbook_ID_map = {}
 
 
+def get_selected_wb():
+    return selected_wb
+
+
 # Displays error message dialog
 # Waits for the message dialog to close, prevents accesing parent frame
 def warnMsg(title, msg):
@@ -61,7 +65,7 @@ def warnMsg(title, msg):
 
 # function for show the curve fit dialog and get regression graphs
 def OnRegression(event):
-    dataset = _selected_wb.dataset
+    dataset = selected_wb.dataset
 
     warnings.simplefilter("error", OptimizeWarning)
     try:
@@ -173,7 +177,7 @@ def OnRegression(event):
 
 # function to get the x-regression values
 def OnData(event):
-    dataset = _selected_wb.dataset
+    dataset = selected_wb.dataset
 
     datadialog = XRValuesDialog(frame, dataset.get_x_regress())
     datadialog.CenterOnScreen()
@@ -195,10 +199,10 @@ class DiscrimTests:
 
 def OnDiscrimTests(test_choice):
     selected_test_func, test_str = test_choice
-    dataset = _selected_wb.dataset
+    dataset = selected_wb.dataset
 
     try:
-        dlg = selected_test_func(frame, dataset, tree_menu, _selected_wb_ID)
+        dlg = selected_test_func(frame, dataset, tree_menu, _selected_results_ID)
     except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
         errorMsg(test_str, str(e))
         if __debug__:
@@ -251,25 +255,25 @@ def display_graph_frame(graph_panel):
 def OnScalePlot(plot_choice: ScalePlots):
     plot_str, title, scale_func, draw_func, menu_text, y_label = plot_choice.value
 
-    if _selected_wb is None or _selected_wb.dataset.is_empty():
+    if selected_wb is None or selected_wb.dataset.is_empty():
         errorMsg(plot_str, "No surfaces given.")
         return
 
-    if _selected_wb.graph_panel is not None:
-        _selected_wb.graph_panel.Destroy()
+    if selected_wb.graph_panel is not None:
+        selected_wb.graph_panel.Destroy()
 
     try:
-        dataset = _selected_wb.dataset
-        _selected_wb.graph_panel = SclbyAreaPlot(_main_panel, dataset.get_results_scale(), scale_func(dataset), dataset)
+        dataset = selected_wb.dataset
+        selected_wb.graph_panel = SclbyAreaPlot(_main_panel, dataset.get_results_scale(), scale_func(dataset), dataset)
 
         if y_label is not None:
-            _selected_wb.graph_panel.get_axes().set_ylabel(y_label)
+            selected_wb.graph_panel.get_axes().set_ylabel(y_label)
 
-        draw_func(_selected_wb.graph_panel)
-        _selected_wb.graph_panel.Show()
+        draw_func(selected_wb.graph_panel)
+        selected_wb.graph_panel.Show()
     except Exception as e:
-        if _selected_wb.graph_panel is not None:
-            _main_panel.RemoveChild(_selected_wb.graph_panel)
+        if selected_wb.graph_panel is not None:
+            _main_panel.RemoveChild(selected_wb.graph_panel)
         raise e
 
 
@@ -340,8 +344,8 @@ class TreeMenu(wx.Menu):
         self._delete_btn = wx.MenuItem(self, wx.ID_ANY, "Delete")
         self._rename_btn = wx.MenuItem(self, wx.ID_ANY, "Rename")
 
-        self.Append(self._rename_btn)
         self.Append(self._delete_btn)
+        self.Append(self._rename_btn)
 
         frame.Bind(wx.EVT_MENU, self._on_rename, self._rename_btn)
         frame.Bind(wx.EVT_MENU, self._on_delete, self._delete_btn)
@@ -403,8 +407,8 @@ class TreeMenuWorkbook(TreeMenu):
         if self._item.graph_panel is not None:
             self._item.graph_panel.Destroy()
 
-        global _selected_wb, _selected_wb_ID, _selected_results_ID, _selected_surfaces_ID
-        _selected_wb = None
+        global selected_wb, _selected_wb_ID, _selected_results_ID, _selected_surfaces_ID
+        selected_wb = None
         _selected_wb_ID = None
         _selected_results_ID = None
         _selected_surfaces_ID = None
@@ -448,30 +452,30 @@ def on_tree_menu_right_click(event):
 
 def OnSelection(event):
     """Handles on click event for sidebar."""
-    global _selected_wb
+    global selected_wb
     selected_id = tree_menu.GetSelection()
     selected = tree_menu.GetItemData(selected_id)
 
     if isinstance(selected, Workbook):
         global _selected_wb_ID, _selected_surfaces_ID, _selected_results_ID
 
-        if selected is _selected_wb:
+        if selected is selected_wb:
             return  # Skip the rest of the function, user clicked on current workbook
 
         # Hide current graph being displayed
-        if _selected_wb.graph_panel is not None:
-            _selected_wb.graph_panel.Hide()
+        if selected_wb.graph_panel is not None:
+            selected_wb.graph_panel.Hide()
 
-        _selected_wb = selected
+        selected_wb = selected
         _selected_wb_ID = selected_id
 
-        ids = _workbook_ID_map[_selected_wb]
+        ids = _workbook_ID_map[selected_wb]
         _selected_surfaces_ID = ids.surfaces_id
         _selected_results_ID = ids.results_id
 
         # Potentially show new graph for selected panel
-        if _selected_wb.graph_panel is not None:
-            _selected_wb.graph_panel.Show()
+        if selected_wb.graph_panel is not None:
+            selected_wb.graph_panel.Show()
 
     elif isinstance(selected, MultiscaleData):
         pass
@@ -558,7 +562,7 @@ def OnOpen(event):
             if datasets is None or not datasets:
                 return
 
-            append_output = _selected_wb.dataset.append_data(datasets)
+            append_output = selected_wb.dataset.append_data(datasets)
             # Handle errors thrown when appending data
             if not append_output:
                 output_val = append_output.get_value()
@@ -585,7 +589,7 @@ def OnOpen(event):
 
     # Remove currently results in tree, and add updated datasets to list
     tree_menu.DeleteChildren(_selected_surfaces_ID)
-    for data in _selected_wb.dataset._datasets:
+    for data in selected_wb.dataset._datasets:
         tree_menu.AppendItem(_selected_surfaces_ID, data.name, data=data)
     tree_menu.Expand(_selected_surfaces_ID)
 
@@ -595,34 +599,34 @@ _wkbk_tree_surfaces = "Surfaces"
 
 
 def OnNewWB(event):
-    global _wb_counter, root, _selected_wb, _selected_wb_ID, _selected_surfaces_ID, _selected_results_ID
+    global _wb_counter, root, selected_wb, _selected_wb_ID, _selected_surfaces_ID, _selected_results_ID
 
     try:
-        if _selected_wb.graph_panel is not None:
-            _selected_wb.graph_panel.Hide()
+        if selected_wb.graph_panel is not None:
+            selected_wb.graph_panel.Hide()
     except AttributeError:
         pass
         # _selected_wb will be None when application starts up
 
-    _selected_wb = Workbook('workbook{}'.format(_wb_counter))
-    _selected_wb_ID = tree_menu.AppendItem(root, _selected_wb.name, data=_selected_wb)
+    selected_wb = Workbook('workbook{}'.format(_wb_counter))
+    _selected_wb_ID = tree_menu.AppendItem(root, selected_wb.name, data=selected_wb)
     _selected_surfaces_ID = tree_menu.AppendItem(_selected_wb_ID, _wkbk_tree_surfaces, data=None)
     _selected_results_ID = tree_menu.AppendItem(_selected_wb_ID, _wkbk_tree_results, data=None)
 
-    _workbook_ID_map[_selected_wb] = WorkbookIDs(_selected_wb_ID, _selected_surfaces_ID, _selected_results_ID)
+    _workbook_ID_map[selected_wb] = WorkbookIDs(_selected_wb_ID, _selected_surfaces_ID, _selected_results_ID)
 
     tree_menu.SelectItem(_selected_wb_ID)
     tree_menu.Expand(_selected_wb_ID)
     _wb_counter += 1
 
-    _wb_set.add(_selected_wb)
+    _wb_set.add(selected_wb)
 
 
 def OnSave(event):
     frame.EnableCloseButton(False)
     output = False
     try:
-        save_file_dialog = wx.FileDialog(frame, "Save", _selected_wb.name, "xlsx (*.xlsx)|*.xlsx",
+        save_file_dialog = wx.FileDialog(frame, "Save", selected_wb.name, "xlsx (*.xlsx)|*.xlsx",
                                          style=wx.FD_SAVE)
         save_file_dialog.CenterOnScreen()
         # shows the dialog on screen when pushes button
@@ -632,8 +636,8 @@ def OnSave(event):
             # gets the file path
             filepath = save_file_dialog.GetPath()
 
-            cells = _selected_wb.get_table_data().keys()
-            values = _selected_wb.get_table_data().values()
+            cells = selected_wb.get_table_data().keys()
+            values = selected_wb.get_table_data().values()
 
             file = openpyxl.Workbook()
             sheet = file.worksheets[0]
@@ -692,22 +696,22 @@ def OnExit(event):
         return False
 
 
-def errorMsg(title, msg):
+def errorMsg(title, msg, trace_str):
     """
     Displays error message dialog. Waits for the message dialog to close, prevents accessing parent frame.
     """
     # Print to stderr
-    print(msg, file=sys.stderr)
+    print(trace_str, file=sys.stderr)
     # Create error dialog
-    dialog = wx.MessageDialog(frame, msg, title, style=wx.ICON_ERROR | wx.OK)
+    dialog = wx.MessageDialog(frame, str(msg), title, style=wx.ICON_ERROR | wx.OK)
     dialog.ShowModal()
 
 
 def exceptionHandler(etype, value, trace):
     trace = traceback.format_exception(etype, value, trace)
-    msg = "".join(trace)
+    trace_str = "".join(trace)
 
-    errorMsg(etype.__name__ + " Error", msg)
+    errorMsg(etype.__name__ + " Error", value, trace_str)
 
 
 if __name__ == "__main__":
