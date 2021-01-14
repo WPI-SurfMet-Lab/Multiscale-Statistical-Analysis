@@ -304,12 +304,15 @@ class ImportOptionsDialog(wx.Dialog):
     application."""
 
     def __init__(self, parent, file_paths):
-        """@param file_paths - List of surface file paths that will be analyzed into result files."""
+        """
+        @param parent Parent window that this window was created from.
+        @param file_paths List of surface file paths that will be analyzed into result files.
+        """
         width = 600
         height = 250
         wx.Dialog.__init__(self, parent, wx.ID_ANY, "Surface Import Options", size=(width, height))
         self.options_panel = wx.Panel(self, wx.ID_ANY)
-        options_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.options_sizer = wx.BoxSizer(wx.VERTICAL)
 
         # Surface file path inputs
         self.file_paths = file_paths
@@ -319,47 +322,47 @@ class ImportOptionsDialog(wx.Dialog):
         self.mnts_processes = None
 
         # Analysis Type Selection
-        analysis_label = wx.StaticText(self.options_panel, wx.ID_ANY, label="Analysis Type:")
+        self.analysis_label = wx.StaticText(self.options_panel, wx.ID_ANY, label="Analysis Type:")
         self.analysis_combo = self.getTypeCombo(AnalysisOption)
 
         # Initialize sizer for both combo boxes
-        combo_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        analysis_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.combo_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.analysis_sizer = wx.BoxSizer(wx.VERTICAL)
         # Initialize Analyasis sizer
-        analysis_sizer.AddStretchSpacer()
-        analysis_sizer.Add(analysis_label, flag=wx.ALIGN_LEFT)
-        analysis_sizer.Add(self.analysis_combo, flag=wx.ALIGN_LEFT)
-        analysis_sizer.AddStretchSpacer()
+        self.analysis_sizer.AddStretchSpacer()
+        self.analysis_sizer.Add(self.analysis_label, flag=wx.ALIGN_LEFT)
+        self.analysis_sizer.Add(self.analysis_combo, flag=wx.ALIGN_LEFT)
+        self.analysis_sizer.AddStretchSpacer()
         # Layout combo sizers
-        combo_sizer.AddStretchSpacer()
-        combo_sizer.Add(analysis_sizer, flag=wx.CENTER)
-        combo_sizer.AddStretchSpacer()
+        self.combo_sizer.AddStretchSpacer()
+        self.combo_sizer.Add(self.analysis_sizer, flag=wx.CENTER)
+        self.combo_sizer.AddStretchSpacer()
 
         # Results folder selection button handling
-        results_label = wx.StaticText(self.options_panel, wx.ID_ANY, label="Select Results Folder:")
+        self.results_label = wx.StaticText(self.options_panel, wx.ID_ANY, label="Select Results Folder:")
         self.results_dir_dialog = wx.DirPickerCtrl(self.options_panel, wx.ID_ANY, message="Select Results Folder",
                                                    style=wx.DIRP_DEFAULT_STYLE)
 
         # Completion button initialization
-        completion_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        cancelBtn = wx.Button(self.options_panel, wx.ID_CANCEL, label="Cancel")
-        okBtn = wx.Button(self.options_panel, wx.ID_ANY, label="Ok")
-        completion_sizer.Add(cancelBtn, flag=wx.ALIGN_LEFT)
-        completion_sizer.Add(okBtn, flag=wx.ALIGN_LEFT)
+        self.completion_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.cancelBtn = wx.Button(self.options_panel, wx.ID_CANCEL, label="Cancel")
+        self.okBtn = wx.Button(self.options_panel, wx.ID_ANY, label="Ok")
+        self.completion_sizer.Add(self.cancelBtn, flag=wx.ALIGN_LEFT)
+        self.completion_sizer.Add(self.okBtn, flag=wx.ALIGN_LEFT)
 
         # Bind button handler to "Ok" button
-        self.Bind(wx.EVT_BUTTON, self.okBtnHandler, okBtn)
+        self.Bind(wx.EVT_BUTTON, self.okBtnHandler, self.okBtn)
 
         # Final initialization of dialog's sizer
-        options_sizer.AddStretchSpacer()
-        options_sizer.Add(combo_sizer, flag=wx.CENTER)
-        options_sizer.AddStretchSpacer()
-        options_sizer.Add(results_label, flag=wx.CENTER)
-        options_sizer.Add(self.results_dir_dialog, flag=wx.CENTER)
-        options_sizer.AddStretchSpacer()
-        options_sizer.Add(completion_sizer, flag=wx.CENTER)
-        options_sizer.AddStretchSpacer()
-        self.options_panel.SetSizerAndFit(options_sizer)
+        self.options_sizer.AddStretchSpacer()
+        self.options_sizer.Add(self.combo_sizer, flag=wx.CENTER)
+        self.options_sizer.AddStretchSpacer()
+        self.options_sizer.Add(self.results_label, flag=wx.CENTER)
+        self.options_sizer.Add(self.results_dir_dialog, flag=wx.CENTER)
+        self.options_sizer.AddStretchSpacer()
+        self.options_sizer.Add(self.completion_sizer, flag=wx.CENTER)
+        self.options_sizer.AddStretchSpacer()
+        self.options_panel.SetSizerAndFit(self.options_sizer)
 
     def getTypeCombo(self, enum):
         """Generates the combo boxes for each drop down option using a set of enums."""

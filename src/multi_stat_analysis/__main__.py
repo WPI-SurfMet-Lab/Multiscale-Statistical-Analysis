@@ -290,14 +290,55 @@ def OnHHPlot(event):
     tree_menu.Refresh()
 
 
+class RenameDialog(wx.Dialog):
+    width = 200
+    height = 100
+
+    def __init__(self, item_name):
+        self._prev_name = item_name
+
+        wx.Dialog.__init__(self, frame, wx.ID_ANY, "Rename - " + item_name,
+                           size=(RenameDialog.width, RenameDialog.height))
+        self.options_panel = wx.Panel(self, wx.ID_ANY)
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
+
+        # Results folder selection button handling
+        self.text = wx.TextCtrl(self.options_panel, wx.ID_ANY, item_name)
+
+        # Completion button initialization
+        self.ok_btn = wx.Button(self.options_panel, wx.ID_OK, label="Rename")
+        self.cancel_btn = wx.Button(self.options_panel, wx.ID_CANCEL, label="Cancel")
+
+        self.completion_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.completion_sizer.Add(self.cancel_btn, flag=wx.ALIGN_LEFT)
+        self.completion_sizer.Add(self.ok_btn, flag=wx.ALIGN_LEFT)
+
+        # Final initialization of dialog's sizer
+        self.sizer.AddStretchSpacer()
+        self.sizer.Add(self.text, flag=wx.ALIGN_CENTER)
+        self.sizer.AddStretchSpacer()
+        self.sizer.Add(self.completion_sizer, flag=wx.ALIGN_CENTER)
+        self.sizer.AddStretchSpacer()
+        self.options_panel.SetSizerAndFit(self.sizer)
+
+        # Center the screen, and set text box to focus
+        self.CenterOnScreen()
+        self.text.SetFocus()
+
+    def get_new_name(self):
+        return self.text.GetValue()
+
+
 class TreeMenu(wx.Menu):
-    def __init__(self, item):
+
+    def __init__(self, item, item_id: wx.TreeItemId):
         super().__init__()
         self.parent = frame
         self._item = item
+        self._item_id = item_id
 
-        self._rename_btn = wx.MenuItem(self, wx.ID_ANY, "Rename")
         self._delete_btn = wx.MenuItem(self, wx.ID_ANY, "Delete")
+        self._rename_btn = wx.MenuItem(self, wx.ID_ANY, "Rename")
 
         self.Append(self._rename_btn)
         self.Append(self._delete_btn)
@@ -306,25 +347,51 @@ class TreeMenu(wx.Menu):
         frame.Bind(wx.EVT_MENU, self._on_delete, self._delete_btn)
 
     def _on_rename(self, event: wx.MenuEvent):
-        pass
+        dialog = RenameDialog(self._item.name)
+        if dialog.ShowModal() == wx.ID_OK:
+            new_name = dialog.get_new_name()
+            self._item.name = new_name
+            # Update tree menu UI with changes
+            tree_menu.SetItemText(self._item_id, new_name)
 
     def _on_delete(self, event: wx.MenuEvent):
-        pass
+        item_wb_id = tree_menu.GetItemParent(tree_menu.GetItemParent(self._item_id))
+        item_wb = tree_menu.GetItemData(item_wb_id)
+
+        # Back up dataset list, wipe list
+        old_dataset_list = item_wb.dataset._datasets.copy()
+        item_wb.dataset.clear()
+
+        # Attempt to add new dataset with the item removed
+        new_dataset_list = old_dataset_list.copy()
+        new_dataset_list.remove(self._item)
+        output = item_wb.dataset.append_data(new_dataset_list)
+        # If dataset could not be created, restore to old dataset and cancel deletion process
+        if output != DatasetAppendOutput.SUCCESS:
+            item_wb.dataset.clear()
+            item_wb.dataset.append_data(old_dataset_list)
+            errorMsg("Error Deleting Surface Data", "Could not delete specified surface, restoring previous data.")
+            return
+
+        # Delete item from tree
+        tree_menu.Delete(self._item_id)
+
+        # Delete current graph
+        if item_wb.graph_panel is not None:
+            item_wb.graph_panel.Destroy()
+            item_wb.graph_panel = None
 
 
 class TreeMenuWorkbook(TreeMenu):
-    def __init__(self, item: Workbook):
-        super().__init__(item)
+
+    def __init__(self, item: Workbook, item_id: wx.TreeItemId):
+        super().__init__(item, item_id)
+
+        frame.Bind(wx.EVT_MENU, self._on_delete, self._delete_btn)
 
         self._clear_btn = wx.MenuItem(self, wx.ID_ANY, "Empty Results/Surfaces")
         self.Append(self._clear_btn)
         frame.Bind(wx.EVT_MENU, self._on_clear, self._clear_btn)
-
-        frame.Bind(wx.EVT_MENU, self._on_rename, self._rename_btn)
-        frame.Bind(wx.EVT_MENU, self._on_delete, self._delete_btn)
-
-    def _on_rename(self, event: wx.MenuEvent):
-        pass
 
     def _on_delete(self, event: wx.MenuEvent):
         # Remove selected workbook from set
@@ -358,15 +425,25 @@ class TreeMenuWorkbook(TreeMenu):
         self._item.results.clear()
 
 
-def activate_tree_menu(event: wx.TreeEvent):
-    selected_item = tree_menu.GetItemData(event.GetItem())
-
+def activate_tree_menu(selected_item: wx.TreeItemData, selected_id: wx.TreeItemId, point):
     if isinstance(selected_item, Workbook):
-        frame.PopupMenu(TreeMenuWorkbook(selected_item), event.GetPoint())
+        frame.PopupMenu(TreeMenuWorkbook(selected_item, selected_id), point)
     if isinstance(selected_item, MultiscaleData):
-        frame.PopupMenu(TreeMenu(selected_item), event.GetPoint())
+        frame.PopupMenu(TreeMenu(selected_item, selected_id), point)
     else:
         pass  # Do nothing otherwise
+
+
+def on_tree_menu_right_click(event):
+    selected_id = event.GetItem()
+    selected_item = tree_menu.GetItemData(selected_id)
+    activate_tree_menu(selected_item, selected_id, event.GetPoint())
+
+
+# def on_tree_menu_context(event):
+#     selected_id = tree_menu.GetSelection()
+#     selected_item = tree_menu.GetItemData(selected_id)
+#     activate_tree_menu(selected_item, selected_id, tree_menu.Pos)
 
 
 def OnSelection(event):
@@ -742,7 +819,8 @@ if __name__ == "__main__":
     tree_sizer.Add(tree_menu, 1, wx.EXPAND)
     left_panel.SetSizer(tree_sizer)
     frame.Bind(wx.EVT_TREE_ITEM_ACTIVATED, OnSelection, tree_menu)
-    frame.Bind(wx.EVT_TREE_ITEM_RIGHT_CLICK, activate_tree_menu, tree_menu)
+    frame.Bind(wx.EVT_TREE_ITEM_RIGHT_CLICK, on_tree_menu_right_click, tree_menu)
+    # frame.Bind(wx.EVT_CONTEXT_MENU, on_tree_menu_context, tree_menu)
 
     main_sizer.Clear()
     main_sizer.Layout()
