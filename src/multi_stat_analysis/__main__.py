@@ -57,13 +57,6 @@ def get_selected_wb():
     return selected_wb
 
 
-# Displays error message dialog
-# Waits for the message dialog to close, prevents accesing parent frame
-def warnMsg(title, msg):
-    dialog = wx.MessageDialog(frame, msg, title, style=wx.ICON_WARNING | wx.OK)
-    dialog.ShowModal()
-
-
 # function for show the curve fit dialog and get regression graphs
 def OnRegression(event):
     global selected_wb
@@ -364,6 +357,25 @@ class TreeMenu(wx.Menu):
             tree_menu.SetItemText(self._item_id, new_name)
 
     def _on_delete(self, event: wx.MenuEvent):
+        # Get workbook for the selected item
+        item_wb_id = tree_menu.GetItemParent(tree_menu.GetItemParent(self._item_id))
+        item_wb = tree_menu.GetItemData(item_wb_id)
+
+        # Remove results from workbook
+        item_wb.results.remove(self._item)
+
+        # Delete item from tree
+        tree_menu.Delete(self._item_id)
+
+
+class TreeMenuDataset(TreeMenu):
+    def __init__(self, item: Workbook, item_id: wx.TreeItemId):
+        super().__init__(item, item_id)
+
+        frame.Bind(wx.EVT_MENU, self._on_delete, self._delete_btn)
+
+    def _on_delete(self, event: wx.MenuEvent):
+        # Get workbook for the selected item
         item_wb_id = tree_menu.GetItemParent(tree_menu.GetItemParent(self._item_id))
         item_wb = tree_menu.GetItemData(item_wb_id)
 
@@ -437,7 +449,9 @@ class TreeMenuWorkbook(TreeMenu):
 def activate_tree_menu(selected_item: wx.TreeItemData, selected_id: wx.TreeItemId, point):
     if isinstance(selected_item, Workbook):
         frame.PopupMenu(TreeMenuWorkbook(selected_item, selected_id), point)
-    if isinstance(selected_item, MultiscaleData):
+    elif isinstance(selected_item, MultiscaleData):
+        frame.PopupMenu(TreeMenuDataset(selected_item, selected_id), point)
+    elif isinstance(selected_item, (TtestDialog, FtestDialog, ANOVAtestDialog)):
         frame.PopupMenu(TreeMenu(selected_item, selected_id), point)
     else:
         pass  # Do nothing otherwise
@@ -711,6 +725,13 @@ def errorMsg(title, msg, trace_str):
     print(trace_str, file=sys.stderr)
     # Create error dialog
     dialog = wx.MessageDialog(frame, str(msg), title, style=wx.ICON_ERROR | wx.OK)
+    dialog.ShowModal()
+
+
+# Displays error message dialog
+# Waits for the message dialog to close, prevents accesing parent frame
+def warnMsg(title, msg):
+    dialog = wx.MessageDialog(frame, msg, title, style=wx.ICON_WARNING | wx.OK)
     dialog.ShowModal()
 
 

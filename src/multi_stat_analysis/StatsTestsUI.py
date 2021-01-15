@@ -159,7 +159,7 @@ class FtestDialog(wx.Dialog):
                     raise TTestException("Result with this name already exists under this workbook.")
 
                 self.selected_wb.results.append(self)
-                self.get_tree_menu().AppendItem(self.get_root(), self.name, data=plot)
+                self.get_tree_menu().AppendItem(self.get_root(), self.name, data=self)
                 self.get_tree_menu().Expand(self.get_root())
                 self.Close()
             if tails == 'left (σ1 ≥ σ2)':
@@ -192,7 +192,7 @@ class FtestDialog(wx.Dialog):
                     raise TTestException("Result with this name already exists under this workbook.")
 
                 self.selected_wb.results.append(self)
-                self.get_tree_menu().AppendItem(self.get_root(), self.name, data=plot)
+                self.get_tree_menu().AppendItem(self.get_root(), self.name, data=self)
                 self.get_tree_menu().Expand(self.get_root())
                 self.Close()
             if tails == 'right (σ1 ≤ σ2)':
@@ -223,7 +223,7 @@ class FtestDialog(wx.Dialog):
                     raise TTestException("Result with this name already exists under this workbook.")
 
                 self.selected_wb.results.append(self)
-                self.get_tree_menu().AppendItem(self.get_root(), self.name, data=plot)
+                self.get_tree_menu().AppendItem(self.get_root(), self.name, data=self)
                 self.get_tree_menu().Expand(self.get_root())
                 self.Close()
         else:
@@ -562,7 +562,7 @@ class TtestDialog(wx.Dialog):
                 raise TTestException("Result with this name already exists under this workbook.")
 
             self.selected_wb.results.append(self)
-            self.get_tree_menu().AppendItem(self.get_root(), self.name, data=plot)
+            self.get_tree_menu().AppendItem(self.get_root(), self.name, data=self)
             self.get_tree_menu().Expand(self.get_root())
             self.Close()
 
@@ -936,7 +936,7 @@ class ANOVAtestDialog(wx.Dialog):
                 raise ANOVAException("Result with this name already exists under this workbook.")
 
             self.selected_wb.results.append(self)
-            self.get_tree_menu().AppendItem(self.get_root(), self.name, data=plot)
+            self.get_tree_menu().AppendItem(self.get_root(), self.name, data=self)
             self.get_tree_menu().Expand(self.get_root())
             self.Close()
 
