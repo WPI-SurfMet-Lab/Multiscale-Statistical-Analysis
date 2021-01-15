@@ -1,7 +1,5 @@
 import warnings
 
-from multi_stat_analysis import __main__
-
 warnings.simplefilter("error", RuntimeWarning)
 
 import wx
@@ -14,6 +12,8 @@ from GraphDialogs import LabelDialog
 from GraphDialogs import SymbolDialog
 from GraphDialogs import LegendDialog
 
+import multi_stat_analysis.__main__ as main
+
 
 class FTestException(Exception):
     def __init__(self, msg):
@@ -23,12 +23,13 @@ class FTestException(Exception):
 # class for the dialog that performs the F-test
 class FtestDialog(wx.Dialog):
     # this is all just GUI stuff
-    def __init__(self, parent, data, tree_menu, root):
+    def __init__(self, parent, data, tree_menu, root, wb):
         wx.Dialog.__init__(self, parent, wx.ID_ANY, "F-test", size=(840, 450))
 
         self.parent = parent
         self.tree_menu = tree_menu
         self.root = root
+        self.selected_wb = wb
 
         self.panel = wx.Panel(self, wx.ID_ANY)
         self.data = data
@@ -153,12 +154,13 @@ class FtestDialog(wx.Dialog):
                 plot.get_graph().draw_scatter()
 
                 self.name = self.name_box.GetValue()
-                selected_wb = __main__.get_selected_wb()
 
-                if self.name in [result.name for result in selected_wb.results]:
+                if self.name in [result.name for result in self.selected_wb.results]:
                     raise TTestException("Result with this name already exists under this workbook.")
 
+                self.selected_wb.results.append(self)
                 self.get_tree_menu().AppendItem(self.get_root(), self.name, data=plot)
+                self.get_tree_menu().Expand(self.get_root())
                 self.Close()
             if tails == 'left (σ1 ≥ σ2)':
                 for dset in d:
@@ -185,12 +187,13 @@ class FtestDialog(wx.Dialog):
                 plot.get_graph().draw_scatter()
 
                 self.name = self.name_box.GetValue()
-                selected_wb = __main__.selected_wb
 
-                if self.name in [result.name for result in selected_wb.results]:
+                if self.name in [result.name for result in self.selected_wb.results]:
                     raise TTestException("Result with this name already exists under this workbook.")
 
+                self.selected_wb.results.append(self)
                 self.get_tree_menu().AppendItem(self.get_root(), self.name, data=plot)
+                self.get_tree_menu().Expand(self.get_root())
                 self.Close()
             if tails == 'right (σ1 ≤ σ2)':
                 for dset in d:
@@ -215,12 +218,13 @@ class FtestDialog(wx.Dialog):
                 plot.get_graph().draw_scatter()
 
                 self.name = self.name_box.GetValue()
-                selected_wb = __main__.selected_wb
 
-                if self.name in [result.name for result in selected_wb.results]:
+                if self.name in [result.name for result in self.selected_wb.results]:
                     raise TTestException("Result with this name already exists under this workbook.")
 
+                self.selected_wb.results.append(self)
                 self.get_tree_menu().AppendItem(self.get_root(), self.name, data=plot)
+                self.get_tree_menu().Expand(self.get_root())
                 self.Close()
         else:
             raise FTestException('F-test: Groups must be the same size')
@@ -376,11 +380,11 @@ class FtestDialog(wx.Dialog):
         # check if the test should be accepted or rejected
         if f1 < f_val < f2:
             if num_data == 2:
-                __main__.errorMsg("F-Test Warning", accepted)
+                main.errorMsg("F-Test Warning", accepted)
             self.get_res_list().append(['accepted', var1, var2, mean1, mean2, sd1, sd2, p_val, p_val, np.round_(p_val * 100, 3), f_val, p_r, f1, f2])
         else:
             if num_data == 2:
-                __main__.errorMsg("F-Test Warning", rejected)
+                main.errorMsg("F-Test Warning", rejected)
             self.get_res_list().append(['rejected', var1, var2, mean1, mean2, sd1, sd2, p_val, p_val,np.round_(p_val * 100, 3), f_val, p_r, f1, f2])
 
     def F_TwoTail(self, alpha, data, num_data):
@@ -439,12 +443,13 @@ class TTestException(Exception):
 # class for the dialog that performs the Welch's t-test
 class TtestDialog(wx.Dialog):
     # again more GUI stuff for the dialog
-    def __init__(self, parent, data, tree_menu, root):
+    def __init__(self, parent, data, tree_menu, root, wb):
         wx.Dialog.__init__(self, parent, wx.ID_ANY, "T-test", size=(840, 450))
 
         self.parent = parent
         self.tree_menu = tree_menu
         self.root = root
+        self.selected_wb = wb
 
         self.panel = wx.Panel(self, wx.ID_ANY)
         self.data = data
@@ -453,7 +458,7 @@ class TtestDialog(wx.Dialog):
         self.name_txt = wx.StaticText(self.panel, wx.ID_ANY, 'Results Name: ', pos=(180, 45))
         self.name_box = wx.TextCtrl(self.panel, wx.ID_ANY,
                                     value=self.name,
-                                    pos=(190, 45), size=(100, 20))
+                                    pos=(275, 42), size=(300, 20))
 
         self.group_selection = GroupSelection(self.panel, self.data, 110)
 
@@ -552,12 +557,13 @@ class TtestDialog(wx.Dialog):
             plot.get_graph().draw_scatter()
 
             self.name = self.name_box.GetValue()
-            selected_wb = __main__.selected_wb
 
-            if self.name in [result.name for result in selected_wb.results]:
+            if self.name in [result.name for result in self.selected_wb.results]:
                 raise TTestException("Result with this name already exists under this workbook.")
 
+            self.selected_wb.results.append(self)
             self.get_tree_menu().AppendItem(self.get_root(), self.name, data=plot)
+            self.get_tree_menu().Expand(self.get_root())
             self.Close()
 
             # if tails == 'two (σ1 = σ2)':
@@ -757,7 +763,7 @@ class TtestDialog(wx.Dialog):
         Confidence: {}%""".format(N, var1, var2, avg1, avg2, std1, std2, t_score, Lpval, Rpval, pval, confidence)
 
         if num_data == 2:
-            __main__.errorMsg("T-test Warning", results_text)
+            main.errorMsg("T-test Warning", results_text)
 
         self.get_res_list().append([var1, var2, avg1, avg2, std1, std2, t_score, pval, Lpval, Rpval, confidence])
 
@@ -803,12 +809,13 @@ class ANOVAException(Exception):
 # functions same as in the above 2 classes.
 class ANOVAtestDialog(wx.Dialog):
 
-    def __init__(self, parent, data, tree_menu, root):
+    def __init__(self, parent, data, tree_menu, root, wb):
         wx.Dialog.__init__(self, parent, wx.ID_ANY, "ANOVA", size=(840, 450))
 
         self.parent = parent
         self.tree_menu = tree_menu
         self.root = root
+        self.selected_wb = wb
 
         self.panel = wx.Panel(self, wx.ID_ANY)
         self.data = data
@@ -817,7 +824,7 @@ class ANOVAtestDialog(wx.Dialog):
         self.name_txt = wx.StaticText(self.panel, wx.ID_ANY, 'Results Name: ', pos=(180, 45))
         self.name_box = wx.TextCtrl(self.panel, wx.ID_ANY,
                                     value=self.name,
-                                    pos=(190, 45), size=(100, 20))
+                                    pos=(275, 42), size=(300, 20))
 
         # self.hyp_box = wx.StaticBox(self.panel, wx.ID_ANY, 'Hypotheses', pos=(20, 20), size=(600, 80))
         # self.hyp0 = wx.StaticText(self.hyp_box, wx.ID_ANY, "H0: σ1^2 = σ2^2", pos=(15, 25))
@@ -924,12 +931,13 @@ class ANOVAtestDialog(wx.Dialog):
             plot.get_graph().set_alpha(1 - alpha)
 
             self.name = self.name_box.GetValue()
-            selected_wb = __main__.selected_wb
 
-            if self.name in [result.name for result in selected_wb.results]:
+            if self.name in [result.name for result in self.selected_wb.results]:
                 raise ANOVAException("Result with this name already exists under this workbook.")
 
+            self.selected_wb.results.append(self)
             self.get_tree_menu().AppendItem(self.get_root(), self.name, data=plot)
+            self.get_tree_menu().Expand(self.get_root())
             self.Close()
 
         else:
@@ -1052,7 +1060,7 @@ class ANOVAtestDialog(wx.Dialog):
         self.get_res_list().append([MSR, MSR_min, (1-alpha)*100, dfn, dfd])
 
         if num_data == 2:
-            __main__.errorMsg("ANOVA Test Warning", res_txt)
+            main.errorMsg("ANOVA Test Warning", res_txt)
 
         self.get_flist().append(MSR)
 

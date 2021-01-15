@@ -53,6 +53,7 @@ _workbook_ID_map = {}
 
 
 def get_selected_wb():
+    global selected_wb
     return selected_wb
 
 
@@ -65,6 +66,7 @@ def warnMsg(title, msg):
 
 # function for show the curve fit dialog and get regression graphs
 def OnRegression(event):
+    global selected_wb
     dataset = selected_wb.dataset
 
     warnings.simplefilter("error", OptimizeWarning)
@@ -177,6 +179,7 @@ def OnRegression(event):
 
 # function to get the x-regression values
 def OnData(event):
+    global selected_wb
     dataset = selected_wb.dataset
 
     datadialog = XRValuesDialog(frame, dataset.get_x_regress())
@@ -198,11 +201,12 @@ class DiscrimTests:
 
 
 def OnDiscrimTests(test_choice):
+    global selected_wb
     selected_test_func, test_str = test_choice
     dataset = selected_wb.dataset
 
     try:
-        dlg = selected_test_func(frame, dataset, tree_menu, _selected_results_ID)
+        dlg = selected_test_func(frame, dataset, tree_menu, _selected_results_ID, selected_wb)
     except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
         errorMsg(test_str, str(e))
         if __debug__:
@@ -255,6 +259,7 @@ def display_graph_frame(graph_panel):
 def OnScalePlot(plot_choice: ScalePlots):
     plot_str, title, scale_func, draw_func, menu_text, y_label = plot_choice.value
 
+    global selected_wb
     if selected_wb is None or selected_wb.dataset.is_empty():
         errorMsg(plot_str, "No surfaces given.")
         return
@@ -531,6 +536,7 @@ def OnAbout(event):
 
 # function to open the data files
 def OnOpen(event):
+    global selected_wb
     frame.EnableCloseButton(False)
 
     try:
@@ -623,6 +629,7 @@ def OnNewWB(event):
 
 
 def OnSave(event):
+    global selected_wb
     frame.EnableCloseButton(False)
     output = False
     try:
