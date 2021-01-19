@@ -548,32 +548,26 @@ def OnAbout(event):
     aboutInfo.ShowModal()
 
 
-# function to open the data files
-def OnOpen(event):
+def create_open_dialog(choices):
+    """
+    Generate file open dialog based on file filtering choices and corresponding handling functions
+    """
     global selected_wb
     frame.EnableCloseButton(False)
 
     try:
-        # File dialog choices
-        choices = [("MountainsMap Results Text Files (*.txt)|*.txt", MultiscaleImporter.open_results_file),
-                   ("Sfrax CSV Results - UTF-8 (*.csv)|*.csv", MultiscaleImporter.open_sfrax)]
-
-        # Add surface file import as an option
-        if not isinstance(ImportUtils.find_mountains_map(), ImportUtils.MountainsNotFound):
-            choices.insert(1, ("MountainsMap Surface Files|*", MultiscaleImporter.open_sur))
-
         # create the open file dialog
-        openFileDialog = wx.FileDialog(frame, "Open",
-                                       wildcard="|".join([choice[0] for choice in choices]),
-                                       style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST | wx.FD_MULTIPLE)
-        openFileDialog.CenterOnScreen()
+        open_file_dialog = wx.FileDialog(frame,
+                                         wildcard="|".join([choice[0] for choice in choices]),
+                                         style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST | wx.FD_MULTIPLE)
+        open_file_dialog.CenterOnScreen()
         # shows the dialog on screen
-        result = openFileDialog.ShowModal()
+        result = open_file_dialog.ShowModal()
         # only opens the file if 'open' in dialog is pressed otherwise if 'cancel' in dialog is pressed closes dialog
         if result == wx.ID_OK:
             # gets the file path
-            selection_index = openFileDialog.GetCurrentlySelectedFilterIndex()
-            filepath = openFileDialog.GetPaths()
+            selection_index = open_file_dialog.GetCurrentlySelectedFilterIndex()
+            filepath = open_file_dialog.GetPaths()
 
             # Handle the opening and reading of the selected files
             datasets = choices[selection_index][1](filepath)
@@ -600,7 +594,7 @@ def OnOpen(event):
         elif result == wx.ID_CANCEL:
             pass
     except Exception as e:
-        errorMsg("File Open Error", str(e))
+        errorMsg("File Open Error", str(e), str(e))
         if __debug__:
             import traceback
             traceback.print_exc()
@@ -612,6 +606,19 @@ def OnOpen(event):
     for data in selected_wb.dataset._datasets:
         tree_menu.AppendItem(_selected_surfaces_ID, data.name, data=data)
     tree_menu.Expand(_selected_surfaces_ID)
+
+
+def on_open_surf(event):
+    """Function to open the surface files."""
+    choices = [("MountainsMap Surface Files (*.sur)|*.sur", MultiscaleImporter.open_sur)]
+    create_open_dialog(choices)
+
+
+def on_open_results(event):
+    """Function to open the results files."""
+    choices = [("MountainsMap Results Text Files (*.txt)|*.txt", MultiscaleImporter.open_results_file),
+               ("Sfrax CSV Results - UTF-8 (*.csv)|*.csv", MultiscaleImporter.open_sfrax)]
+    create_open_dialog(choices)
 
 
 _wkbk_tree_results = "Results"
@@ -716,6 +723,8 @@ def OnExit(event):
         exitdialog.Destroy()
         return False
 
+    app.Destroy()
+
 
 def errorMsg(title, msg, trace_str):
     """
@@ -761,8 +770,12 @@ if __name__ == "__main__":
     # this is a bunch of GUI stuff
     # create the menu bar and populate it
     filemenu = wx.Menu()
-    openitem = wx.MenuItem(parentMenu=filemenu, id=wx.ID_OPEN, text="Open")
-    openfile = filemenu.Append(openitem)
+    if not isinstance(ImportUtils.find_mountains_map(), ImportUtils.MountainsNotFound):
+        open_surf = wx.MenuItem(parentMenu=filemenu, id=wx.ID_ANY, text="Open Surfaces")
+        open_surf = filemenu.Append(open_surf)
+        frame.Bind(wx.EVT_MENU, on_open_surf, open_surf)
+    open_results = wx.MenuItem(parentMenu=filemenu, id=wx.ID_ANY, text="Open Results Files")
+    open_results = filemenu.Append(open_results)
     new_wb = filemenu.Append(wx.ID_ANY, 'New Workbook', 'New Workbook')
     frame.Bind(wx.EVT_MENU, OnNewWB, new_wb)
 
@@ -810,7 +823,7 @@ if __name__ == "__main__":
     menuBar.Append(discrim_menu, 'Discrimination')
     menuBar.Append(graph_menu, 'Graphs')
     frame.SetMenuBar(menuBar)
-    frame.Bind(wx.EVT_MENU, OnOpen, openfile)
+    frame.Bind(wx.EVT_MENU, on_open_results, open_results)
     frame.Bind(wx.EVT_MENU, OnExit, exitprogram)
     frame.Bind(wx.EVT_CLOSE, OnExit)
     frame.Bind(wx.EVT_MENU, OnAbout, about)
