@@ -97,8 +97,7 @@ def OnRegression(event):
                  False),
                 (rsdlg.b10log1check.IsChecked, "Base-10 Log", RP.log10_fit_plot, "Base-10 Log Regression", "Log10",
                  False),
-                (
-                    rsdlg.invexp1check.IsChecked, "Inverse Exponent", RP.inverseexp_fit_plot,
+                (rsdlg.invexp1check.IsChecked, "Inverse Exponent", RP.inverseexp_fit_plot,
                     "Inverse Exponent Regression",
                     "Inverse Exponent", False),
                 (rsdlg.sin1check.IsChecked, "Sine", RP.sin_fit_plot, "Sine Regression", "Sine", False),
@@ -157,14 +156,14 @@ def OnRegression(event):
                         break
                     except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning,
                             OptimizeWarning) as e:
-                        errorMsg(error_label, str(e))
+                        errorMsg(error_label, str(e), str(e))
                 # Don't increase ID if current dialog is not an R^2 dialog
                 id += 1 if isR2 else 0
 
             # Refresh tree menu to show newly created graphs
             tree_menu.Refresh()
     except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
-        errorMsg("Graph", str(e))
+        errorMsg("Graph", str(e), str(e))
         if __debug__:
             import traceback
             traceback.print_exc()
@@ -257,8 +256,7 @@ def OnScalePlot(plot_choice: ScalePlots):
         errorMsg(plot_str, "No surfaces given.")
         return
 
-    if selected_wb.graph_panel is not None:
-        selected_wb.graph_panel.Destroy()
+    selected_wb.clear_graph_panel()
 
     try:
         dataset = selected_wb.dataset
@@ -398,9 +396,7 @@ class TreeMenuDataset(TreeMenu):
         tree_menu.Delete(self._item_id)
 
         # Delete current graph
-        if item_wb.graph_panel is not None:
-            item_wb.graph_panel.Destroy()
-            item_wb.graph_panel = None
+        item_wb.clear_graph_panel()
 
 
 class TreeMenuWorkbook(TreeMenu):
@@ -420,9 +416,8 @@ class TreeMenuWorkbook(TreeMenu):
 
         # Update UI
         tree_menu.Delete(_workbook_ID_map[self._item].wb_id)
-
-        if self._item.graph_panel is not None:
-            self._item.graph_panel.Destroy()
+        # Remove graph from pane
+        self._item.clear_graph_panel()
 
         global selected_wb, _selected_wb_ID, _selected_results_ID, _selected_surfaces_ID
         selected_wb = None
@@ -436,8 +431,7 @@ class TreeMenuWorkbook(TreeMenu):
 
     def _on_clear(self, event: wx.MenuEvent):
         # Update UI
-        if self._item.graph_panel is not None:
-            self._item.graph_panel.Destroy()
+        self._item.clear_graph_panel()
         tree_menu.DeleteChildren(_selected_surfaces_ID)
         tree_menu.DeleteChildren(_selected_results_ID)
 
@@ -482,8 +476,7 @@ def OnSelection(event):
             return  # Skip the rest of the function, user clicked on current workbook
 
         # Hide current graph being displayed
-        if selected_wb.graph_panel is not None:
-            selected_wb.graph_panel.Hide()
+        selected_wb.hide_graph()
 
         selected_wb = selected
         _selected_wb_ID = selected_id
@@ -493,8 +486,7 @@ def OnSelection(event):
         _selected_results_ID = ids.results_id
 
         # Potentially show new graph for selected panel
-        if selected_wb.graph_panel is not None:
-            selected_wb.graph_panel.Show()
+        selected_wb.show_graph()
 
     elif isinstance(selected, MultiscaleData):
         pass
@@ -628,12 +620,9 @@ _wkbk_tree_surfaces = "Surfaces"
 def OnNewWB(event):
     global _wb_counter, root, selected_wb, _selected_wb_ID, _selected_surfaces_ID, _selected_results_ID
 
-    try:
-        if selected_wb.graph_panel is not None:
-            selected_wb.graph_panel.Hide()
-    except AttributeError:
-        pass
-        # _selected_wb will be None when application starts up
+    # selected_wb will be None when application starts up
+    if selected_wb is not None:
+        selected_wb.hide_graph()
 
     selected_wb = Workbook('workbook{}'.format(_wb_counter))
     _selected_wb_ID = tree_menu.AppendItem(root, selected_wb.name, data=selected_wb)
@@ -726,12 +715,13 @@ def OnExit(event):
     app.Destroy()
 
 
-def errorMsg(title, msg, trace_str):
+def errorMsg(title, msg, trace_str=None):
     """
     Displays error message dialog. Waits for the message dialog to close, prevents accessing parent frame.
     """
-    # Print to stderr
-    print(trace_str, file=sys.stderr)
+    # Print to stderr the stacktrace
+    if trace_str is not None:
+        print(trace_str, file=sys.stderr)
     # Create error dialog
     dialog = wx.MessageDialog(frame, str(msg), title, style=wx.ICON_ERROR | wx.OK)
     dialog.ShowModal()

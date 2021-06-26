@@ -126,7 +126,7 @@ class MountainsNotFound(str):
         super().__init__()
 
 
-_MOUNTAINS_PATH = str()
+_MOUNTAINS_PATH = None
 
 
 def find_mountains_map() -> str:
@@ -143,7 +143,7 @@ def find_mountains_map() -> str:
         # Open class ID key registery
         with winreg.ConnectRegistry(None, winreg.HKEY_CLASSES_ROOT) as reg:
             # Open MountainsMap's CLSID specific key
-            with winreg.OpenKey(reg, "CLSID\{B55C9B36-8A0F-463A-B367-9926963F08F7}\InprocServer32") as key:
+            with winreg.OpenKey(reg, "CLSID\\{B55C9B36-8A0F-463A-B367-9926963F08F7}\\InprocServer32") as key:
                 sub_count, val_count, last_changed = winreg.QueryInfoKey(key)
                 # Iterate through keys and find value containing MountainsMap path
                 for i in range(val_count):

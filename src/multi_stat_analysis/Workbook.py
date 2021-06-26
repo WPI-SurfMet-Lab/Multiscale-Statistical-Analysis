@@ -15,3 +15,17 @@ class Workbook:
 
     def get_complexity(self):
         return self.dataset.get_complexity()
+
+    def hide_graph(self):
+        if self.graph_panel is not None:
+            self.graph_panel.Hide()
+
+    def show_graph(self):
+        if self.graph_panel is not None:
+            self.graph_panel.Show()
+
+    def clear_graph_panel(self):
+        """Delete current graph if it has been created previously. Otherwise do nothing."""
+        if self.graph_panel is not None:
+            self.graph_panel.Destroy()
+            self.graph_panel = None
