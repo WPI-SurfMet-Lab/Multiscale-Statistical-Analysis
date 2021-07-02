@@ -15,6 +15,12 @@ from GraphDialogs import LegendDialog
 import multi_stat_analysis.__main__ as main
 
 
+def _add_to_results(self, curr_plot):
+    self.selected_wb.results.append(curr_plot)
+    self.get_tree_menu().AppendItem(self.get_root(), self.name, data=curr_plot)
+    self.get_tree_menu().Expand(self.get_root())
+
+
 class FTestException(Exception):
     def __init__(self, msg):
         super().__init__(self, msg)
@@ -158,9 +164,7 @@ class FtestDialog(wx.Dialog):
                 if self.name in [result.name for result in self.selected_wb.results]:
                     raise TTestException("Result with this name already exists under this workbook.")
 
-                self.selected_wb.results.append(self)
-                self.get_tree_menu().AppendItem(self.get_root(), self.name, data=self)
-                self.get_tree_menu().Expand(self.get_root())
+                _add_to_results(self, plot)
                 self.Close()
             if tails == 'left (σ1 ≥ σ2)':
                 for dset in d:
@@ -191,9 +195,7 @@ class FtestDialog(wx.Dialog):
                 if self.name in [result.name for result in self.selected_wb.results]:
                     raise TTestException("Result with this name already exists under this workbook.")
 
-                self.selected_wb.results.append(self)
-                self.get_tree_menu().AppendItem(self.get_root(), self.name, data=self)
-                self.get_tree_menu().Expand(self.get_root())
+                _add_to_results(self, plot)
                 self.Close()
             if tails == 'right (σ1 ≤ σ2)':
                 for dset in d:
@@ -222,9 +224,7 @@ class FtestDialog(wx.Dialog):
                 if self.name in [result.name for result in self.selected_wb.results]:
                     raise TTestException("Result with this name already exists under this workbook.")
 
-                self.selected_wb.results.append(self)
-                self.get_tree_menu().AppendItem(self.get_root(), self.name, data=self)
-                self.get_tree_menu().Expand(self.get_root())
+                _add_to_results(self, plot.get_graph())
                 self.Close()
         else:
             raise FTestException('F-test: Groups must be the same size')
@@ -561,9 +561,7 @@ class TtestDialog(wx.Dialog):
             if self.name in [result.name for result in self.selected_wb.results]:
                 raise TTestException("Result with this name already exists under this workbook.")
 
-            self.selected_wb.results.append(self)
-            self.get_tree_menu().AppendItem(self.get_root(), self.name, data=self)
-            self.get_tree_menu().Expand(self.get_root())
+            _add_to_results(self, plot.get_graph())
             self.Close()
 
             # if tails == 'two (σ1 = σ2)':
@@ -587,7 +585,7 @@ class TtestDialog(wx.Dialog):
             #                          'Scale (um^2)', 'T-Value', self.data, self.get_res_list())
             #     plot.statsmenu.Remove(plot.confidence)
             #     plot.get_graph().draw_scatter()
-            #     self.get_tree_menu().AppendItem(self.get_root(), "Two Tail T-test Results", data=plot)
+            #     _add_to_results(self, plot)
             # if tails == 'left (σ1 ≥ σ2)':
             #     for dset in d:
             #         self.WelchsTTest(alpha, dset, len(d))
@@ -611,7 +609,7 @@ class TtestDialog(wx.Dialog):
             #                          'Scale (um^2)', 'T-Value', self.data, self.get_res_list())
             #     plot.statsmenu.Remove(plot.confidence)
             #     plot.get_graph().draw_scatter()
-            #     self.get_tree_menu().AppendItem(self.get_root(), "Left Tail T-test Results", data=plot)
+            #     _add_to_results(self, plot)
             # if tails == 'right (σ1 ≤ σ2)':
             #     for dset in d:
             #         self.WelchsTTest(alpha, dset, len(d))
@@ -634,7 +632,7 @@ class TtestDialog(wx.Dialog):
             #                          'Scale (um^2)', 'T-Value', self.data, self.get_res_list())
             #     plot.statsmenu.Remove(plot.confidence)
             #     plot.get_graph().draw_scatter()
-            #     self.get_tree_menu().AppendItem(self.get_root(), "Right Tail T-test Results", data=plot)
+            #     _add_to_results(self, plot)
             # somethings wrong with this and the picker....
             # print(self.get_res_list())
         else:
@@ -935,9 +933,7 @@ class ANOVAtestDialog(wx.Dialog):
             if self.name in [result.name for result in self.selected_wb.results]:
                 raise ANOVAException("Result with this name already exists under this workbook.")
 
-            self.selected_wb.results.append(self)
-            self.get_tree_menu().AppendItem(self.get_root(), self.name, data=self)
-            self.get_tree_menu().Expand(self.get_root())
+            _add_to_results(self, plot)
             self.Close()
 
         else:
