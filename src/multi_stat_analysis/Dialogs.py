@@ -3,6 +3,7 @@ import warnings
 
 import numpy as np
 import wx
+import wx.grid
 import CurveFit
 from wx.lib.scrolledpanel import ScrolledPanel
 from scipy.optimize import OptimizeWarning
@@ -13,19 +14,30 @@ from CanvasPanel import HHPlot
 from GraphDialogs import SymbolDialog
 from GraphDialogs import LegendDialog
 from GraphDialogs import LabelDialog
+from multi_stat_analysis.MultiscaleData import RegressValTable
 
-# Class for the dialog to select the curve fitting types and graphs
-# From the main menu under Analysis > Curve Fit
-# select Regression and R^2 by scale graphs, get best fitting curve
+
 class GraphSelectDialog(wx.Dialog):
-    # this is all a bunch of UI stuff
-    def __init__(self, parent, scale_data, x_regress_vals, y_regress_vals):
+    """
+    Class for the dialog to select the curve fitting types and graphs
+    From the main menu under Analysis > Curve Fit
+    select Regression and R^2 by scale graphs, get best fitting curve
+    """
+
+    def __init__(self, parent, scale_data, x_regress_table: RegressValTable, y_regress_vals):
         wx.Dialog.__init__(self, parent, wx.ID_ANY, "Curve Fit", size=(840, 680))
         self.panel = wx.Panel(self, wx.ID_ANY)
         CurveFit.set_maxfev(1000)
 
+        # REGRESSION GROUP SELECTION
+        self._x_regres_table = x_regress_table
+        self._regress_group_box = wx.StaticBox(self.panel, wx.ID_ANY, "Regression Group", size=(840, 80), pos=(10, 10))
+        self._regress_group_dropdown = wx.Choice(self._regress_group_box, id=wx.ID_ANY, size=(140, 40), pos=(10, 30),
+                                                 choices=self._x_regres_table.get_regress_groups())
+        self._regress_group_dropdown.SetSelection(0)
+
         # -------------------------------------------REGRESSION TYPE SELECTION------------------------------------------------------------------REGRESSION TYPE SELECTION-----------------------
-        self.regress_box = wx.StaticBox(self.panel, wx.ID_ANY, "Curve Type", size=(420, 150), pos=(10,10))
+        self.regress_box = wx.StaticBox(self.panel, wx.ID_ANY, "Curve Type", size=(420, 150), pos=(10, 100))
         # -- creating the list box --
         self.regress_selection = wx.ListCtrl(self.regress_box, id=wx.ID_ANY, size=(400, 125), style=wx.LC_REPORT |
                                                                                               wx.LC_NO_HEADER |
@@ -61,7 +73,7 @@ class GraphSelectDialog(wx.Dialog):
 
         # --------------------------------------DISPLAY GRAPHS---------------------------------------------------------------------------------------------DISPLAY GRAPHS-------------------
         # -- box to contain all check boxes --
-        self.display_box = wx.StaticBox(self.panel, wx.ID_ANY, "Graph Display", size=(490, 400), pos=(10,170))
+        self.display_box = wx.StaticBox(self.panel, wx.ID_ANY, "Graph Display", size=(490, 310), pos=(10, 260))
 
         # general graphs that can be generated without selecting regression type ---------
         # self.gen_plot_box = wx.StaticBox(self.display_box, wx.ID_ANY, "General", size=(110, 65))
@@ -114,8 +126,8 @@ class GraphSelectDialog(wx.Dialog):
 
         # --------------------------------BEST REGRESSION RELATIONSHIP BASED ON R^2---------------------------------------------
 
-        self.find_best_box = wx.StaticBox(self.panel, wx.ID_ANY, "Best Fit", size=(290,400), pos=(520,170))
-        self.best_fit_txt = wx.StaticText(self.find_best_box, -1, "Curve Fit: ", pos=(20,25))
+        self.find_best_box = wx.StaticBox(self.panel, wx.ID_ANY, "Best Fit", size=(290, 310), pos=(520, 260))
+        self.best_fit_txt = wx.StaticText(self.find_best_box, -1, "Curve Fit: ", pos=(20, 25))
         self.best_R2_txt = wx.StaticText(self.find_best_box, -1, "R^2: ", pos=(20,50))
         self.best_scale_txt = wx.StaticText(self.find_best_box, -1, "Scale: ", pos=(20,75))
 
@@ -123,12 +135,14 @@ class GraphSelectDialog(wx.Dialog):
         self.try_best.Bind(wx.EVT_BUTTON, self.OnBest)
 
         self.scale_data = scale_data
-        self.x_regress_vals = np.array(x_regress_vals).astype(np.float)
+
+        # TODO Remove this variable since it is no longer directly needed, and could be replaced by regresion_table
+#          = np.array(x_regress_table).astype(np.float)
         self.y_regress_vals = y_regress_vals
 
         # ------------------------------------ MAXFEV ------------------------------
 
-        self.recursion_box = wx.StaticBox(self.panel, wx.ID_ANY, "Recursion", size=(350,150), pos=(450,10))
+        self.recursion_box = wx.StaticBox(self.panel, wx.ID_ANY, "Recursion", size=(350,150), pos=(450, 100))
         self.recursion_txt = wx.StaticText(self.recursion_box, label="Recursion Limit: ", pos=(20,40))
         self.recursion_amount = wx.TextCtrl(self.recursion_box, value="1000", pos=(120,40), size=(200,20))
 
@@ -289,9 +303,9 @@ class GraphSelectDialog(wx.Dialog):
                 scalebest = self.get_scale_vals()[self.get_y_rvals().index(y_values)]
                 curvebest = r2list[0][1]
         # show the best curve type, R^2 and scale
-        best_curve = wx.StaticText(self.find_best_box, -1, curvebest, pos=(80, 25))
-        best_R2 = wx.StaticText(self.find_best_box, -1, str(r2best), pos=(80, 50))
-        best_scale = wx.StaticText(self.find_best_box, -1, str(scalebest), pos=(80, 75))
+        best_curve = wx.StaticText(self.find_best_box, wx.ID_ANY, curvebest, pos=(80, 25))
+        best_R2 = wx.StaticText(self.find_best_box, wx.ID_ANY, str(r2best), pos=(80, 50))
+        best_scale = wx.StaticText(self.find_best_box, wx.ID_ANY, str(scalebest), pos=(80, 75))
     # function to select the curve types in the list
     def OnSelect(self, event):
 
@@ -393,7 +407,10 @@ class GraphSelectDialog(wx.Dialog):
     def get_recurse_value(self, event):
         CurveFit.set_maxfev(int(self.get_recursion_amount().GetValue()))
 
-    def get_x_rvals(self): return self.x_regress_vals
+    def get_x_rvals(self):
+        selected_group = self._regress_group_dropdown.GetString(self._regress_group_dropdown.GetSelection())
+        return self._x_regres_table.get_regress_group_list(selected_group)
+
     def get_y_rvals(self): return self.y_regress_vals
     def get_scale_vals(self): return self.scale_data
     def get_selected(self): return self.selectedList
@@ -1325,54 +1342,232 @@ class R2byScaleDialog(wx.Frame):
     def set_isGrid(self, g): self.isGrid = g
     def get_saved_legend_text(self): return self.legend_text
     def set_saved_legend_text(self, txt): self.legend_text = txt
-# class for the dialog which allows the user to set the x-regression values based on the opened data sets
-class XRValuesDialog(wx.Dialog):
-    # Dynamic UI stuff
-    def __init__(self, parent, regress_vals:list):
-        wx.Dialog.__init__(self, parent, wx.ID_ANY, "X-Axis Regression Values", size=(450, 350))
-        self.main_panel = wx.Panel(self, wx.ID_ANY)
 
-        self.sep = wx.StaticLine(self.main_panel, -1, pos=(10,250), size=(420, -1), style=wx.LI_HORIZONTAL)
 
-        self.scroll_panel = ScrolledPanel(self.main_panel, wx.ID_ANY, pos=(0,0), size=(415, 225))
-        self.scroll_panel.SetupScrolling(scroll_y=True, rate_x=20)
+class _GroupRenameDialog(wx.Dialog):
+    width = 200
+    height = 100
+    default_purpose = "Rename"
 
-        self.btn_panel = wx.Panel(self.main_panel, wx.ID_ANY, pos=(0,275), size=(450, 75))
+    def __init__(self, parent, regress_val_table, old_group_name: str, purpose_str: str = default_purpose):
+        super().__init__(parent, wx.ID_ANY, title='', size=(_GroupRenameDialog.width, _GroupRenameDialog.height))
+        self._regress_val_table = regress_val_table
+        self._old_group_name = old_group_name
 
+        dialog_title = purpose_str
+        if old_group_name:
+            dialog_title += " - " + old_group_name
+        self.SetTitle(dialog_title)
+
+        self.options_panel = wx.Panel(self, wx.ID_ANY)
         self.sizer = wx.BoxSizer(wx.VERTICAL)
 
-        self.lblxvals = wx.StaticText(self.scroll_panel, label="X Regression Values", pos=(20, 20))
-        self.sizer.Add(0, 3, 0)
-        self.sizer.Add(self.lblxvals, 1, wx.ALL, 5)
+        # Results folder selection button handling
+        self.text = wx.TextCtrl(self.options_panel, wx.ID_ANY)
+        if self._old_group_name:
+            self.text.SetValue(self._old_group_name)
+
+        # Completion button initialization
+        self.ok_btn = wx.Button(self.options_panel, wx.ID_OK, label=purpose_str)
+        self.cancel_btn = wx.Button(self.options_panel, wx.ID_CANCEL, label="Cancel")
+
+        self.completion_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.completion_sizer.Add(self.cancel_btn, flag=wx.ALIGN_LEFT)
+        self.completion_sizer.Add(self.ok_btn, flag=wx.ALIGN_LEFT)
+
+        # Final initialization of dialog's sizer
+        self.sizer.AddStretchSpacer()
+        self.sizer.Add(self.text, flag=wx.ALIGN_CENTER)
+        self.sizer.AddStretchSpacer()
+        self.sizer.Add(self.completion_sizer, flag=wx.ALIGN_CENTER)
+        self.sizer.AddStretchSpacer()
+        self.options_panel.SetSizerAndFit(self.sizer)
+
+        # Center the screen, and set text box to focus
+        self.CenterOnScreen()
+        self.text.SetFocus()
+
+    def get_new_name(self) -> str:
+        return self.text.GetValue()
+
+    def ShowModal(self) -> int:
+        modal_return = super().ShowModal()
+
+        if modal_return == wx.ID_OK:
+            new_group_name = self.get_new_name()
+            # Check to make sure a duplicate name wasn't given
+            if self._old_group_name is not None and self._old_group_name is new_group_name:
+                raise ValueError("The new group name was the same as the old group name.")
+            # Check to make sure column name doesn't already exist
+            elif self._old_group_name is not None and self._regress_val_table.does_group_exist(new_group_name):
+                raise ValueError("The new group name already exists. Please enter a different name.")
+
+        return modal_return
+
+
+class _ColumnMenu(wx.Menu):
+
+    def __init__(self, grid, col: int):
+        super().__init__()
+        self._grid = grid
+        self._col = col
+        self._group_name = self._grid.GetColLabelValue(self._col)
+
+        # Create menu buttons
+        self._delete_btn = wx.MenuItem(self, wx.ID_ANY, "Delete")
+        self._rename_btn = wx.MenuItem(self, wx.ID_ANY, "Rename")
+        self._new_col_btn = wx.MenuItem(self, wx.ID_ANY, "Add Column")
+
+        # Structure menu layout
+        self.Append(self._delete_btn)
+        self.Append(self._rename_btn)
+        # Only add the "Add column" button if the column selected is the last column in the grid
+        if self._col + 1 == self._grid.GetNumberCols():
+            self.Append(wx.MenuItem(self, wx.ID_SEPARATOR))
+            self.Append(self._new_col_btn)
+
+        # Assign menu button handlers
+        self.Bind(wx.EVT_MENU, self._on_rename, self._rename_btn)
+        self.Bind(wx.EVT_MENU, self._on_delete, self._delete_btn)
+        self.Bind(wx.EVT_MENU, self._on_new_col, self._new_col_btn)
+
+    def _retrieve_new_unique_group(self, old_group_name, purpose_str=_GroupRenameDialog.default_purpose):
+        dialog = _GroupRenameDialog(self._grid, self._grid.regress_val_table, old_group_name, purpose_str)
+        # Return the new name if the OK button was pressed
+        if dialog.ShowModal() == wx.ID_OK:
+            return dialog.get_new_name()
+        # Return None if the rename box was closed unsuccessfully
+        else:
+            return None
+
+    def _on_rename(self, event: wx.MenuEvent):
+        new_group_name = self._retrieve_new_unique_group(self._group_name)
+        if new_group_name:
+            # Update internal regression table
+            self._grid.regress_val_table.rename_regress_group(self._group_name, new_group_name)
+            # Update grid UI with changes
+            self._grid.SetColLabelValue(self._col, new_group_name)
+
+    def _on_delete(self, event: wx.MenuEvent):
+        # Update internal regression table
+        self._grid.regress_val_table.del_regress_group(self._group_name)
+        # Update grid UI with changes
+        self._grid.DeleteCols(self._col)
+
+        # Populate the default column if no more columns exist
+        if self._grid.GetNumberCols() <= 0:
+            self._grid.create_new_group(RegressValTable.DEFAULT_GROUP)
+
+    def _on_new_col(self, event: wx.MenuEvent):
+        new_group_name = self._retrieve_new_unique_group(None, "New Group Name")
+        if new_group_name:
+            self._grid.create_new_group(new_group_name)
+
+
+class _XRValuesGrid(wx.grid.Grid):
+
+    def __init__(self, parent, pos, size, regress_val_table: RegressValTable, regress_datasets: list):
+        super().__init__(parent=parent, id=wx.ID_ANY, pos=pos, size=size)
+        self.regress_val_table = regress_val_table
+        self._regress_datasets = regress_datasets
+
+        # Setup cell editing event handler
+        self.Bind(wx.grid.EVT_GRID_CELL_CHANGED, self._on_table_modify)
+        # Setup column editing right-click handler
+        self.Bind(wx.grid.EVT_GRID_LABEL_RIGHT_CLICK, self._on_column_right_click)
+
+        # Display regression values on grid
+        self._refresh_regress_entries()
+
+    def _on_table_modify(self, event: wx.grid.GridEvent):
+        col = event.GetCol()
+        row = event.GetRow()
+        new_regress_value = float(self.GetCellValue(row, col))
+        group_name = self.GetColLabelValue(col)
+        dataset = self._regress_datasets[row]
+
+        # Store new regression value for given group and dataset in the regression value table
+        self.regress_val_table.set_regress_val(group_name, dataset, new_regress_value)
+
+        # Refresh the grid to display the new number as a float
+        self.SetCellValue(row, col, str(new_regress_value))
+
+    def _on_column_right_click(self, event: wx.grid.GridEvent):
+        # Only display the right click menu if a column is clicked
+        if event.GetRow() == -1:
+            self.PopupMenu(_ColumnMenu(self, event.GetCol()), event.GetPosition())
+
+    def _refresh_regress_entries(self):
+        # Reset grid to an empty state
+        self.ClearGrid()
+
+        # Create the number of rows based on the length of the multiscale dataset
+        # Create the number of columns from the number of regression groups
+        self.CreateGrid(len(self._regress_datasets),
+                        len(self.regress_val_table.get_regress_groups()))
+
+        # Fill in column labels based on regression group names
+        regress_groups = self.regress_val_table.get_regress_groups()
+        for col, group_name in enumerate(regress_groups):
+            self.SetColLabelValue(col, group_name)
+
+        # Fill in row labels based on dataset names
+        for row, dataset in enumerate(self._regress_datasets):
+            self.SetRowLabelValue(row, dataset.name)
+
+        # Fill with table with data
+        for col, group_name in enumerate(regress_groups):
+            for row, dataset in enumerate(self._regress_datasets):
+                self.SetCellValue(row, col, str(self.regress_val_table.get_regress_val(group_name, dataset)))
+
+    def create_new_group(self, new_group_name):
+        # Update internal regression table
+        self.regress_val_table.add_regress_group(new_group_name)
+        # Update grid UI with changes
+        self.AppendCols(1)
+        self.SetColLabelValue(self.GetNumberCols() - 1, new_group_name)
+
+
+class XRValuesDialog(wx.Dialog):
+    """
+    Dialog which allows the user to set the x-regression values based on the opened data sets
+    """
+    # Dynamic UI stuff
+    def __init__(self, parent, regress_vals_copy: RegressValTable, regress_datasets: list):
+        super().__init__(parent, wx.ID_ANY, "X-Axis Regression Values", size=(450, 350))
+        self.regress_vals_copy = regress_vals_copy
+
+        self._main_panel = wx.Panel(self, wx.ID_ANY)
+
+        self._sep = wx.StaticLine(self._main_panel, -1, pos=(10, 250), size=(420, -1), style=wx.LI_HORIZONTAL)
+
+        self._table_panel = ScrolledPanel(self._main_panel, wx.ID_ANY, pos=(0, 0), size=(415, 240))
+
+        self._btn_panel = wx.Panel(self._main_panel, wx.ID_ANY, pos=(0, 275), size=(450, 75))
+
+        self._table_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        self._x_val_label = wx.StaticText(self._table_panel, label="X Regression Values", pos=(20, 20))
+        self._table_sizer.Add(0, 3, 0)
+        self._table_sizer.Add(self._x_val_label, 1, wx.ALL, 5)
 
         self.txt_ctrl = []
-        # dynamically add a new textbox for each value that is given in the list
-        for value in regress_vals:
-            txt = wx.TextCtrl(self.scroll_panel, value=str(value), pos=(140, 20), size=(250, -1))
-            self.txt_ctrl.append(txt)
-            self.sizer.Add(txt, 0, wx.ALL, 5)
 
-        self.ok = wx.Button(self.btn_panel, id=wx.ID_OK, label="OK", pos=(240, 0))
-        self.cancel = wx.Button(self.btn_panel, id=wx.ID_CANCEL, label="Cancel", pos=(335, 0))
+        self._value_grid = _XRValuesGrid(self._table_panel, (1, 60), (400, 200), regress_vals_copy, regress_datasets)
+        self._table_sizer.Add(0, 3, 0)
+        self._table_sizer.Add(self._value_grid)
 
-        self.regress_vals = ''
-        self.scroll_panel.SetSizer(self.sizer)
-        self.scroll_panel.Layout()
-        self.scroll_panel.Fit()
+        self._ok = wx.Button(self._btn_panel, id=wx.ID_OK, label="OK", pos=(240, 0))
+        self._cancel = wx.Button(self._btn_panel, id=wx.ID_CANCEL, label="Cancel", pos=(335, 0))
+
+        self._table_panel.SetSizer(self._table_sizer)
+        self._table_panel.Layout()
+        self._table_panel.Fit()
 
     # function for closing the dialog
-    def OnQuit(self, event):
+    def on_quit(self, event):
         self.Destroy()
 
-    # function to save the user input values
-    def SaveString(self):
-        new_regress_vals = []
-        for values in self.get_txtctrl():
-            new_regress_vals.append(float(values.GetValue()))
-        self.regress_vals = new_regress_vals
-
-    def get_regress_vals(self): return self.regress_vals
-    def get_txtctrl(self): return self.txt_ctrl
 
 class HHPlotDialog(wx.Frame):
 

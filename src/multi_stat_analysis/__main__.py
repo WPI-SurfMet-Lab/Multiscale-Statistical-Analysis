@@ -31,11 +31,13 @@ __url__ = 'https://github.com/MatthewSpofford/Multiscale-Statistical-Analysis'
 frame = None
 app = None
 
+_startup = False
+
 _wb_counter = 1
 _wb_set = set()
 _main_panel = None
 
-selected_wb = None
+selected_wb = Workbook('')
 _selected_wb_ID = None
 _selected_results_ID = None
 _selected_surfaces_ID = None
@@ -52,11 +54,6 @@ class WorkbookIDs:
 _workbook_ID_map = {}
 
 
-def get_selected_wb():
-    global selected_wb
-    return selected_wb
-
-
 # function for show the curve fit dialog and get regression graphs
 def OnRegression(event):
     global selected_wb
@@ -64,7 +61,7 @@ def OnRegression(event):
 
     warnings.simplefilter("error", OptimizeWarning)
     try:
-        rsdlg = GraphSelectDialog(frame, dataset.get_results_scale(), dataset.get_x_regress(),
+        rsdlg = GraphSelectDialog(frame, dataset.get_results_scale(), dataset.regress_table,
                                   dataset.get_regress_sets())
         rsdlg.CenterOnScreen()
         resid = rsdlg.ShowModal()
@@ -149,7 +146,7 @@ def OnRegression(event):
                         if isR2:
                             gdlg = R2byScaleDialog(frame, title, dataset, tree_menu, _selected_results_ID, id)
                         else:
-                            gdlg = RegressionDialog(frame, title, dataset.get_results_scale(), dataset.get_x_regress(),
+                            gdlg = RegressionDialog(frame, title, dataset.get_results_scale(), rsdlg.get_x_rvals(),
                                                     dataset.get_regress_sets(), _selected_results_ID, tree_menu)
                         fit_func(gdlg.get_graph())
                         tree_menu.AppendItem(_selected_results_ID, menu_label, data=gdlg)
@@ -157,6 +154,7 @@ def OnRegression(event):
                     except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning,
                             OptimizeWarning) as e:
                         errorMsg(error_label, str(e), str(e))
+                        traceback.print_exc()
                 # Don't increase ID if current dialog is not an R^2 dialog
                 id += 1 if isR2 else 0
 
@@ -165,22 +163,20 @@ def OnRegression(event):
     except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
         errorMsg("Graph", str(e), str(e))
         if __debug__:
-            import traceback
             traceback.print_exc()
 
 
 # function to get the x-regression values
-def OnData(event):
+def OnRegressionValues(event):
     global selected_wb
     dataset = selected_wb.dataset
 
-    datadialog = XRValuesDialog(frame, dataset.get_x_regress())
-    datadialog.CenterOnScreen()
-    result = datadialog.ShowModal()
+    regress_val_dialog = XRValuesDialog(frame, dataset.regress_table.copy(), dataset.datasets)
+    regress_val_dialog.CenterOnScreen()
+    result = regress_val_dialog.ShowModal()
 
     if result == wx.ID_OK:
-        datadialog.SaveString()
-        dataset.set_x_regress(datadialog.get_regress_vals())
+        dataset.regress_table = regress_val_dialog.regress_vals_copy
 
 
 class DiscrimTests:
@@ -202,7 +198,6 @@ def OnDiscrimTests(test_choice):
     except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning, OptimizeWarning) as e:
         errorMsg(test_str, str(e))
         if __debug__:
-            import traceback
             traceback.print_exc()
 
     dlg.CenterOnScreen()
@@ -378,7 +373,7 @@ class TreeMenuDataset(TreeMenu):
         item_wb = tree_menu.GetItemData(item_wb_id)
 
         # Back up dataset list, wipe list
-        old_dataset_list = item_wb.dataset._datasets.copy()
+        old_dataset_list = item_wb.dataset.datasets.copy()
         item_wb.dataset.clear()
 
         # Attempt to add new dataset with the item removed
@@ -588,14 +583,13 @@ def create_open_dialog(choices):
     except Exception as e:
         errorMsg("File Open Error", str(e), str(e))
         if __debug__:
-            import traceback
             traceback.print_exc()
     finally:
         frame.EnableCloseButton(True)
 
     # Remove currently results in tree, and add updated datasets to list
     tree_menu.DeleteChildren(_selected_surfaces_ID)
-    for data in selected_wb.dataset._datasets:
+    for data in selected_wb.dataset.datasets:
         tree_menu.AppendItem(_selected_surfaces_ID, data.name, data=data)
     tree_menu.Expand(_selected_surfaces_ID)
 
@@ -618,10 +612,10 @@ _wkbk_tree_surfaces = "Surfaces"
 
 
 def OnNewWB(event):
-    global _wb_counter, root, selected_wb, _selected_wb_ID, _selected_surfaces_ID, _selected_results_ID
+    global _wb_counter, root, selected_wb, _startup, _selected_wb_ID, _selected_surfaces_ID, _selected_results_ID
 
-    # selected_wb will be None when application starts up
-    if selected_wb is not None:
+    # Don't attempt to hide the graph on startup, because it is not initialized yet
+    if not _startup:
         selected_wb.hide_graph()
 
     selected_wb = Workbook('workbook{}'.format(_wb_counter))
@@ -784,7 +778,7 @@ if __name__ == "__main__":
     xyvals = regres_menu.Append(wx.ID_ANY, 'Regression Values', 'Regression Values')
     regression = regres_menu.Append(wx.ID_ANY, 'Curve Fit', 'Curve Fit')
     # bind functions to menu objects
-    frame.Bind(wx.EVT_MENU, OnData, xyvals)
+    frame.Bind(wx.EVT_MENU, OnRegressionValues, xyvals)
     frame.Bind(wx.EVT_MENU, OnRegression, regression)
 
     # Discrimination menu initialization
