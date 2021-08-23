@@ -1494,7 +1494,7 @@ class _XRValuesGrid(wx.grid.Grid):
 
     def _on_column_right_click(self, event: wx.grid.GridEvent):
         # Only display the right click menu if a column is clicked
-        if event.GetRow() == -1:
+        if event.GetRow() == -1 and event.GetCol() >= 0:
             self.PopupMenu(_ColumnMenu(self, event.GetCol()), event.GetPosition())
 
     def _refresh_regress_entries(self):
