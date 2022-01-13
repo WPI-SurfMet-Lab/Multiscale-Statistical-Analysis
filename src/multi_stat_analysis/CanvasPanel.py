@@ -5,21 +5,22 @@ import CurveFit
 from matplotlib import use
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wx import NavigationToolbar2Wx as NavigationToolbar
-from matplotlib.pyplot import figure, yscale
+from matplotlib.pyplot import figure
+from matplotlib.figure import Figure
 from scipy.optimize import OptimizeWarning
 from GraphDialogs import SymbolDialog
 from GraphDialogs import LegendDialog
 from GraphDialogs import LabelDialog
 
-import logging
-import traceback
+import __main__
 
 use('WXAgg')
+
 
 # Class for the R^2 by scale plots to generate the graphs
 class R2byScalePlot(wx.Panel):
 
-    def __init__(self, parent, data, error_txt, tree_menu, root, id):
+    def __init__(self, parent, data, tree_menu, root, id):
         # gets the Panel properties
         wx.Panel.__init__(self, parent, size=wx.Size(640, 480), style=wx.SIMPLE_BORDER)
         # id corresponding to regression curve type
@@ -55,13 +56,13 @@ class R2byScalePlot(wx.Panel):
         self.get_axes().set_title(self.get_titlelabel())
         self.get_axes().set_xlabel(self.get_xlabel())
         self.get_axes().set_ylabel(self.get_ylabel())
-        self.error_txt = error_txt
         # ------------------------- HOVER ANNOTATE -------------------------------
         self.scatter_plot = None
         self.annot = self.get_axes().annotate("", xy=(0, 0), xytext=(0.025, 0.025), textcoords="axes fraction",
                                               bbox=dict(boxstyle="round", fc="w"),
                                               arrowprops=dict(arrowstyle="->"))
         self.get_annot().set_visible(False)
+
         # function to update the annotation when hovering over a point
         def update_annot(ind):
 
@@ -84,6 +85,7 @@ class R2byScalePlot(wx.Panel):
                     if vis:
                         self.get_annot().set_visible(False)
                         self.get_fig().canvas.draw_idle()
+
         self.get_fig().canvas.mpl_connect("motion_notify_event", hover)
 
         # ------------------ CLICK ON POINTS TO MAKE REGRESSION PLOT --------------------------
@@ -104,22 +106,35 @@ class R2byScalePlot(wx.Panel):
                         # checks the given id to perform the correct regression using the data determined above
                         # this needs error exceptions still
                         regression_choices = \
-                            {0:("Proportional Regression Plot", dialog.get_graph().proportional_fit_plot, "Proportional Regression at"),
-                             1:("Linear Regression Plot", dialog.get_graph().linear_fit_plot, "Linear Regression at"),
-                             2:("Quadratic Regression Plot", dialog.get_graph().quadratic_fit_plot, "Quadratic Regression at"),
-                             3:("Cubic Regression Plot", dialog.get_graph().cubic_fit_plot, "Cubic Regression at"),
-                             4:("Quartic Regression Plot", dialog.get_graph().quartic_fit_plot, "Quartic Regression at"),
-                             5:("Quintic Regression Plot", dialog.get_graph().quintic_fit_plot, "Quintic Regression at"),
-                             6:("Power Regression Plot", dialog.get_graph().power_fit_plot, "Power Regression at"),
-                             7:("Inverse Regression Plot", dialog.get_graph().inverse_fit_plot, "Inverse Regression at"),
-                             8:("Inverse Squared Regression Plot", dialog.get_graph().inverse_squared_fit_plot, "Inverse Squared Regression at"),
-                             9:("Natural Exponent Regression Plot", dialog.get_graph().naturalexp_fit_plot, "Natural Exponent Regression at"),
-                             10:("Natural Log Regression Plot", dialog.get_graph().loge_fit_plot, "Natural Log Regression at"),
-                             11:("Log10 Regression Plot", dialog.get_graph().log10_fit_plot, "Log10 Regression at"),
-                             12:("Inverse Exponent Regression Plot", dialog.get_graph().inverseexp_fit_plot, "Inverse Exponent Regression at"),
-                             13:("Sin Regression Plot", dialog.get_graph().sin_fit_plot, "Sin Regression at"),
-                             14:("Cos Regression Plot", dialog.get_graph().cos_fit_plot, "Cos Regression at"),
-                             15:("Gaussian Regression Plot", dialog.get_graph().gaussian_fit_plot, "Gaussian Regression at")}
+                            {0: ("Proportional Regression Plot", parent.get_graph().proportional_fit_plot,
+                                 "Proportional Regression at"),
+                             1: ("Linear Regression Plot", parent.get_graph().linear_fit_plot, "Linear Regression at"),
+                             2: ("Quadratic Regression Plot", parent.get_graph().quadratic_fit_plot,
+                                 "Quadratic Regression at"),
+                             3: ("Cubic Regression Plot", parent.get_graph().cubic_fit_plot, "Cubic Regression at"),
+                             4: (
+                                 "Quartic Regression Plot", parent.get_graph().quartic_fit_plot,
+                                 "Quartic Regression at"),
+                             5: (
+                                 "Quintic Regression Plot", parent.get_graph().quintic_fit_plot,
+                                 "Quintic Regression at"),
+                             6: ("Power Regression Plot", parent.get_graph().power_fit_plot, "Power Regression at"),
+                             7: (
+                                 "Inverse Regression Plot", parent.get_graph().inverse_fit_plot,
+                                 "Inverse Regression at"),
+                             8: ("Inverse Squared Regression Plot", parent.get_graph().inverse_squared_fit_plot,
+                                 "Inverse Squared Regression at"),
+                             9: ("Natural Exponent Regression Plot", parent.get_graph().naturalexp_fit_plot,
+                                 "Natural Exponent Regression at"),
+                             10: ("Natural Log Regression Plot", parent.get_graph().loge_fit_plot,
+                                  "Natural Log Regression at"),
+                             11: ("Log10 Regression Plot", parent.get_graph().log10_fit_plot, "Log10 Regression at"),
+                             12: ("Inverse Exponent Regression Plot", parent.get_graph().inverseexp_fit_plot,
+                                  "Inverse Exponent Regression at"),
+                             13: ("Sin Regression Plot", parent.get_graph().sin_fit_plot, "Sin Regression at"),
+                             14: ("Cos Regression Plot", parent.get_graph().cos_fit_plot, "Cos Regression at"),
+                             15: ("Gaussian Regression Plot", parent.get_graph().gaussian_fit_plot,
+                                  "Gaussian Regression at")}
                         title, plot_func, menu_text = regression_choices[self.id]
 
                         dialog = RegressionSelectDialog(self.get_parent(), title,
@@ -138,10 +153,11 @@ class R2byScalePlot(wx.Panel):
 
         # --------------------- SIZER ---------------------------------
         self.sizer = wx.BoxSizer(wx.VERTICAL)
-        self.sizer.Add(self.canvas, 1, wx.EXPAND) # wx.SHAPED keeps aspect ratio)
+        self.sizer.Add(self.canvas, 1, wx.EXPAND)  # wx.SHAPED keeps aspect ratio)
         self.add_toolbar()
         self.SetSizer(self.sizer)
         self.Fit()
+
     # adds the toolbar to the bottom of the plot
     def add_toolbar(self):
         self.toolbar = NavigationToolbar(self.canvas)
@@ -151,6 +167,7 @@ class R2byScalePlot(wx.Panel):
         self.sizer.Add(self.toolbar, 0, wx.EXPAND)
         # update the axes menu on the toolbar
         self.toolbar.update()
+
     # sets and updates the plots labels
     def label(self, title, xlabel, ylabel):
 
@@ -161,7 +178,8 @@ class R2byScalePlot(wx.Panel):
         # updates the regression plot's label
         self.get_canvas().draw()
 
-    # uses various regression functions to calculate R^2 values same as following functions but with respective curve type
+    # Uses various regression functions to calculate R^2 values same as following functions but with
+    # respective curve type
     def plot_fit(self, data_func, fit_func, error_str):
         warnings.simplefilter('error', OptimizeWarning)
         # iterate over all sets of y-values in regression
@@ -172,8 +190,8 @@ class R2byScalePlot(wx.Panel):
                 # calculate R^2 values
                 r2 = CurveFit.r_squared(np.array(y_values), fit_func(np.array(self.get_xr()), *popt))
             except (RuntimeError, Exception, Warning, TypeError, OptimizeWarning) as e:
-                self.get_error_txt().AppendText(error_str + str(e) + '\n')
-                # if error R^2 value is set to 0. error is likely due to not being able to find the functional correlation
+                # if error R^2 value is set to 0. error is likely due to not being able to
+                # find the functional correlation
                 r2 = 0
             # append R^2 value to the y values to be plotted
             self.y_plot.append(r2)
@@ -235,46 +253,124 @@ class R2byScalePlot(wx.Panel):
     def gaussian_plot(self):
         self.plot_fit(CurveFit.gauss_data, CurveFit.gauss_fit, "Gaussian R^2: ")
 
-    def get_axes(self): return self.axes
-    def get_x(self): return self.x
-    def get_y(self): return self.y
-    def get_fig(self): return self.figure
-    def get_canvas(self): return self.canvas
-    def get_saved(self): return self.isSaved
-    def set_saved(self, s): self.isSaved = s
-    def get_isLegend(self): return self.isLegend
-    def set_isLegend(self, s): self.isLegend = s
-    def get_titlelabel(self): return self.titlelabel
-    def set_titlelabel(self, title): self.titlelabel = title
-    def get_xlabel(self): return self.xlabel
-    def set_xlabel(self, xlabel): self.xlabel = xlabel
-    def get_ylabel(self): return self.ylabel
-    def set_ylabel(self, ylabel): self.ylabel = ylabel
-    def get_legendLoc(self): return self.legendLoc
-    def set_legendLoc(self, loc): self.legendLoc = loc
-    def get_xr(self): return self.xr
-    def get_y_plot(self): return self.y_plot
-    def get_error_txt(self): return self.error_txt
-    def get_scatter_plot(self): return self.scatter_plot
-    def set_scatter_plot(self, scatter): self.scatter_plot = scatter
-    def get_annot(self): return self.annot
-    def set_annot(self, a): self.annot = a
-    def get_pos(self): return self.pos
-    def set_pos(self, pos): self.pos = pos
-    def get_data(self): return self.data
-    def get_parent(self): return self.parent
-    def get_root(self): return self.root
-    def get_id(self): return self.id
-    def get_dataColor(self): return self.dataColor
-    def set_dataColor(self, color): self.dataColor = color
-    def get_dataSymbol(self): return self.dataSymbol
-    def set_dataSymbol(self, symbol): self.dataSymbol = symbol
-    def get_dataSymbolSize(self): return self.dataSymbolSize
-    def set_dataSymbolSize(self, size): self.dataSymbolSize = size
-    def get_legendText(self): return self.legend_text
-    def set_legendText(self, txt): self.legend_text = txt
-    def get_save_xr(self): return self.save_xr
-    def set_save_xr(self, x): self.save_xr = x
+    def get_axes(self):
+        return self.axes
+
+    def get_x(self):
+        return self.x
+
+    def get_y(self):
+        return self.y
+
+    def get_fig(self):
+        return self.figure
+
+    def get_canvas(self):
+        return self.canvas
+
+    def get_saved(self):
+        return self.isSaved
+
+    def set_saved(self, s):
+        self.isSaved = s
+
+    def get_isLegend(self):
+        return self.isLegend
+
+    def set_isLegend(self, s):
+        self.isLegend = s
+
+    def get_titlelabel(self):
+        return self.titlelabel
+
+    def set_titlelabel(self, title):
+        self.titlelabel = title
+
+    def get_xlabel(self):
+        return self.xlabel
+
+    def set_xlabel(self, xlabel):
+        self.xlabel = xlabel
+
+    def get_ylabel(self):
+        return self.ylabel
+
+    def set_ylabel(self, ylabel):
+        self.ylabel = ylabel
+
+    def get_legendLoc(self):
+        return self.legendLoc
+
+    def set_legendLoc(self, loc):
+        self.legendLoc = loc
+
+    def get_xr(self):
+        return self.xr
+
+    def get_y_plot(self):
+        return self.y_plot
+
+    def get_scatter_plot(self):
+        return self.scatter_plot
+
+    def set_scatter_plot(self, scatter):
+        self.scatter_plot = scatter
+
+    def get_annot(self):
+        return self.annot
+
+    def set_annot(self, a):
+        self.annot = a
+
+    def get_pos(self):
+        return self.pos
+
+    def set_pos(self, pos):
+        self.pos = pos
+
+    def get_data(self):
+        return self.data
+
+    def get_parent(self):
+        return self.parent
+
+    def get_root(self):
+        return self.root
+
+    def get_id(self):
+        return self.id
+
+    def get_dataColor(self):
+        return self.dataColor
+
+    def set_dataColor(self, color):
+        self.dataColor = color
+
+    def get_dataSymbol(self):
+        return self.dataSymbol
+
+    def set_dataSymbol(self, symbol):
+        self.dataSymbol = symbol
+
+    def get_dataSymbolSize(self):
+        return self.dataSymbolSize
+
+    def set_dataSymbolSize(self, size):
+        self.dataSymbolSize = size
+
+    def get_legendText(self):
+        return self.legend_text
+
+    def set_legendText(self, txt):
+        self.legend_text = txt
+
+    def get_save_xr(self):
+        return self.save_xr
+
+    def set_save_xr(self, x):
+        self.save_xr = x
+
+
 # Class for single scale scatter plots with regression line
 # y-axis is relative area
 # x-axis is regression parameter
@@ -305,7 +401,7 @@ class RegressionPlot(wx.Panel):
         # ---- Regression line ---
         self.mn = np.min(self.get_xr())
         self.mx = np.max(self.get_xr())
-        self.x_plot = np.linspace(self.mn, self.mx, num=5*len(self.get_xr()))
+        self.x_plot = np.linspace(self.mn, self.mx, num=5 * len(self.get_xr()))
         # -------------------------- GRAPH LABELS ---------------------------------------
         self.titlelabel = 'Relative Area Regression'
         self.xlabel = ''
@@ -324,13 +420,14 @@ class RegressionPlot(wx.Panel):
                                               arrowprops=dict(arrowstyle="->"))
         self.get_annot().set_visible(False)
 
-        self.line_annot = self.get_axes().annotate("", xy=(0,0),
-                                                   xytext=(0.5,0.5), textcoords="figure fraction",
+        self.line_annot = self.get_axes().annotate("", xy=(0, 0),
+                                                   xytext=(0.5, 0.5), textcoords="figure fraction",
                                                    bbox=dict(boxstyle="round", fc="w"),
                                                    arrowprops=dict(arrowstyle="->"))
         self.line_annot.set_visible(False)
         self.line_annot.draggable()
         self.line_annot_pos = [0, 0]
+
         # this function is described in class R2byScalePlot
         def update_annot(ind):
 
@@ -339,6 +436,7 @@ class RegressionPlot(wx.Panel):
             text = "Point \n({}, {})".format(pos[0], pos[1])
             self.get_annot().set_text(text)
             self.get_annot().get_bbox_patch().set_alpha(0.4)
+
         # this function is described in class R2byScalePlot
         def hover(event):
             vis = self.get_annot().get_visible()
@@ -352,6 +450,7 @@ class RegressionPlot(wx.Panel):
                     if vis:
                         self.get_annot().set_visible(False)
                         self.get_fig().canvas.draw_idle()
+
         self.get_fig().canvas.mpl_connect("motion_notify_event", hover)
 
         # ---------------------------------- GRAPH STYLE ---------------------------
@@ -364,6 +463,7 @@ class RegressionPlot(wx.Panel):
         # --------------------- SIZER ---------------------------------
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.sizer.Add(self.canvas, 1, wx.EXPAND)
+        self.toolbar = NavigationToolbar(self.canvas)
         self.add_toolbar()
         self.SetSizer(self.sizer)
         self.Fit()
@@ -372,13 +472,13 @@ class RegressionPlot(wx.Panel):
 
     # function to add the toolbar to the bottom of the plot panel
     def add_toolbar(self):
-        self.toolbar = NavigationToolbar(self.canvas)
         self.toolbar.Realize()
         # By adding toolbar in sizer, we are able to put it at the bottom
         # of the frame - so appearance is closer to GTK version.
         self.sizer.Add(self.toolbar, 0, wx.EXPAND)
         # update the axes menu on the toolbar
         self.toolbar.update()
+
     # function to set the labels of the graph form user input
     def label(self, title, xlabel, ylabel):
 
@@ -433,7 +533,7 @@ class RegressionPlot(wx.Panel):
         self.set_best_scale(bestscale)
         self.set_line_annot_pos((int((min(self.get_xr()) + max(self.get_xr())) / 2),
                                  fit_func(int((min(self.get_xr()) + max(self.get_xr())) / 2),
-                                                           *poptbest)))
+                                          *poptbest)))
 
     def linear_fit_plot(self):
         self.plot_fit(CurveFit.linear_data, CurveFit.linear_fit, 'y = {}x + {}')
@@ -483,84 +583,193 @@ class RegressionPlot(wx.Panel):
     def gaussian_fit_plot(self):
         self.plot_fit(CurveFit.gauss_data, CurveFit.gauss_fit, 'y = {}*exp(-1*((x-{})^2)/({}^2)) + {}')
 
-    def get_axes(self): return self.axes
-    def get_x(self): return self.x
-    def get_y(self): return self.y
-    def get_fig(self): return self.figure
-    def get_canvas(self): return self.canvas
-    def get_saved(self): return self.isSaved
-    def set_saved(self, s): self.isSaved = s
-    def get_isLegend(self): return self.isLegend
-    def set_isLegend(self, s): self.isLegend = s
-    def get_x_plot(self): return self.x_plot
-    def get_titlelabel(self): return self.titlelabel
-    def set_titlelabel(self, title): self.titlelabel = title
-    def get_xlabel(self): return self.xlabel
-    def set_xlabel(self, xlabel): self.xlabel = xlabel
-    def get_ylabel(self): return self.ylabel
-    def set_ylabel(self, ylabel): self.ylabel = ylabel
-    def get_legendLoc(self): return self.legendLoc
-    def set_legendLoc(self, loc): self.legendLoc = loc
-    def get_xr(self): return self.xr
-    def set_yr(self, yr): self.yr = yr
-    def get_best_r_squared(self): return self.best_r_squared
-    def set_best_r_squared(self, r2): self.best_r_squared = r2
-    def get_best_scale(self): return self.best_scale
-    def set_best_scale(self, scl): self.best_scale = scl
-    def get_yr(self): return self.yr
-    def get_curve(self): return self.curve
-    def set_curve(self, curve): self.curve = curve
-    def get_cvf(self): return self.cvf
-    def get_scatter_plot(self): return self.scatter_plot
-    def set_scatter_plot(self, scatter): self.scatter_plot = scatter
-    def get_annot(self): return self.annot
-    def set_annot(self, a): self.annot = a
-    def get_annot_line(self): return self.line_annot
-    def set_annot_line(self, a): self.line_annot = a
-    def get_line_annot_pos(self): return self.line_annot_pos
-    def set_line_annot_pos(self, pos): self.line_annot_pos = pos
-    def get_dataColor(self): return self.dataColor
-    def set_dataColor(self, color): self.dataColor = color
-    def get_lineColor(self): return self.lineColor
-    def set_lineColor(self, color): self.lineColor = color
-    def get_dataSymbol(self): return self.dataSymbol
-    def set_dataSymbol(self, symbol): self.dataSymbol = symbol
-    def get_dataSymbolSize(self): return self.dataSymbolSize
-    def set_dataSymbolSize(self, size): self.dataSymbolSize = size
-    def get_legendText(self): return self.legend_text
-    def set_legendText(self, txt): self.legend_text = txt
-    def get_mn(self): return self.mn
-    def get_mx(self): return self.mx
-    def get_wb(self): return self.workbook
-    def get_swb(self): return self.swb
-    def get_tree_menu(self): return self.tree_menu
-    def get_popt(self): return self.popt
-    def set_popt(self, popt): self.popt = popt
+    def get_axes(self):
+        return self.axes
+
+    def get_x(self):
+        return self.x
+
+    def get_y(self):
+        return self.y
+
+    def get_fig(self):
+        return self.figure
+
+    def get_canvas(self):
+        return self.canvas
+
+    def get_saved(self):
+        return self.isSaved
+
+    def set_saved(self, s):
+        self.isSaved = s
+
+    def get_isLegend(self):
+        return self.isLegend
+
+    def set_isLegend(self, s):
+        self.isLegend = s
+
+    def get_x_plot(self):
+        return self.x_plot
+
+    def get_titlelabel(self):
+        return self.titlelabel
+
+    def set_titlelabel(self, title):
+        self.titlelabel = title
+
+    def get_xlabel(self):
+        return self.xlabel
+
+    def set_xlabel(self, xlabel):
+        self.xlabel = xlabel
+
+    def get_ylabel(self):
+        return self.ylabel
+
+    def set_ylabel(self, ylabel):
+        self.ylabel = ylabel
+
+    def get_legendLoc(self):
+        return self.legendLoc
+
+    def set_legendLoc(self, loc):
+        self.legendLoc = loc
+
+    def get_xr(self):
+        return self.xr
+
+    def set_yr(self, yr):
+        self.yr = yr
+
+    def get_best_r_squared(self):
+        return self.best_r_squared
+
+    def set_best_r_squared(self, r2):
+        self.best_r_squared = r2
+
+    def get_best_scale(self):
+        return self.best_scale
+
+    def set_best_scale(self, scl):
+        self.best_scale = scl
+
+    def get_yr(self):
+        return self.yr
+
+    def get_curve(self):
+        return self.curve
+
+    def set_curve(self, curve):
+        self.curve = curve
+
+    def get_cvf(self):
+        return self.cvf
+
+    def get_scatter_plot(self):
+        return self.scatter_plot
+
+    def set_scatter_plot(self, scatter):
+        self.scatter_plot = scatter
+
+    def get_annot(self):
+        return self.annot
+
+    def set_annot(self, a):
+        self.annot = a
+
+    def get_annot_line(self):
+        return self.line_annot
+
+    def set_annot_line(self, a):
+        self.line_annot = a
+
+    def get_line_annot_pos(self):
+        return self.line_annot_pos
+
+    def set_line_annot_pos(self, pos):
+        self.line_annot_pos = pos
+
+    def get_dataColor(self):
+        return self.dataColor
+
+    def set_dataColor(self, color):
+        self.dataColor = color
+
+    def get_lineColor(self):
+        return self.lineColor
+
+    def set_lineColor(self, color):
+        self.lineColor = color
+
+    def get_dataSymbol(self):
+        return self.dataSymbol
+
+    def set_dataSymbol(self, symbol):
+        self.dataSymbol = symbol
+
+    def get_dataSymbolSize(self):
+        return self.dataSymbolSize
+
+    def set_dataSymbolSize(self, size):
+        self.dataSymbolSize = size
+
+    def get_legendText(self):
+        return self.legend_text
+
+    def set_legendText(self, txt):
+        self.legend_text = txt
+
+    def get_mn(self):
+        return self.mn
+
+    def get_mx(self):
+        return self.mx
+
+    def get_wb(self):
+        return self.workbook
+
+    def get_swb(self):
+        return self.swb
+
+    def get_tree_menu(self):
+        return self.tree_menu
+
+    def get_popt(self):
+        return self.popt
+
+    def set_popt(self, popt):
+        self.popt = popt
+
+
 # Class for the Scale by area plot as well as complexity by scale
 # TODO: rename the class name
 class SclbyAreaPlot(wx.Panel):
-
     _X_AXIS_LABEL = "Scale-sensitive multiscale analysis"
 
     def __init__(self, parent, x, y, data):
         # gets the Panel properties
-        wx.Panel.__init__(self, parent, size=wx.Size(640, 530), style=wx.SIMPLE_BORDER)
-        self.figure = figure()
-        # defines the plot not entirely sure what the numbers in add_subplot mean
-        self.axes = self.get_fig().add_subplot(111)
-        self.canvas = FigureCanvas(self, -1, self.get_fig())
-        self.Fit()
+        wx.Panel.__init__(self, parent)
+
+        self.data = data
         self.xlin = x
         self.ylin = y
         self.x = []
         self.y = []
         [self.get_x().append(i) for i in x]
         [self.get_y().append(np.array(i)) for i in y]
+
+        self.figure = Figure(tight_layout=False)
+        # https://stackoverflow.com/questions/6374272/how-to-make-a-figurecanvas-fit-a-panel
+        # Last two values state that width and height will expand to fit panel (similar to how the sizer.Add()
+        # values work)
+        self.axes = self.figure.add_subplot(111)
+        self.canvas = FigureCanvas(self, -1, self.get_fig())
+
         self.isSaved = False
         self.isLegend = False
         self.legendLoc = 'best'
-
-        self.data = data
 
         # -------------------------- GRAPH LABELS ---------------------------------------
         # self.titlelabel = 'Title'
@@ -575,6 +784,7 @@ class SclbyAreaPlot(wx.Panel):
                                               bbox=dict(boxstyle="round", fc="w"),
                                               arrowprops=dict(arrowstyle="->"))
         self.get_annot().set_visible(False)
+
         # this only currently works for when there is one curve on the area -scale plot or complexoty scale plot
         def update_annot(ind):
 
@@ -584,9 +794,14 @@ class SclbyAreaPlot(wx.Panel):
                 text = "{}, {}".format(pos[0], np.round_(np.power(10, pos[1]), 4))
                 self.get_annot().set_text(text)
                 self.get_annot().get_bbox_patch().set_alpha(0.4)
+
         def hover(event):
             vis = self.get_annot().get_visible()
             if event.inaxes == self.get_axes():
+
+                if self.get_scatter_plot() is None:
+                    return  # Ignore hover event if scatter plot is uninitialized
+
                 for plot in self.get_scatter_plot():
                     cont, ind = plot.contains(event)
                     if cont:
@@ -597,13 +812,18 @@ class SclbyAreaPlot(wx.Panel):
                         if vis:
                             self.get_annot().set_visible(False)
                             self.get_fig().canvas.draw_idle()
+
         self.get_fig().canvas.mpl_connect("motion_notify_event", hover)
-        # --------------------- SIZER ---------------------------------
+
+        # ----------------- ADD TOOLBAR -------------------------------
         self.sizer = wx.BoxSizer(wx.VERTICAL)
-        self.sizer.Add(self.canvas, 1, wx.EXPAND)
         self.add_toolbar()
+
+        # --------------------- SIZER ---------------------------------
+        self.sizer.Add(self.canvas, 1, wx.LEFT | wx.TOP | wx.GROW)
         self.SetSizer(self.sizer)
         self.Fit()
+
     # add toolbar to bottom of plot
     def add_toolbar(self):
         self.toolbar = NavigationToolbar(self.canvas)
@@ -613,20 +833,22 @@ class SclbyAreaPlot(wx.Panel):
         self.sizer.Add(self.toolbar, 0, wx.EXPAND)
         # update the axes menu on the toolbar
         self.toolbar.update()
+
     # add labels to graph based on user inputs
     def label(self, title, xlabel, ylabel):
-
         # labels the title, ylabel, xlabel of the regression plot from user input
         self.get_axes().set_title(title)
         self.get_axes().set_xlabel(xlabel)
         self.get_axes().set_ylabel(ylabel)
         # updates the regression plot's label
         self.get_canvas().draw()
+
     # function to create range of floats.
     def frange(self, x, y, jump):
         while x < y:
             yield x
             x += jump
+
     # draws a scatter plot of the area scale plot
     def draw_plot(self):
 
@@ -637,10 +859,13 @@ class SclbyAreaPlot(wx.Panel):
 
         newy = []
 
-        for yvals in self.get_y():
-            # plot log of y-values
-            scatterList.append(self.get_axes().scatter(self.get_x(), np.log10(yvals), marker="o", s=8))
-            newy.append(np.log10(yvals))
+        try:
+            for yvals in self.get_y():
+                # plot log of y-values
+                scatterList.append(self.get_axes().scatter(self.get_x(), np.log10(yvals), marker="o", s=8))
+                newy.append(np.log10(yvals))
+        except RuntimeWarning as e:
+            __main__.errorMsg("Plot Error", "Y-values could not be placed on a log scale.")
 
         self.set_y(newy)
         self.get_axes().set_title('')
@@ -667,53 +892,100 @@ class SclbyAreaPlot(wx.Panel):
 
         self.get_axes().set_yticklabels(ynew)
         self.get_canvas().draw()
+
     # draws a scatter plot of the complexity scale plot
     # tick labels are messed up on complexity scale graph
     def draw_complexity_plot(self):
 
-        scatterList = []
+        scatter_list = []
 
         # self.get_axes().locator_params(axis='x', nbins=8)
 
         for yvals in self.get_y():
             # Prevent negative input into log10
-            if np.any(yvals < 0) :
+            if np.any(yvals < 0):
                 raise Exception("Y-values cannot be negative because of log scale.")
             # scatter log of complexity values
-            scatterList.append(self.get_axes().scatter(self.get_x(), np.log10(yvals), marker="o", s=8))
+            scatter_list.append(self.get_axes().scatter(self.get_x(), np.log10(yvals), marker="o", s=8))
 
         self.get_axes().set_title('')
         self.get_axes().set_xlabel(SclbyAreaPlot._X_AXIS_LABEL)
         self.get_axes().set_ylabel(self.data.get_row_labels()[0][1] + ' log10 scale')
-        self.set_scatter_plot(scatterList)
+        self.set_scatter_plot(scatter_list)
         # set x-axis to log scale
         self.get_axes().set_xscale('log')
 
         self.get_canvas().draw()
 
-    def get_axes(self): return self.axes
-    def get_x(self): return self.x
-    def get_y(self): return self.y
-    def set_y(self, y): self.y = y
-    def get_fig(self): return self.figure
-    def get_canvas(self): return self.canvas
-    def get_saved(self): return self.isSaved
-    def set_saved(self, s): self.isSaved = s
-    def get_isLegend(self): return self.isLegend
-    def set_isLegend(self, s): self.isLegend = s
-    def get_titlelabel(self): return self.titlelabel
-    def set_titlelabel(self, title): self.titlelabel = title
-    def get_xlabel(self): return self.xlabel
-    def set_xlabel(self, xlabel): self.xlabel = xlabel
-    def get_ylabel(self): return self.ylabel
-    def set_ylabel(self, ylabel): self.ylabel = ylabel
-    def get_legendLoc(self): return self.legendLoc
-    def set_legendLoc(self, loc): self.legendLoc = loc
-    def get_scatter_plot(self): return self.scatter_plot
-    def set_scatter_plot(self, scatter): self.scatter_plot = scatter
-    def get_xlin(self): return self.xlin
-    def get_ylin(self): return self.ylin
-    def get_annot(self): return self.annot
+    def get_axes(self):
+        return self.axes
+
+    def get_x(self):
+        return self.x
+
+    def get_y(self):
+        return self.y
+
+    def set_y(self, y):
+        self.y = y
+
+    def get_fig(self):
+        return self.figure
+
+    def get_canvas(self):
+        return self.canvas
+
+    def get_saved(self):
+        return self.isSaved
+
+    def set_saved(self, s):
+        self.isSaved = s
+
+    def get_isLegend(self):
+        return self.isLegend
+
+    def set_isLegend(self, s):
+        self.isLegend = s
+
+    def get_titlelabel(self):
+        return self.titlelabel
+
+    def set_titlelabel(self, title):
+        self.titlelabel = title
+
+    def get_xlabel(self):
+        return self.xlabel
+
+    def set_xlabel(self, xlabel):
+        self.xlabel = xlabel
+
+    def get_ylabel(self):
+        return self.ylabel
+
+    def set_ylabel(self, ylabel):
+        self.ylabel = ylabel
+
+    def get_legendLoc(self):
+        return self.legendLoc
+
+    def set_legendLoc(self, loc):
+        self.legendLoc = loc
+
+    def get_scatter_plot(self):
+        return self.scatter_plot
+
+    def set_scatter_plot(self, scatter):
+        self.scatter_plot = scatter
+
+    def get_xlin(self):
+        return self.xlin
+
+    def get_ylin(self):
+        return self.ylin
+
+    def get_annot(self):
+        return self.annot
+
 
 # --------------------- SCALE SELECTED REGRESSION PLOT ----------------------------------
 # Class to produce the regression plots when selecting the R^2 values on the R^2 by scale plot
@@ -743,7 +1015,7 @@ class RegressionSelectPlot(wx.Panel):
         # ---- Regression line ---
         self.mn = np.min(self.get_xr())
         self.mx = np.max(self.get_xr())
-        self.x_plot = np.linspace(self.mn, self.mx, num=5*len(self.get_xr()))
+        self.x_plot = np.linspace(self.mn, self.mx, num=5 * len(self.get_xr()))
         # -------------------------- GRAPH LABELS ---------------------------------------
         self.titlelabel = 'Relative Area Regression'
         self.xlabel = ''
@@ -762,13 +1034,13 @@ class RegressionSelectPlot(wx.Panel):
                                               arrowprops=dict(arrowstyle="->"))
         self.get_annot().set_visible(False)
 
-        self.line_annot = self.get_axes().annotate("", xy=(0,0),
-                                                   xytext=(0.5,0.5), textcoords="figure fraction",
+        self.line_annot = self.get_axes().annotate("", xy=(0, 0),
+                                                   xytext=(0.5, 0.5), textcoords="figure fraction",
                                                    bbox=dict(boxstyle="round", fc="w"),
                                                    arrowprops=dict(arrowstyle="->"))
         self.line_annot.set_visible(False)
         self.line_annot.draggable()
-        self.line_annot_pos = (0,0)
+        self.line_annot_pos = (0, 0)
 
         def update_annot(ind):
 
@@ -777,6 +1049,7 @@ class RegressionSelectPlot(wx.Panel):
             text = "Point \n{}, {}".format(pos[0], pos[1])
             self.get_annot().set_text(text)
             self.get_annot().get_bbox_patch().set_alpha(0.4)
+
         def hover(event):
             vis = self.get_annot().get_visible()
             if event.inaxes == self.get_axes():
@@ -789,6 +1062,7 @@ class RegressionSelectPlot(wx.Panel):
                     if vis:
                         self.get_annot().set_visible(False)
                         self.get_fig().canvas.draw_idle()
+
         self.get_fig().canvas.mpl_connect("motion_notify_event", hover)
 
         self.pos = []
@@ -806,6 +1080,7 @@ class RegressionSelectPlot(wx.Panel):
         self.add_toolbar()
         self.SetSizer(self.sizer)
         self.Fit()
+
     # function to add toolbar to plot
     def add_toolbar(self):
         self.toolbar = NavigationToolbar(self.canvas)
@@ -815,6 +1090,7 @@ class RegressionSelectPlot(wx.Panel):
         self.sizer.Add(self.toolbar, 0, wx.EXPAND)
         # update the axes menu on the toolbar
         self.toolbar.update()
+
     # function to set plot labels
     def label(self, title, xlabel, ylabel):
 
@@ -838,16 +1114,18 @@ class RegressionSelectPlot(wx.Panel):
 
         self.set_curve(fit_func(np.array(self.get_x_plot()), *popt))
         # scatter plot
-        self.set_scatter_plot(self.get_axes().scatter(np.array(self.get_xr()), self.get_yr(), s=self.get_dataSymbolSize(),
-                                                      marker=self.get_dataSymbol(),
-                                                      color=self.get_dataColor()))
+        self.set_scatter_plot(
+            self.get_axes().scatter(np.array(self.get_xr()), self.get_yr(), s=self.get_dataSymbolSize(),
+                                    marker=self.get_dataSymbol(),
+                                    color=self.get_dataColor()))
         # linear fit line
-        self.get_axes().plot(self.get_x_plot(), fit_func(np.array(self.get_x_plot()), *popt), '-', color=self.get_lineColor())
+        self.get_axes().plot(self.get_x_plot(), fit_func(np.array(self.get_x_plot()), *popt), '-',
+                             color=self.get_lineColor())
         self.get_canvas().draw()
         self.set_best_r_squared(r2)
         self.set_best_scale(self.get_scale())
-        self.set_line_annot_pos((int((min(self.get_xr()) + max(self.get_xr()))/2),
-                                 fit_func(int((min(self.get_xr()) + max(self.get_xr()))/2), *popt)))
+        self.set_line_annot_pos((int((min(self.get_xr()) + max(self.get_xr())) / 2),
+                                 fit_func(int((min(self.get_xr()) + max(self.get_xr())) / 2), *popt)))
 
     def linear_fit_plot(self):
         self.plot_fit(CurveFit.linear_data, CurveFit.linear_fit, 'y = {}x + {}')
@@ -897,58 +1175,159 @@ class RegressionSelectPlot(wx.Panel):
     def gaussian_fit_plot(self):
         self.plot_fit(CurveFit.gauss_data, CurveFit.gauss_fit, 'y = {}*exp(-1*((x-{})^2)/({}^2)) + {}')
 
-    def get_axes(self): return self.axes
-    def get_x(self): return self.x
+    def get_axes(self):
+        return self.axes
+
+    def get_x(self):
+        return self.x
+
     # def get_y(self): return self.y
-    def get_fig(self): return self.figure
-    def get_canvas(self): return self.canvas
-    def get_saved(self): return self.isSaved
-    def set_saved(self, s): self.isSaved = s
-    def get_isLegend(self): return self.isLegend
-    def set_isLegend(self, s): self.isLegend = s
-    def get_x_plot(self): return self.x_plot
-    def get_titlelabel(self): return self.titlelabel
-    def set_titlelabel(self, title): self.titlelabel = title
-    def get_xlabel(self): return self.xlabel
-    def set_xlabel(self, xlabel): self.xlabel = xlabel
-    def get_ylabel(self): return self.ylabel
-    def set_ylabel(self, ylabel): self.ylabel = ylabel
-    def get_legendLoc(self): return self.legendLoc
-    def set_legendLoc(self, loc): self.legendLoc = loc
-    def get_xr(self): return self.xr
-    def set_yr(self, yr): self.yr = yr
-    def get_best_r_squared(self): return self.best_r_squared
-    def set_best_r_squared(self, r2): self.best_r_squared = r2
-    def get_best_scale(self): return self.best_scale
-    def set_best_scale(self, scl): self.best_scale = scl
-    def get_yr(self): return self.yr
-    def get_curve(self): return self.curve
-    def set_curve(self, curve): self.curve = curve
-    def get_scatter_plot(self): return self.scatter_plot
-    def set_scatter_plot(self, scatter): self.scatter_plot = scatter
-    def get_annot(self): return self.annot
-    def set_annot(self, a): self.annot = a
-    def get_annot_line(self): return self.line_annot
-    def set_annot_line(self, a): self.line_annot = a
-    def get_line_annot_pos(self): return self.line_annot_pos
-    def set_line_annot_pos(self, pos): self.line_annot_pos = pos
-    def get_pos(self): return self.pos
-    def set_pos(self, pos): self.pos = pos
-    def get_scale(self): return self.scale
-    def get_dataColor(self): return self.dataColor
-    def set_dataColor(self, color): self.dataColor = color
-    def get_lineColor(self): return self.lineColor
-    def set_lineColor(self, color): self.lineColor = color
-    def get_dataSymbol(self): return self.dataSymbol
-    def set_dataSymbol(self, symbol): self.dataSymbol = symbol
-    def get_dataSymbolSize(self): return self.dataSymbolSize
-    def set_dataSymbolSize(self, size): self.dataSymbolSize = size
-    def get_legendText(self): return self.legend_text
-    def set_legendText(self, txt): self.legend_text = txt
-    def get_mn(self): return self.mn
-    def get_mx(self): return self.mx
-    def get_popt(self): return self.popt
-    def set_popt(self, popt): self.popt = popt
+    def get_fig(self):
+        return self.figure
+
+    def get_canvas(self):
+        return self.canvas
+
+    def get_saved(self):
+        return self.isSaved
+
+    def set_saved(self, s):
+        self.isSaved = s
+
+    def get_isLegend(self):
+        return self.isLegend
+
+    def set_isLegend(self, s):
+        self.isLegend = s
+
+    def get_x_plot(self):
+        return self.x_plot
+
+    def get_titlelabel(self):
+        return self.titlelabel
+
+    def set_titlelabel(self, title):
+        self.titlelabel = title
+
+    def get_xlabel(self):
+        return self.xlabel
+
+    def set_xlabel(self, xlabel):
+        self.xlabel = xlabel
+
+    def get_ylabel(self):
+        return self.ylabel
+
+    def set_ylabel(self, ylabel):
+        self.ylabel = ylabel
+
+    def get_legendLoc(self):
+        return self.legendLoc
+
+    def set_legendLoc(self, loc):
+        self.legendLoc = loc
+
+    def get_xr(self):
+        return self.xr
+
+    def set_yr(self, yr):
+        self.yr = yr
+
+    def get_best_r_squared(self):
+        return self.best_r_squared
+
+    def set_best_r_squared(self, r2):
+        self.best_r_squared = r2
+
+    def get_best_scale(self):
+        return self.best_scale
+
+    def set_best_scale(self, scl):
+        self.best_scale = scl
+
+    def get_yr(self):
+        return self.yr
+
+    def get_curve(self):
+        return self.curve
+
+    def set_curve(self, curve):
+        self.curve = curve
+
+    def get_scatter_plot(self):
+        return self.scatter_plot
+
+    def set_scatter_plot(self, scatter):
+        self.scatter_plot = scatter
+
+    def get_annot(self):
+        return self.annot
+
+    def set_annot(self, a):
+        self.annot = a
+
+    def get_annot_line(self):
+        return self.line_annot
+
+    def set_annot_line(self, a):
+        self.line_annot = a
+
+    def get_line_annot_pos(self):
+        return self.line_annot_pos
+
+    def set_line_annot_pos(self, pos):
+        self.line_annot_pos = pos
+
+    def get_pos(self):
+        return self.pos
+
+    def set_pos(self, pos):
+        self.pos = pos
+
+    def get_scale(self):
+        return self.scale
+
+    def get_dataColor(self):
+        return self.dataColor
+
+    def set_dataColor(self, color):
+        self.dataColor = color
+
+    def get_lineColor(self):
+        return self.lineColor
+
+    def set_lineColor(self, color):
+        self.lineColor = color
+
+    def get_dataSymbol(self):
+        return self.dataSymbol
+
+    def set_dataSymbol(self, symbol):
+        self.dataSymbol = symbol
+
+    def get_dataSymbolSize(self):
+        return self.dataSymbolSize
+
+    def set_dataSymbolSize(self, size):
+        self.dataSymbolSize = size
+
+    def get_legendText(self):
+        return self.legend_text
+
+    def set_legendText(self, txt):
+        self.legend_text = txt
+
+    def get_mn(self):
+        return self.mn
+
+    def get_mx(self):
+        return self.mx
+
+    def get_popt(self):
+        return self.popt
+
+    def set_popt(self, popt):
+        self.popt = popt
 
 
 # Dialog for the Regression select plot which contains the graph and menu for graph options
@@ -999,6 +1378,7 @@ class RegressionSelectDialog(wx.Frame):
         # ------------------------------ GRAPH ANNOTATION -----------------------------------------------
         self.ann = []
         self.legend_text = ['line', 'data']
+
     # function to save image of the plot
     def OnSave(self, event):
         # dialog to save a file
@@ -1018,10 +1398,12 @@ class RegressionSelectDialog(wx.Frame):
             return True
         elif result == wx.ID_CANCEL:
             return False
+
     # function to close the dialog
     def OnClose(self, event):
 
         self.Hide()
+
     # function to get labels of user input
     def OnLabel(self, event):
         # gets the current labels
@@ -1039,6 +1421,7 @@ class RegressionSelectDialog(wx.Frame):
 
         # sets the title, xlabel, ylabel of the regression plot to the user inputs
         self.get_graph().label(labelDialog.get_title(), labelDialog.get_xaxis(), labelDialog.get_yaxis())
+
     # function to show the legend on the plot
     def OnLegend(self, event):
         # create the legend dialog
@@ -1065,11 +1448,13 @@ class RegressionSelectDialog(wx.Frame):
                 self.get_graph().set_isLegend(False)
                 self.get_graph().set_legendLoc('')
             self.get_graph().get_canvas().draw()
+
     # function to add the legend to the graph
     def add_legend(self, loc, txt):
         self.get_graph().get_axes().legend(labels=txt, loc=loc)
         self.get_graph().set_isLegend(True)
         self.get_graph().set_legendLoc(loc)
+
     # function to put a grid on the graph
     def OnGrid(self, event):
         # variable to hold the color selected for the grid
@@ -1083,15 +1468,19 @@ class RegressionSelectDialog(wx.Frame):
         gridOn = wx.CheckBox(gridPanel, wx.ID_ANY, label="Grid On", pos=(10, 10))
         gridOff = wx.CheckBox(gridPanel, wx.ID_ANY, label="Grid Off", pos=(80, 10))
 
-        gridTypeTxt = wx.StaticText(gridPanel, -1, 'Style', pos=(10,45))
+        gridTypeTxt = wx.StaticText(gridPanel, -1, 'Style', pos=(10, 45))
         gridColorTxt = wx.StaticText(gridPanel, -1, 'Color', pos=(10, 80))
         # choice selectors to select the style and grid color
         gridType = wx.Choice(gridPanel, wx.ID_ANY, pos=(50, 45), choices=['solid', 'dashed', 'dotted', 'dashdot'])
-        gridColor = wx.Choice(gridPanel, wx.ID_ANY, pos=(50, 80), choices=['black', 'dark grey', 'grey', 'light grey', 'custom...'])
+        gridColor = wx.Choice(gridPanel, wx.ID_ANY, pos=(50, 80),
+                              choices=['black', 'dark grey', 'grey', 'light grey', 'custom...'])
         # the ok button on the dialog
         okbutton = wx.Button(gridPanel, wx.ID_OK, pos=(65, 130))
+
         # get the grid style
-        def OnType(event): return str(gridType.GetString(gridType.GetSelection()))
+        def OnType(event):
+            return str(gridType.GetString(gridType.GetSelection()))
+
         # get the selected color
         def OnColor(event):
             # there are default colors or select custom colors using the color dialog
@@ -1125,7 +1514,7 @@ class RegressionSelectDialog(wx.Frame):
                 else:
 
                     self.get_graph().get_axes().grid(True, linestyle=str(gridType.GetString(gridType.GetSelection())),
-                                                     color='xkcd:'+str(gridColor.GetString(gridColor.GetSelection())))
+                                                     color='xkcd:' + str(gridColor.GetString(gridColor.GetSelection())))
                     self.set_isGrid(True)
             # remove the grid from the graph if off
             if gridOff.IsChecked():
@@ -1133,6 +1522,7 @@ class RegressionSelectDialog(wx.Frame):
                 self.set_isGrid(False)
 
             self.get_graph().get_canvas().draw()
+
     # function to change the symbol and size of the symbol in the scatter plot
     def OnSymbol(self, event):
         # make the symbol dialog
@@ -1143,17 +1533,20 @@ class RegressionSelectDialog(wx.Frame):
             # x = []
             # get the selected symbol and size
             self.get_graph().set_dataSymbol(symbolDialog.get_selectedSymbol())
-            self.get_graph().set_dataSymbolSize(int(symbolDialog.get_sizeChoices()[symbolDialog.get_sizeSelect().GetSelection()]))
+            self.get_graph().set_dataSymbolSize(
+                int(symbolDialog.get_sizeChoices()[symbolDialog.get_sizeSelect().GetSelection()]))
             # clear the axes
             self.get_graph().get_axes().cla()
             # redefine the stuff for annotations
-            self.get_graph().set_annot_line(self.get_graph().get_axes().annotate("", xy=(0,0),
-                                                   xytext=(0.5,0.5), textcoords="figure fraction",
-                                                   bbox=dict(boxstyle="round", fc="w"),
-                                                   arrowprops=dict(arrowstyle="->")))
-            self.get_graph().set_annot(self.get_graph().get_axes().annotate("", xy=(0, 0), xytext=(8, 8), textcoords="figure pixels",
-                                              bbox=dict(boxstyle="round", fc="w"),
-                                              arrowprops=dict(arrowstyle="->")))
+            self.get_graph().set_annot_line(self.get_graph().get_axes().annotate("", xy=(0, 0),
+                                                                                 xytext=(0.5, 0.5),
+                                                                                 textcoords="figure fraction",
+                                                                                 bbox=dict(boxstyle="round", fc="w"),
+                                                                                 arrowprops=dict(arrowstyle="->")))
+            self.get_graph().set_annot(
+                self.get_graph().get_axes().annotate("", xy=(0, 0), xytext=(8, 8), textcoords="figure pixels",
+                                                     bbox=dict(boxstyle="round", fc="w"),
+                                                     arrowprops=dict(arrowstyle="->")))
             self.get_graph().get_annot().set_visible(False)
             self.get_graph().get_annot_line().set_visible(False)
             self.get_graph().get_annot_line().draggable()
@@ -1167,7 +1560,8 @@ class RegressionSelectDialog(wx.Frame):
                                              color=self.get_graph().get_lineColor())
             # if there is a legend redraw it
             if self.get_graph().get_isLegend():
-                self.get_graph().get_axes().legend(labels=self.get_graph().get_legendText(), loc=self.get_graph().get_legendLoc())
+                self.get_graph().get_axes().legend(labels=self.get_graph().get_legendText(),
+                                                   loc=self.get_graph().get_legendLoc())
             # if self.get_annotated():
             #     for i in range(0, len(self.get_graph().get_xr())):
             #         x.append(self.get_graph().get_axes().annotate("("+str(self.get_graph().get_xr()[i]) + "," +
@@ -1186,6 +1580,7 @@ class RegressionSelectDialog(wx.Frame):
                                    self.get_graph().get_xlabel(),
                                    self.get_graph().get_ylabel())
             self.get_graph().get_canvas().draw()
+
     # function to annotate the regression line
     def OnAnnotate(self, event):
 
@@ -1196,7 +1591,8 @@ class RegressionSelectDialog(wx.Frame):
         self.get_graph().get_annot_line().xy = [((mx - mn) / 2.0) + mn, y]
         # show the R^2 value and scale value
         text = 'R^2: ' + str(np.round_(self.get_graph().get_best_r_squared(), 3)) + '\n' + \
-               'Scale: ' + str(self.get_data_scale()[self.get_graph().get_best_scale()]) + '\n' + self.get_graph().get_popt()
+               'Scale: ' + str(
+            self.get_data_scale()[self.get_graph().get_best_scale()]) + '\n' + self.get_graph().get_popt()
         self.get_graph().get_annot_line().set_text(text)
         self.get_graph().get_annot_line().set_fontsize(10)
         self.get_graph().get_annot_line().get_bbox_patch().set_alpha(0.4)
@@ -1207,6 +1603,7 @@ class RegressionSelectDialog(wx.Frame):
         else:
             self.get_graph().get_annot_line().set_visible(True)
             self.get_graph().get_fig().canvas.draw_idle()
+
     # function to set the graph color
     def OnGraphColor(self, event):
         # variable for the color of the line and the data points
@@ -1227,6 +1624,7 @@ class RegressionSelectDialog(wx.Frame):
                               choices=['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'custom...'])
 
         okbutton = wx.Button(graphColorPanel, wx.ID_OK, pos=(65, 130))
+
         # function to get the line color
         def OnLineColor(event):
 
@@ -1243,6 +1641,7 @@ class RegressionSelectDialog(wx.Frame):
                 customLineColor = 'xkcd:' + str(lineColor.GetString(lineColor.GetSelection()))
 
             self.get_graph().set_lineColor(customLineColor)
+
         # function to get the data color
         def OnDataColor(event):
 
@@ -1289,7 +1688,8 @@ class RegressionSelectDialog(wx.Frame):
             self.get_graph().get_axes().plot(self.get_graph().get_x_plot(), self.get_graph().get_curve(), '-',
                                              color=self.get_graph().get_lineColor())
             if self.get_graph().get_isLegend():
-                self.get_graph().get_axes().legend(labels=self.get_graph().get_legendText(), loc=self.get_graph().get_legendLoc())
+                self.get_graph().get_axes().legend(labels=self.get_graph().get_legendText(),
+                                                   loc=self.get_graph().get_legendLoc())
 
             if self.get_isGrid():
                 self.get_graph().get_axes().grid(True)
@@ -1301,18 +1701,42 @@ class RegressionSelectDialog(wx.Frame):
 
             self.get_graph().get_canvas().draw()
 
-    def get_graph(self): return self.graph
-    def get_curve(self): return self.curve
-    def set_curve(self, curve): self.curve = curve
-    def get_annotated(self): return self.annotated
-    def set_annotated(self, ann): self.annotated = ann
-    def get_ann(self): return self.ann
-    def set_ann(self, a): self.ann = a
-    def get_isGrid(self): return self.isGrid
-    def set_isGrid(self, g): self.isGrid = g
-    def get_saved_legend_text(self): return self.legend_text
-    def set_saved_legend_text(self, txt): self.legend_text = txt
-    def get_data_scale(self): return self.data_scale
+    def get_graph(self):
+        return self.graph
+
+    def get_curve(self):
+        return self.curve
+
+    def set_curve(self, curve):
+        self.curve = curve
+
+    def get_annotated(self):
+        return self.annotated
+
+    def set_annotated(self, ann):
+        self.annotated = ann
+
+    def get_ann(self):
+        return self.ann
+
+    def set_ann(self, a):
+        self.ann = a
+
+    def get_isGrid(self):
+        return self.isGrid
+
+    def set_isGrid(self, g):
+        self.isGrid = g
+
+    def get_saved_legend_text(self):
+        return self.legend_text
+
+    def set_saved_legend_text(self, txt):
+        self.legend_text = txt
+
+    def get_data_scale(self):
+        return self.data_scale
+
 
 class HHPlot(wx.Panel):
 
@@ -1343,10 +1767,11 @@ class HHPlot(wx.Panel):
         self.toolbar.update()
 
     def plot(self, x, y):
-
         self.get_axes().scatter(x, y, marker="o", s=8)
         self.get_canvas().draw()
 
     def get_fig(self): return self.figure
+
     def get_axes(self): return self.axes
+
     def get_canvas(self): return self.canvas

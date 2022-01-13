@@ -134,3 +134,6 @@ dmypy.json
 # Visual Studios (VS) Files
 .vs/
 multiscale-stat-env/
+
+# Jetbrains Files
+.idea/

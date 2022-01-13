@@ -1,4 +1,5 @@
 import warnings
+
 warnings.simplefilter("error", RuntimeWarning)
 
 import wx
@@ -11,19 +12,39 @@ from GraphDialogs import LabelDialog
 from GraphDialogs import SymbolDialog
 from GraphDialogs import LegendDialog
 
+import multi_stat_analysis.__main__ as main
+
+
+def _add_to_results(self, curr_plot):
+    self.selected_wb.results.append(curr_plot)
+    self.get_tree_menu().AppendItem(self.get_root(), self.name, data=curr_plot)
+    self.get_tree_menu().Expand(self.get_root())
+
+
+class FTestException(Exception):
+    def __init__(self, msg):
+        super().__init__(self, msg)
+
+
 # class for the dialog that performs the F-test
 class FtestDialog(wx.Dialog):
     # this is all just GUI stuff
-    def __init__(self, parent, data, errtext, tree_menu, root):
-        wx.Dialog.__init__(self, parent, wx.ID_ANY, "F-test", size=(840, 680))
+    def __init__(self, parent, data, tree_menu, root, wb):
+        wx.Dialog.__init__(self, parent, wx.ID_ANY, "F-test", size=(840, 450))
 
         self.parent = parent
         self.tree_menu = tree_menu
         self.root = root
+        self.selected_wb = wb
 
         self.panel = wx.Panel(self, wx.ID_ANY)
         self.data = data
-        self.error_log = errtext
+
+        self.name = "F-test Results"
+        self.name_txt = wx.StaticText(self.panel, wx.ID_ANY, 'Results Name: ', pos=(180, 45))
+        self.name_box = wx.TextCtrl(self.panel, wx.ID_ANY,
+                                    value=self.name,
+                                    pos=(275, 42), size=(300, 20))
 
         # self.hyp_box = wx.StaticBox(self.panel, wx.ID_ANY, 'Hypotheses', pos=(20,20), size=(600, 80))
         # self.hyp0 = wx.StaticText(self.hyp_box, wx.ID_ANY, "H0: σ1^2 = σ2^2", pos=(15,25))
@@ -63,159 +84,167 @@ class FtestDialog(wx.Dialog):
         self.range_min = ''
         self.range_max = ''
 
-        self.results_box = wx.StaticBox(self.panel, wx.ID_ANY, 'Results', pos=(20, 375), size=(780, 200))
-        self.results_txt = wx.TextCtrl(self.results_box, pos=(15,20), size=(750, 170), style=wx.TE_READONLY | wx.TE_MULTILINE)
-        self.results_txt.SetBackgroundColour('#f0f0f0')
-
-        self.helpbutton = wx.Button(self.panel, wx.ID_HELP, pos=(20, 600))
-        self.okbutton = wx.Button(self.panel, wx.ID_OK, "OK", pos=(630, 600))
+        self.helpbutton = wx.Button(self.panel, wx.ID_HELP, pos=(20, 375))
+        self.okbutton = wx.Button(self.panel, wx.ID_OK, "OK", pos=(630, 375))
         self.Bind(wx.EVT_BUTTON, self.OnOK, self.okbutton)
-        self.cancelbutton = wx.Button(self.panel, wx.ID_CANCEL, "Close", pos=(720, 600))
+        self.cancelbutton = wx.Button(self.panel, wx.ID_CANCEL, "Close", pos=(720, 375))
         self.panel.Fit()
         self.Layout()
 
         self.flist = []
         self.res_list = []
+
     # when pressing the OK button
     def OnOK(self, event):
-        try:
-            self.get_results_txt().Clear()
-            # self.OnTypeSelect()
-            # self.OnTailsSelect()
-            self.OnRangeSelect()
-            self.set_flist([])
-            self.set_res_list([])
+        # self.OnTypeSelect()
+        # self.OnTailsSelect()
+        self.OnRangeSelect()
+        self.set_flist([])
+        self.set_res_list([])
 
-            d = []
-            # Used as confidence level (percentage) as a function of scale (collected from means square ratio)
-            alpha = float(self.get_selectedAlpha())
-            # default tails for the f-test this is a statistics thing which I figured wasnt a big deal right now
-            # code is commented out but this can be selected by the user
-            # typ = self.get_selectedType()
-            tails = 'two (σ1 = σ2)'
-            outlier = self.get_selectedOutlier()
-            # the following code is to perform the F-test on every scale if there is more than one data set selected in the
-            # data selection area. If there is only one in each an F-test will be performed to compare all of the relative areas
-            # of the data set.
-            # TODO: Confirm if surface is being split for only two surfaces (#74)
-            if len(self.get_group_selection().get_group1_choices()) == 1 and len(self.get_group_selection().get_group2_choices()) == 1:
+        d = []
+        # Used as confidence level (percentage) as a function of scale (collected from means square ratio)
+        alpha = float(self.get_selectedAlpha())
+        # default tails for the f-test this is a statistics thing which I figured wasnt a big deal right now
+        # code is commented out but this can be selected by the user
+        # typ = self.get_selectedType()
+        tails = 'two (σ1 = σ2)'
+        outlier = self.get_selectedOutlier()
+        # the following code is to perform the F-test on every scale if there is more than one data set selected in the
+        # data selection area. If there is only one in each an F-test will be performed to compare all of the relative areas
+        # of the data set.
+        # TODO: Confirm if surface is being split for only two surfaces (#74)
+        if len(self.get_group_selection().get_group1_choices()) == 1 and len(self.get_group_selection().get_group2_choices()) == 1:
 
-                d = self.get_f_data1()
+            d = self.get_f_data1()
 
-                # print(self.data.get_results_scale()[self.data.get_results_scale().index(float(self.get_range_min())):
-                #       self.data.get_results_scale().index(float(self.get_range_max()))+1])
+            # print(self.data.get_results_scale()[self.data.get_results_scale().index(float(self.get_range_min())):
+            #       self.data.get_results_scale().index(float(self.get_range_max()))+1])
 
-                if tails == 'two (σ1 = σ2)':
-                    self.F_TwoTail(alpha, d, len(d))
-                if tails == 'left (σ1 ≥ σ2)':
-                    self.F_LeftTail(alpha, d, len(d))
-                if tails == 'right (σ1 ≤ σ2)':
-                    self.F_RightTail(alpha, d, len(d))
+            if tails == 'two (σ1 = σ2)':
+                self.F_TwoTail(alpha, d, len(d))
+            if tails == 'left (σ1 ≥ σ2)':
+                self.F_LeftTail(alpha, d, len(d))
+            if tails == 'right (σ1 ≤ σ2)':
+                self.F_RightTail(alpha, d, len(d))
 
-            elif 1 < len(self.get_group_selection().get_group1_choices()) == len(self.get_group_selection().get_group2_choices()) and \
-                    len(self.get_group_selection().get_group2_choices()) > 1:
+        elif 1 < len(self.get_group_selection().get_group1_choices()) == len(self.get_group_selection().get_group2_choices()) and \
+                len(self.get_group_selection().get_group2_choices()) > 1:
 
-                d = self.get_f_data2()
+            d = self.get_f_data2()
 
-                if tails == 'two (σ1 = σ2)':
-                    for dset in d:
-                        self.F_TwoTail(alpha, dset, len(d))
+            if tails == 'two (σ1 = σ2)':
+                for dset in d:
+                    self.F_TwoTail(alpha, dset, len(d))
 
-                    if outlier != '':
-                        for i in self.get_flist():
+                if outlier != '':
+                    for i in self.get_flist():
 
-                            if i > float(outlier):
+                        if i > float(outlier):
 
-                                index = self.get_flist().index(i)
-                                self.get_flist().insert(index, 0)
-                                self.get_flist().remove(i)
+                            index = self.get_flist().index(i)
+                            self.get_flist().insert(index, 0)
+                            self.get_flist().remove(i)
 
-                    x = np.array(self.data.get_results_scale()[self.data.get_results_scale().index(float(self.get_range_min())):
-                                                            self.data.get_results_scale().index(float(self.get_range_max()))+1])
+                x = np.array(self.data.get_results_scale()[self.data.get_results_scale().index(float(self.get_range_min())):
+                                                           self.data.get_results_scale().index(
+                                                               float(self.get_range_max())) + 1])
 
-                    plot = ScatterDialog(self.get_parent(), 'Two Tail F-test Results', x,
-                                         self.get_flist(), self.get_tree_menu(), self.get_root(), 'F-Value by Scale',
-                                         'Scale (um^2)', 'F-Value', self.data, self.get_res_list())
-                    plot.graphmenu.Remove(plot.annotate)
-                    statsmenu = plot.menuBar.FindMenu('Statistics')
-                    if statsmenu >= 0:
-                        plot.menuBar.Remove(statsmenu)
-                    plot.get_graph().draw_scatter()
-                    self.get_tree_menu().AppendItem(self.get_root(), "Two Tail F-test Results", data=plot)
-                    self.get_results_txt().AppendText('See graph.')
-                if tails == 'left (σ1 ≥ σ2)':
-                    for dset in d:
-                        self.F_LeftTail(alpha, dset, len(d))
+                plot = ScatterDialog(self.get_parent(), 'Two Tail F-test Results', x,
+                                     self.get_flist(), self.get_tree_menu(), self.get_root(), 'F-Value by Scale',
+                                     'Scale (um^2)', 'F-Value', self.data, self.get_res_list())
+                plot.graphmenu.Remove(plot.annotate)
+                statsmenu = plot.menuBar.FindMenu('Statistics')
+                if statsmenu >= 0:
+                    plot.menuBar.Remove(statsmenu)
+                plot.get_graph().draw_scatter()
 
-                    if outlier != '':
-                        for i in self.get_flist():
+                self.name = self.name_box.GetValue()
 
-                            if i > float(outlier):
+                if self.name in [result.name for result in self.selected_wb.results]:
+                    raise TTestException("Result with this name already exists under this workbook.")
 
-                                index = self.get_flist().index(i)
-                                self.get_flist().insert(index, 0)
-                                self.get_flist().remove(i)
+                _add_to_results(self, plot)
+                self.Close()
+            if tails == 'left (σ1 ≥ σ2)':
+                for dset in d:
+                    self.F_LeftTail(alpha, dset, len(d))
 
-                    # needs log plot
-                    x = np.array(self.data.get_results_scale()[
-                                        self.data.get_results_scale().index(float(self.get_range_min())):
-                                        self.data.get_results_scale().index(float(self.get_range_max())) + 1])
+                if outlier != '':
+                    for i in self.get_flist():
 
-                    plot = ScatterDialog(self.get_parent(), 'Left Tail F-test Results', x,
-                                         self.get_flist(), self.get_tree_menu(), self.get_root(), 'F-Value by Scale',
-                                         'Scale (um^2)', 'F-Value', self.data, self.get_res_list())
-                    plot.statsmenu.Remove(plot.confidence)
-                    plot.get_graph().draw_scatter()
-                    self.get_tree_menu().AppendItem(self.get_root(), "Left Tail F-test Results", data=plot)
-                    self.get_results_txt().AppendText('See graph.')
-                if tails == 'right (σ1 ≤ σ2)':
-                    for dset in d:
-                        self.F_RightTail(alpha, dset, len(d))
+                        if i > float(outlier):
 
-                    if outlier != '':
-                        for i in self.get_flist():
+                            index = self.get_flist().index(i)
+                            self.get_flist().insert(index, 0)
+                            self.get_flist().remove(i)
 
-                            if i > float(outlier):
+                # needs log plot
+                x = np.array(self.data.get_results_scale()[
+                             self.data.get_results_scale().index(float(self.get_range_min())):
+                             self.data.get_results_scale().index(float(self.get_range_max())) + 1])
 
-                                index = self.get_flist().index(i)
-                                self.get_flist().insert(index, 0)
-                                self.get_flist().remove(i)
-                    # needs log plot
-                    x = np.array(self.data.get_results_scale()[
-                                        self.data.get_results_scale().index(float(self.get_range_min())):
-                                        self.data.get_results_scale().index(float(self.get_range_max())) + 1])
+                plot = ScatterDialog(self.get_parent(), 'Left Tail F-test Results', x,
+                                     self.get_flist(), self.get_tree_menu(), self.get_root(), 'F-Value by Scale',
+                                     'Scale (um^2)', 'F-Value', self.data, self.get_res_list())
+                plot.statsmenu.Remove(plot.confidence)
+                plot.get_graph().draw_scatter()
 
-                    plot = ScatterDialog(self.get_parent(), 'Right Tail F-test Results', x,
-                                         self.get_flist(), self.get_tree_menu(), self.get_root(), 'F-Value by Scale',
-                                         'Scale (um^2)', 'F-Value', self.data, self.get_res_list())
-                    plot.get_graph().draw_scatter()
-                    self.get_tree_menu().AppendItem(self.get_root(), "Right Tail F-test Results", data=plot)
-                    self.get_results_txt().AppendText('See graph.')
-            else:
+                self.name = self.name_box.GetValue()
 
-                self.get_errlog().AppendText('F-test: Groups must be the same size \n')
-        except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning) as e:
-            self.error_log.AppendText("F-test: " + str(e) + '\n')
+                if self.name in [result.name for result in self.selected_wb.results]:
+                    raise TTestException("Result with this name already exists under this workbook.")
+
+                _add_to_results(self, plot)
+                self.Close()
+            if tails == 'right (σ1 ≤ σ2)':
+                for dset in d:
+                    self.F_RightTail(alpha, dset, len(d))
+
+                if outlier != '':
+                    for i in self.get_flist():
+
+                        if i > float(outlier):
+
+                            index = self.get_flist().index(i)
+                            self.get_flist().insert(index, 0)
+                            self.get_flist().remove(i)
+                # needs log plot
+                x = np.array(self.data.get_results_scale()[
+                             self.data.get_results_scale().index(float(self.get_range_min())):
+                             self.data.get_results_scale().index(float(self.get_range_max())) + 1])
+
+                plot = ScatterDialog(self.get_parent(), 'Right Tail F-test Results', x,
+                                     self.get_flist(), self.get_tree_menu(), self.get_root(), 'F-Value by Scale',
+                                     'Scale (um^2)', 'F-Value', self.data, self.get_res_list())
+                plot.get_graph().draw_scatter()
+
+                self.name = self.name_box.GetValue()
+
+                if self.name in [result.name for result in self.selected_wb.results]:
+                    raise TTestException("Result with this name already exists under this workbook.")
+
+                _add_to_results(self, plot.get_graph())
+                self.Close()
+        else:
+            raise FTestException('F-test: Groups must be the same size')
 
     # def OnTailsSelect(self):
     #     self.set_selectedTails(self.get_tails_choices()[self.get_tails_select().GetSelection()])
 
     # when selecting the alpha value
     def OnAlphaSelect(self, event):
-        try:
             self.set_selectedAlpha(float(self.alpha_select.GetValue()))
-        except ValueError as e:
-            self.get_errlog().AppendText("Alpha: " + str(e) + '\n')
+
     # when selecting the range of scales to perform the F-test on
     def OnRangeSelect(self):
         self.set_range_min(self.get_range_choices()[self.get_range_min_select().GetSelection()])
         self.set_range_max(self.get_range_choices()[self.get_range_max_select().GetSelection()])
+
     # setting the outlier value
     def OnOutlierSelect(self, event):
-        try:
             self.set_selectedOutlier(self.outlier_select.GetValue())
-        except ValueError as e:
-            self.get_errlog().AppendText("Alpha: " + str(e) + '\n')
+
     # this is the function that does the F-test for to compate 2 relative areas.
     def get_f_data1(self):
 
@@ -351,11 +380,11 @@ class FtestDialog(wx.Dialog):
         # check if the test should be accepted or rejected
         if f1 < f_val < f2:
             if num_data == 2:
-                self.get_results_txt().AppendText(accepted)
+                main.errorMsg("F-Test Warning", accepted)
             self.get_res_list().append(['accepted', var1, var2, mean1, mean2, sd1, sd2, p_val, p_val, np.round_(p_val * 100, 3), f_val, p_r, f1, f2])
         else:
             if num_data == 2:
-                self.get_results_txt().AppendText(rejected)
+                main.errorMsg("F-Test Warning", rejected)
             self.get_res_list().append(['rejected', var1, var2, mean1, mean2, sd1, sd2, p_val, p_val,np.round_(p_val * 100, 3), f_val, p_r, f1, f2])
 
     def F_TwoTail(self, alpha, data, num_data):
@@ -373,7 +402,6 @@ class FtestDialog(wx.Dialog):
 
     def get_panel(self): return self.panel
     def get_data(self): return self.data
-    def get_errlog(self): return self.error_log
     def get_group_selection(self): return self.group_selection
 
     def get_selectedTails(self): return self.selectedTail
@@ -398,7 +426,6 @@ class FtestDialog(wx.Dialog):
     # def get_tails_select(self): return self.tails_select
     def get_tails_choices(self): return self.tails_choices
 
-    def get_results_txt(self): return self.results_txt
     def get_flist(self): return self.flist
     def set_flist(self, flist): self.flist = flist
     def get_parent(self): return self.parent
@@ -406,19 +433,32 @@ class FtestDialog(wx.Dialog):
     def get_root(self): return self.root
     def get_res_list(self): return self.res_list
     def set_res_list(self, lst): self.res_list = lst
+
+
+class TTestException(Exception):
+    def __init__(self, msg):
+        super().__init__(self, msg)
+
+
 # class for the dialog that performs the Welch's t-test
 class TtestDialog(wx.Dialog):
     # again more GUI stuff for the dialog
-    def __init__(self, parent, data, errtext, tree_menu, root):
-        wx.Dialog.__init__(self, parent, wx.ID_ANY, "T-test", size=(840, 680))
+    def __init__(self, parent, data, tree_menu, root, wb):
+        wx.Dialog.__init__(self, parent, wx.ID_ANY, "T-test", size=(840, 450))
 
         self.parent = parent
         self.tree_menu = tree_menu
         self.root = root
+        self.selected_wb = wb
 
         self.panel = wx.Panel(self, wx.ID_ANY)
         self.data = data
-        self.error_log = errtext
+
+        self.name = "T-test Results"
+        self.name_txt = wx.StaticText(self.panel, wx.ID_ANY, 'Results Name: ', pos=(180, 45))
+        self.name_box = wx.TextCtrl(self.panel, wx.ID_ANY,
+                                    value=self.name,
+                                    pos=(275, 42), size=(300, 20))
 
         self.group_selection = GroupSelection(self.panel, self.data, 110)
 
@@ -443,15 +483,10 @@ class TtestDialog(wx.Dialog):
         self.range_min = ''
         self.range_max = ''
 
-        self.results_box = wx.StaticBox(self.panel, wx.ID_ANY, 'Results', pos=(20, 375), size=(780, 200))
-        self.results_txt = wx.TextCtrl(self.results_box, pos=(15, 20), size=(750, 170),
-                                       style=wx.TE_READONLY | wx.TE_MULTILINE)
-        self.results_txt.SetBackgroundColour('#f0f0f0')
-
-        self.helpbutton = wx.Button(self.panel, wx.ID_HELP, pos=(20, 600))
-        self.okbutton = wx.Button(self.panel, wx.ID_OK, "OK", pos=(630, 600))
+        self.helpbutton = wx.Button(self.panel, wx.ID_HELP, pos=(20, 375))
+        self.okbutton = wx.Button(self.panel, wx.ID_OK, "OK", pos=(630, 375))
         self.Bind(wx.EVT_BUTTON, self.OnOK, self.okbutton)
-        self.cancelbutton = wx.Button(self.panel, wx.ID_CANCEL, "Close", pos=(720, 600))
+        self.cancelbutton = wx.Button(self.panel, wx.ID_CANCEL, "Close", pos=(720, 375))
         self.panel.Fit()
         self.Layout()
 
@@ -464,143 +499,144 @@ class TtestDialog(wx.Dialog):
 
     # functions here are identical to the ones described in the F-test dialog but with T-test statistics
     def OnOK(self, event):
-        try:
-            self.get_results_txt().Clear()
-            # self.OnTypeSelect()
-            # self.OnTailsSelect()
-            self.OnRangeSelect()
-            self.set_tlist([])
-            self.set_res_list([])
+        # self.OnTypeSelect()
+        # self.OnTailsSelect()
+        self.OnRangeSelect()
+        self.set_tlist([])
+        self.set_res_list([])
 
-            d = []
-            alpha = float(self.get_selectedAlpha())
-            # tails = self.get_selectedTails()
-            # typ = self.get_selectedType()
-            outlier = '' # self.get_selectedOutlier()
+        d = []
+        alpha = float(self.get_selectedAlpha())
+        # tails = self.get_selectedTails()
+        # typ = self.get_selectedType()
+        outlier = '' # self.get_selectedOutlier()
 
-            if len(self.get_group_selection().get_group1_choices()) == 1 and len(self.get_group_selection().get_group2_choices()) == 1:
+        if len(self.get_group_selection().get_group1_choices()) == 1 and len(self.get_group_selection().get_group2_choices()) == 1:
 
-                d = self.get_f_data1()
+            d = self.get_f_data1()
 
-                # print(self.data.get_results_scale()[self.data.get_results_scale().index(float(self.get_range_min())):
-                #       self.data.get_results_scale().index(float(self.get_range_max()))+1])
+            # print(self.data.get_results_scale()[self.data.get_results_scale().index(float(self.get_range_min())):
+            #       self.data.get_results_scale().index(float(self.get_range_max()))+1])
 
-                # if tails == 'two (σ1 = σ2)':
-                #     self.WelchsTTest(alpha, d, len(d))
-                # if tails == 'left (σ1 ≥ σ2)':
-                #     self.WelchsTTest(alpha, d, len(d))
-                # if tails == 'right (σ1 ≤ σ2)':
-                #     self.WelchsTTest(alpha, d, len(d))
-                self.WelchsTTest(alpha, d, len(d))
+            # if tails == 'two (σ1 = σ2)':
+            #     self.WelchsTTest(alpha, d, len(d))
+            # if tails == 'left (σ1 ≥ σ2)':
+            #     self.WelchsTTest(alpha, d, len(d))
+            # if tails == 'right (σ1 ≤ σ2)':
+            #     self.WelchsTTest(alpha, d, len(d))
+            self.WelchsTTest(alpha, d, len(d))
 
-            elif 1 < len(self.get_group_selection().get_group1_choices()) == len(self.get_group_selection().get_group2_choices()) and \
-                    len(self.get_group_selection().get_group2_choices()) > 1:
+        elif 1 < len(self.get_group_selection().get_group1_choices()) == len(self.get_group_selection().get_group2_choices()) and \
+                len(self.get_group_selection().get_group2_choices()) > 1:
 
-                d = self.get_f_data2()
+            d = self.get_f_data2()
 
-                for dset in d:
-                    self.WelchsTTest(alpha, dset, len(d))
+            for dset in d:
+                self.WelchsTTest(alpha, dset, len(d))
 
-                if outlier != '':
-                    for i in self.get_tlist():
+            if outlier != '':
+                for i in self.get_tlist():
 
-                        if i > float(outlier):
+                    if i > float(outlier):
 
-                            index = self.get_tlist().index(i)
-                            self.get_tlist().insert(index, 0)
-                            self.get_tlist().remove(i)
-                # needs log plot
-                x = np.array(self.data.get_results_scale()[self.data.get_results_scale().index(float(self.get_range_min())):
-                                                        self.data.get_results_scale().index(float(self.get_range_max()))+1])
+                        index = self.get_tlist().index(i)
+                        self.get_tlist().insert(index, 0)
+                        self.get_tlist().remove(i)
+            # needs log plot
+            x = np.array(self.data.get_results_scale()[self.data.get_results_scale().index(float(self.get_range_min())):
+                                                       self.data.get_results_scale().index(
+                                                           float(self.get_range_max())) + 1])
 
-                plot = ScatterDialog(self.get_parent(), "Welch\'s T-test Results", x,
-                                     self.get_tlist(), self.get_tree_menu(), self.get_root(), 'T-Value by Scale',
-                                     'Scale (um^2)', 'T-Value', self.data, self.get_res_list())
-                plot.graphmenu.Remove(plot.annotate)
-                statsmenu = plot.menuBar.FindMenu('Statistics')
-                if statsmenu >= 0:
-                    plot.menuBar.Remove(statsmenu)
-                plot.get_graph().draw_scatter()
-                self.get_tree_menu().AppendItem(self.get_root(), "Welch\'s T-test Results", data=plot)
+            plot = ScatterDialog(self.get_parent(), "Welch\'s T-test Results", x,
+                                 self.get_tlist(), self.get_tree_menu(), self.get_root(), 'T-Value by Scale',
+                                 'Scale (um^2)', 'T-Value', self.data, self.get_res_list())
+            plot.graphmenu.Remove(plot.annotate)
+            statsmenu = plot.menuBar.FindMenu('Statistics')
+            if statsmenu >= 0:
+                plot.menuBar.Remove(statsmenu)
+            plot.get_graph().draw_scatter()
 
-                self.get_results_txt().AppendText('See graph.')
+            self.name = self.name_box.GetValue()
 
-                # if tails == 'two (σ1 = σ2)':
-                #     for dset in d:
-                #         self.WelchsTTest(alpha, dset, len(d))
-                #
-                #     if outlier != '':
-                #         for i in self.get_tlist():
-                #
-                #             if i > float(outlier):
-                #
-                #                 index = self.get_tlist().index(i)
-                #                 self.get_tlist().insert(index, 0)
-                #                 self.get_tlist().remove(i)
-                #     # needs log plot
-                #     x = np.array(self.data.get_results_scale()[self.data.get_results_scale().index(float(self.get_range_min())):
-                #                                             self.data.get_results_scale().index(float(self.get_range_max()))+1])
-                #
-                #     plot = ScatterDialog(self.get_parent(), 'Two Tail T-test Results', x,
-                #                          self.get_tlist(), self.get_tree_menu(), self.get_root(), 'T-Value by Scale',
-                #                          'Scale (um^2)', 'T-Value', self.data, self.get_res_list())
-                #     plot.statsmenu.Remove(plot.confidence)
-                #     plot.get_graph().draw_scatter()
-                #     self.get_tree_menu().AppendItem(self.get_root(), "Two Tail T-test Results", data=plot)
-                # if tails == 'left (σ1 ≥ σ2)':
-                #     for dset in d:
-                #         self.WelchsTTest(alpha, dset, len(d))
-                #
-                #     if outlier != '':
-                #         for i in self.get_tlist():
-                #
-                #             if i > float(outlier):
-                #                 # instead of setting outliers to 0 should just remove all together
-                #                 index = self.get_tlist().index(i)
-                #                 self.get_tlist().insert(index, 0)
-                #                 self.get_tlist().remove(i)
-                #
-                #     # needs log plot
-                #     x = np.array(self.data.get_results_scale()[
-                #                         self.data.get_results_scale().index(float(self.get_range_min())):
-                #                         self.data.get_results_scale().index(float(self.get_range_max())) + 1])
-                #
-                #     plot = ScatterDialog(self.get_parent(), 'Left Tail T-test Results', x,
-                #                          self.get_tlist(), self.get_tree_menu(), self.get_root(), 'T-Value by Scale',
-                #                          'Scale (um^2)', 'T-Value', self.data, self.get_res_list())
-                #     plot.statsmenu.Remove(plot.confidence)
-                #     plot.get_graph().draw_scatter()
-                #     self.get_tree_menu().AppendItem(self.get_root(), "Left Tail T-test Results", data=plot)
-                # if tails == 'right (σ1 ≤ σ2)':
-                #     for dset in d:
-                #         self.WelchsTTest(alpha, dset, len(d))
-                #
-                #     if outlier != '':
-                #         for i in self.get_tlist():
-                #
-                #             if i > float(outlier):
-                #
-                #                 index = self.get_tlist().index(i)
-                #                 self.get_tlist().insert(index, 0)
-                #                 self.get_tlist().remove(i)
-                #     # needs log plot
-                #     x = np.array(self.data.get_results_scale()[
-                #                         self.data.get_results_scale().index(float(self.get_range_min())):
-                #                         self.data.get_results_scale().index(float(self.get_range_max())) + 1])
-                #
-                #     plot = ScatterDialog(self.get_parent(), 'Right Tail T-test Results', x,
-                #                          self.get_tlist(), self.get_tree_menu(), self.get_root(), 'T-Value by Scale',
-                #                          'Scale (um^2)', 'T-Value', self.data, self.get_res_list())
-                #     plot.statsmenu.Remove(plot.confidence)
-                #     plot.get_graph().draw_scatter()
-                #     self.get_tree_menu().AppendItem(self.get_root(), "Right Tail T-test Results", data=plot)
-                # somethings wrong with this and the picker....
-                # print(self.get_res_list())
-            else:
+            if self.name in [result.name for result in self.selected_wb.results]:
+                raise TTestException("Result with this name already exists under this workbook.")
 
-                self.get_errlog().AppendText('T-test: Groups must be the same size \n')
-        except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning) as e:
-            self.error_log.AppendText("T-test: " + str(e) + '\n')
+            _add_to_results(self, plot.get_graph())
+            self.Close()
+
+            # if tails == 'two (σ1 = σ2)':
+            #     for dset in d:
+            #         self.WelchsTTest(alpha, dset, len(d))
+            #
+            #     if outlier != '':
+            #         for i in self.get_tlist():
+            #
+            #             if i > float(outlier):
+            #
+            #                 index = self.get_tlist().index(i)
+            #                 self.get_tlist().insert(index, 0)
+            #                 self.get_tlist().remove(i)
+            #     # needs log plot
+            #     x = np.array(self.data.get_results_scale()[self.data.get_results_scale().index(float(self.get_range_min())):
+            #                                             self.data.get_results_scale().index(float(self.get_range_max()))+1])
+            #
+            #     plot = ScatterDialog(self.get_parent(), 'Two Tail T-test Results', x,
+            #                          self.get_tlist(), self.get_tree_menu(), self.get_root(), 'T-Value by Scale',
+            #                          'Scale (um^2)', 'T-Value', self.data, self.get_res_list())
+            #     plot.statsmenu.Remove(plot.confidence)
+            #     plot.get_graph().draw_scatter()
+            #     _add_to_results(self, plot)
+            # if tails == 'left (σ1 ≥ σ2)':
+            #     for dset in d:
+            #         self.WelchsTTest(alpha, dset, len(d))
+            #
+            #     if outlier != '':
+            #         for i in self.get_tlist():
+            #
+            #             if i > float(outlier):
+            #                 # instead of setting outliers to 0 should just remove all together
+            #                 index = self.get_tlist().index(i)
+            #                 self.get_tlist().insert(index, 0)
+            #                 self.get_tlist().remove(i)
+            #
+            #     # needs log plot
+            #     x = np.array(self.data.get_results_scale()[
+            #                         self.data.get_results_scale().index(float(self.get_range_min())):
+            #                         self.data.get_results_scale().index(float(self.get_range_max())) + 1])
+            #
+            #     plot = ScatterDialog(self.get_parent(), 'Left Tail T-test Results', x,
+            #                          self.get_tlist(), self.get_tree_menu(), self.get_root(), 'T-Value by Scale',
+            #                          'Scale (um^2)', 'T-Value', self.data, self.get_res_list())
+            #     plot.statsmenu.Remove(plot.confidence)
+            #     plot.get_graph().draw_scatter()
+            #     _add_to_results(self, plot)
+            # if tails == 'right (σ1 ≤ σ2)':
+            #     for dset in d:
+            #         self.WelchsTTest(alpha, dset, len(d))
+            #
+            #     if outlier != '':
+            #         for i in self.get_tlist():
+            #
+            #             if i > float(outlier):
+            #
+            #                 index = self.get_tlist().index(i)
+            #                 self.get_tlist().insert(index, 0)
+            #                 self.get_tlist().remove(i)
+            #     # needs log plot
+            #     x = np.array(self.data.get_results_scale()[
+            #                         self.data.get_results_scale().index(float(self.get_range_min())):
+            #                         self.data.get_results_scale().index(float(self.get_range_max())) + 1])
+            #
+            #     plot = ScatterDialog(self.get_parent(), 'Right Tail T-test Results', x,
+            #                          self.get_tlist(), self.get_tree_menu(), self.get_root(), 'T-Value by Scale',
+            #                          'Scale (um^2)', 'T-Value', self.data, self.get_res_list())
+            #     plot.statsmenu.Remove(plot.confidence)
+            #     plot.get_graph().draw_scatter()
+            #     _add_to_results(self, plot)
+            # somethings wrong with this and the picker....
+            # print(self.get_res_list())
+        else:
+            raise TTestException('T-test: Groups must be the same size')
 
     # def OnTailsSelect(self):
     #     self.set_selectedTails(self.get_tails_choices()[self.get_tails_select().GetSelection()])
@@ -609,11 +645,9 @@ class TtestDialog(wx.Dialog):
     def OnRangeSelect(self):
         self.set_range_min(self.get_range_choices()[self.get_range_min_select().GetSelection()])
         self.set_range_max(self.get_range_choices()[self.get_range_max_select().GetSelection()])
+
     def OnAlphaSelect(self, event):
-        try:
             self.set_selectedAlpha(float(self.alpha_select.GetValue()))
-        except ValueError as e:
-            self.get_errlog().AppendText("Alpha: " + str(e) + '\n')
 
     def get_f_data1(self):
 
@@ -727,12 +761,11 @@ class TtestDialog(wx.Dialog):
         Confidence: {}%""".format(N, var1, var2, avg1, avg2, std1, std2, t_score, Lpval, Rpval, pval, confidence)
 
         if num_data == 2:
-            self.get_results_txt().AppendText(results_text)
+            main.errorMsg("T-test Warning", results_text)
 
         self.get_res_list().append([var1, var2, avg1, avg2, std1, std2, t_score, pval, Lpval, Rpval, confidence])
 
     def get_data(self): return self.data
-    def get_errlog(self): return self.error_log
     def get_group_selection(self): return self.group_selection
 
     # def get_selectedTails(self): return self.selectedTail
@@ -756,7 +789,6 @@ class TtestDialog(wx.Dialog):
     def get_range_min_select(self): return self.range_min_select
     def get_range_max_select(self): return self.range_max_select
 
-    def get_results_txt(self): return self.results_txt
     def get_tlist(self): return self.tlist
     def set_tlist(self, tlist): self.tlist = tlist
     def get_parent(self): return self.parent
@@ -764,20 +796,33 @@ class TtestDialog(wx.Dialog):
     def get_root(self): return self.root
     def get_res_list(self): return self.res_list
     def set_res_list(self, lst): self.res_list = lst
+
+
+class ANOVAException(Exception):
+    def __init__(self, msg):
+        super().__init__(self, msg)
+
+
 # class for the dialog that performs the ANOVA test
 # functions same as in the above 2 classes.
 class ANOVAtestDialog(wx.Dialog):
 
-    def __init__(self, parent, data, errtext, tree_menu, root):
-        wx.Dialog.__init__(self, parent, wx.ID_ANY, "ANOVA", size=(840, 680))
+    def __init__(self, parent, data, tree_menu, root, wb):
+        wx.Dialog.__init__(self, parent, wx.ID_ANY, "ANOVA", size=(840, 450))
 
         self.parent = parent
         self.tree_menu = tree_menu
         self.root = root
+        self.selected_wb = wb
 
         self.panel = wx.Panel(self, wx.ID_ANY)
         self.data = data
-        self.error_log = errtext
+
+        self.name = "ANOVA Test Results"
+        self.name_txt = wx.StaticText(self.panel, wx.ID_ANY, 'Results Name: ', pos=(180, 45))
+        self.name_box = wx.TextCtrl(self.panel, wx.ID_ANY,
+                                    value=self.name,
+                                    pos=(275, 42), size=(300, 20))
 
         # self.hyp_box = wx.StaticBox(self.panel, wx.ID_ANY, 'Hypotheses', pos=(20, 20), size=(600, 80))
         # self.hyp0 = wx.StaticText(self.hyp_box, wx.ID_ANY, "H0: σ1^2 = σ2^2", pos=(15, 25))
@@ -796,36 +841,26 @@ class ANOVAtestDialog(wx.Dialog):
         # self.tails_select = wx.Choice(self.panel, wx.ID_ANY, pos=(45, 337), choices=self.tails_choices)
         # self.selectedTail = ''
 
-        self.alpha_txt = wx.StaticText(self.panel, wx.ID_ANY, 'Alpha: ', pos=(30, 340))
-        self.alpha_select = wx.TextCtrl(self.panel, wx.ID_ANY, '', pos=(70, 337), size=(50, 20))
+        self.alpha_txt = wx.StaticText(self.panel, wx.ID_ANY, 'Alpha: ', pos=(200, 340))
+        self.alpha_select = wx.TextCtrl(self.panel, wx.ID_ANY, '', pos=(240, 337), size=(50, 20))
         self.selectedAlpha = ''
         self.Bind(wx.EVT_TEXT, self.OnAlphaSelect, self.alpha_select)
 
-        self.range_txt = wx.StaticText(self.panel, wx.ID_ANY, 'Scale: ', pos=(180, 340))
+        self.range_txt = wx.StaticText(self.panel, wx.ID_ANY, 'Scale: ', pos=(480, 340))
 
         self.range_choices = list(map(str, self.data.get_results_scale()))
 
-        self.range_min_select = wx.Choice(self.panel, wx.ID_ANY, pos=(220, 337), choices=self.range_choices)
-        self.to = wx.StaticText(self.panel, wx.ID_ANY, ' to ', pos=(335, 340))
-        self.range_max_select = wx.Choice(self.panel, wx.ID_ANY, pos=(360, 337), choices=self.range_choices)
+        self.range_min_select = wx.Choice(self.panel, wx.ID_ANY, pos=(520, 337), choices=self.range_choices)
+        self.to = wx.StaticText(self.panel, wx.ID_ANY, ' to ', pos=(635, 340))
+        self.range_max_select = wx.Choice(self.panel, wx.ID_ANY, pos=(660, 337), choices=self.range_choices)
 
         self.range_min = ''
         self.range_max = ''
 
-        self.results_box = wx.StaticBox(self.panel, wx.ID_ANY, 'Results', pos=(20, 375), size=(780, 200))
-        self.results_txt = wx.TextCtrl(self.results_box, pos=(15, 20), size=(750, 170),
-                                       style=wx.TE_READONLY | wx.TE_MULTILINE)
-        self.results_txt.SetBackgroundColour('#f0f0f0')
-
-        # self.outlier_txt = wx.StaticText(self.panel, wx.ID_ANY, 'Max F-Val: ', pos=(650, 25))
-        # self.outlier_select = wx.TextCtrl(self.panel, wx.ID_ANY, '', pos=(720, 25), size=(50, 20))
-        # self.selectedOutlier = ''
-        # self.Bind(wx.EVT_TEXT, self.OnOutlierSelect, self.outlier_select)
-
-        self.helpbutton = wx.Button(self.panel, wx.ID_HELP, pos=(20, 600))
-        self.okbutton = wx.Button(self.panel, wx.ID_OK, "OK", pos=(630, 600))
+        self.helpbutton = wx.Button(self.panel, wx.ID_HELP, pos=(20, 375))
+        self.okbutton = wx.Button(self.panel, wx.ID_OK, "OK", pos=(630, 375))
         self.Bind(wx.EVT_BUTTON, self.OnOK, self.okbutton)
-        self.cancelbutton = wx.Button(self.panel, wx.ID_CANCEL, "Close", pos=(720, 600))
+        self.cancelbutton = wx.Button(self.panel, wx.ID_CANCEL, "Close", pos=(720, 375))
         self.panel.Fit()
         self.Layout()
 
@@ -833,76 +868,76 @@ class ANOVAtestDialog(wx.Dialog):
         self.res_list = []
 
     def OnOK(self, event):
-        try:
-            self.get_results_txt().Clear()
-            # self.OnTypeSelect()
-            # self.OnTailsSelect()
-            self.OnRangeSelect()
-            self.set_flist([])
-            self.set_res_list([])
+        # self.OnTypeSelect()
+        # self.OnTailsSelect()
+        self.OnRangeSelect()
+        self.set_flist([])
+        self.set_res_list([])
 
-            d = []
-            alpha = float(self.get_selectedAlpha())
-            # tails = self.get_selectedTails()
-            # typ = self.get_selectedType()
-            # outlier = self.get_selectedOutlier()
+        d = []
+        alpha = float(self.get_selectedAlpha())
+        # tails = self.get_selectedTails()
+        # typ = self.get_selectedType()
+        # outlier = self.get_selectedOutlier()
 
-            if len(self.get_group_selection().get_group1_choices()) == 1 and len(self.get_group_selection().get_group2_choices()) == 1:
+        if len(self.get_group_selection().get_group1_choices()) == 1 and len(self.get_group_selection().get_group2_choices()) == 1:
 
-                d = self.get_f_data1()
-                self.F_anova(alpha, d, len(d))
+            d = self.get_f_data1()
+            self.F_anova(alpha, d, len(d))
 
-            elif 1 < len(self.get_group_selection().get_group1_choices()) == len(self.get_group_selection().get_group2_choices()) and \
-                    len(self.get_group_selection().get_group2_choices()) > 1:
+        elif 1 < len(self.get_group_selection().get_group1_choices()) == len(self.get_group_selection().get_group2_choices()) and \
+                len(self.get_group_selection().get_group2_choices()) > 1:
 
-                d = self.get_f_data2()
+            d = self.get_f_data2()
 
-                # find degrees of freedom
-                n = len(d[0][0])
-                N = len(d[0]) * n
-                c = len(d[0])
-                dfn = c - 1
-                dfd = (N - 1) - (c - 1)
-                # min msr plot line
-                MSR_min = np.round_(stats.f.ppf(1 - alpha, dfn, dfd), 5)
+            # find degrees of freedom
+            n = len(d[0][0])
+            N = len(d[0]) * n
+            c = len(d[0])
+            dfn = c - 1
+            dfd = (N - 1) - (c - 1)
+            # min msr plot line
+            MSR_min = np.round_(stats.f.ppf(1 - alpha, dfn, dfd), 5)
 
-                for dset in d:
-                    self.F_anova(alpha, dset, len(d))
+            for dset in d:
+                self.F_anova(alpha, dset, len(d))
 
-                # if outlier != '':
-                #     for i in self.get_flist():
-                #
-                #         if i > float(outlier):
-                #             index = self.get_flist().index(i)
-                #             self.get_flist().insert(index, 0)
-                #             self.get_flist().remove(i)
+            # if outlier != '':
+            #     for i in self.get_flist():
+            #
+            #         if i > float(outlier):
+            #             index = self.get_flist().index(i)
+            #             self.get_flist().insert(index, 0)
+            #             self.get_flist().remove(i)
 
-                x = self.data.get_results_scale()[
-                                    self.data.get_results_scale().index(float(self.get_range_min())):
-                                    self.data.get_results_scale().index(float(self.get_range_max())) + 1]
-                # needs log plot
-                xlog = np.array(self.data.get_results_scale()[
-                                    self.data.get_results_scale().index(float(self.get_range_min())):
-                                    self.data.get_results_scale().index(float(self.get_range_max())) + 1])
+            x = self.data.get_results_scale()[
+                                self.data.get_results_scale().index(float(self.get_range_min())):
+                                self.data.get_results_scale().index(float(self.get_range_max())) + 1]
+            # needs log plot
+            xlog = np.array(self.data.get_results_scale()[
+                                self.data.get_results_scale().index(float(self.get_range_min())):
+                                self.data.get_results_scale().index(float(self.get_range_max())) + 1])
 
-                plot = ScatterDialog(self.get_parent(), 'ANOVA Results', xlog,
-                                     self.get_flist(), self.get_tree_menu(), self.get_root(), 'MSR by Scale',
-                                     'Scale (um^2)', 'MSR', self.data, self.get_res_list())
-                plot.get_graph().set_min_msr(MSR_min)
-                plot.get_graph().draw_scatter()
-                plot.get_graph().draw_line(x, MSR_min)
-                plot.get_graph().set_df1(dfn)
-                plot.get_graph().set_df2(dfd)
-                plot.get_graph().set_alpha(1-alpha)
-                self.get_tree_menu().AppendItem(self.get_root(), "Two Tail ANOVA test Results", data=plot)
+            plot = ScatterDialog(self.get_parent(), 'ANOVA Results', xlog,
+                                 self.get_flist(), self.get_tree_menu(), self.get_root(), 'MSR by Scale',
+                                 'Scale (um^2)', 'MSR', self.data, self.get_res_list())
+            plot.get_graph().set_min_msr(MSR_min)
+            plot.get_graph().draw_scatter()
+            plot.get_graph().draw_line(x, MSR_min)
+            plot.get_graph().set_df1(dfn)
+            plot.get_graph().set_df2(dfd)
+            plot.get_graph().set_alpha(1 - alpha)
 
-                self.get_results_txt().AppendText('See graph.')
+            self.name = self.name_box.GetValue()
 
-            else:
+            if self.name in [result.name for result in self.selected_wb.results]:
+                raise ANOVAException("Result with this name already exists under this workbook.")
 
-                self.get_errlog().AppendText('Anova: Groups must be the same size \n')
-        except (ZeroDivisionError, RuntimeError, Exception, Warning, TypeError, RuntimeWarning) as e:
-            self.error_log.AppendText("Anova: " + str(e) + '\n')
+            _add_to_results(self, plot)
+            self.Close()
+
+        else:
+            raise ANOVAException('Anova: Groups must be the same size')
 
     # def OnTailsSelect(self):
     #     self.set_selectedTails(self.get_tails_choices()[self.get_tails_select().GetSelection()])
@@ -911,10 +946,7 @@ class ANOVAtestDialog(wx.Dialog):
     #     self.set_selectedType(self.get_type_choices()[self.get_type_select().GetSelection()])
 
     def OnAlphaSelect(self, event):
-        try:
-            self.set_selectedAlpha(float(self.alpha_select.GetValue()))
-        except ValueError as e:
-            self.get_errlog().AppendText("Alpha: " + str(e) + '\n')
+        self.set_selectedAlpha(float(self.alpha_select.GetValue()))
 
     def OnRangeSelect(self):
         self.set_range_min(self.get_range_choices()[self.get_range_min_select().GetSelection()])
@@ -1024,13 +1056,12 @@ class ANOVAtestDialog(wx.Dialog):
         self.get_res_list().append([MSR, MSR_min, (1-alpha)*100, dfn, dfd])
 
         if num_data == 2:
-            self.get_results_txt().AppendText(res_txt)
+            main.errorMsg("ANOVA Test Warning", res_txt)
 
         self.get_flist().append(MSR)
 
     def get_panel(self): return self.panel
     def get_data(self): return self.data
-    def get_errlog(self): return self.error_log
     def get_group_selection(self): return self.group_selection
 
     # def get_selectedTails(self): return self.selectedTail
@@ -1055,7 +1086,6 @@ class ANOVAtestDialog(wx.Dialog):
     # def get_tails_select(self): return self.tails_select
     # def get_tails_choices(self): return self.tails_choices
 
-    def get_results_txt(self): return self.results_txt
     def get_flist(self): return self.flist
     def set_flist(self, flist): self.flist = flist
 

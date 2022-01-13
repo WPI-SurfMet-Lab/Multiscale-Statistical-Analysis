@@ -1,6 +1,6 @@
-import __main__
-import MountainsImporter.ImportUtils as ImportUtils
-from MountainsImporter.ImportUtils import ResourceFiles, TEMP_PATH
+from multi_stat_analysis.__main__ import frame
+import multi_stat_analysis.MountainsImporter.ImportUtils as ImportUtils
+from .ImportUtils import ResourceFiles, TEMP_PATH
 import wx, os, time, shutil
 import pyautogui
 from enum import Enum
@@ -12,6 +12,7 @@ _DELAY = 1
 _PYAUTOGUI_ACTION_DELAY = 0.05
 _FILE_DIALOG_TAB_INTERVAL = 0.05
 
+
 def import_surfaces(file_paths):
     """Takes an input of an array of strings for the file path of each surface being analyzed. These surfaces are
     input into MountainsMap using mouse and keyboard control. The user is then given a choice of selecting either
@@ -19,7 +20,7 @@ def import_surfaces(file_paths):
     @return output_paths - Outputs an empty list if paths could not be imported"""
 
     # Display import information/requirements dialog
-    info_dialog = ImportInfoDialog(__main__.frame)
+    info_dialog = ImportInfoDialog(frame)
     info_dialog.CenterOnScreen()
     # If the dialog was closed or cancelled, leave import process
     if not info_dialog.ShowModal() == wx.ID_OK:
@@ -29,7 +30,7 @@ def import_surfaces(file_paths):
     output_paths = []
 
     # Collect user selected configuration from import options dialog
-    options_dialog = ImportOptionsDialog(__main__.frame, file_paths)
+    options_dialog = ImportOptionsDialog(frame, file_paths)
     options_dialog.CenterOnScreen()
     # If the dialog was closed or cancelled, leave import process
     if not options_dialog.ShowModal() == wx.ID_OK:
@@ -69,7 +70,7 @@ def import_surfaces(file_paths):
         mnts_instance = ImportUtils.MountainsProcess(cmd_path)
 
         # Generate result files for each selected surface
-        for i, surf_file_path in enumerate(file_paths) :
+        for i, surf_file_path in enumerate(file_paths):
             # Write external command file for MountainsMap
             ImportUtils.write_mnts_surf_import_script(cmd_path, surf_file_path, initializer=(i == 0))
 
@@ -104,6 +105,7 @@ def import_surfaces(file_paths):
     # Output generated result files
     return output_paths
 
+
 class MntsImporter:
     """Using the given result file destination and MountainsMap interaction function,
     launch the MountainsMap app and generate the results file.
@@ -117,6 +119,7 @@ class MntsImporter:
     This queue outputs a tuple with data:
       [0] - Exception to re-raise
       [1] - Traceback to print out"""
+
     def __init__(self, is_init, result_file_path, file_dir, file_name, analysis_func_wrapper):
         self.is_init = is_init
         self.result_file_path = result_file_path
@@ -178,16 +181,16 @@ class MntsImporter:
             # Check to make sure the current window position is not (0,0,0,0)
             # If it is (0,0,0,0), then window still needs to be initialized
             window_rect = ImportUtils.get_foreground_window_rect(window_title)
-            if window_rect is None or window_rect == (0,0,0,0):
+            if window_rect is None or window_rect == (0, 0, 0, 0):
                 continue
 
             # Set window dimension values and leave loop
             top_left_x, top_left_y, btm_right_x, btm_right_y = window_rect
             # Get point at center of screen
-            window_center = ((btm_right_x - top_left_x)//2 + top_left_x,
-                             (btm_right_y - top_left_y)//2 + top_left_y)
+            window_center = ((btm_right_x - top_left_x) // 2 + top_left_x,
+                             (btm_right_y - top_left_y) // 2 + top_left_y)
             # If point is at failsafe position, recalculate center
-            if window_center == (0,0):
+            if window_center == (0, 0):
                 continue
 
             # Select ssfa graph
@@ -236,6 +239,7 @@ class MntsImporter:
         if __debug__:
             print("Closed file editor")
 
+
 def get_results_data(file_paths, results_dir, analysis_func_wrapper):
     """Given the list of surface files and a results directory,
     generate the corresponding list of new file names and paths.
@@ -244,9 +248,9 @@ def get_results_data(file_paths, results_dir, analysis_func_wrapper):
     mountains_processes = []
     result_temp_paths = []
     for i, surfName in enumerate(file_paths):
-        surfName = os.path.normpath(surfName) # Remove stray/double slashes
-        surfName = os.path.splitext(surfName)[0] # Remove file extension
-        surfName = os.path.basename(surfName) # Grab file name
+        surfName = os.path.normpath(surfName)  # Remove stray/double slashes
+        surfName = os.path.splitext(surfName)[0]  # Remove file extension
+        surfName = os.path.basename(surfName)  # Grab file name
         surf_full_name = surfName + ".txt"
         # Add to file lists
         result_paths.append(ImportUtils.append_to_path(surf_full_name, results_dir))
@@ -254,9 +258,10 @@ def get_results_data(file_paths, results_dir, analysis_func_wrapper):
         result_temp_paths.append(ImportUtils.append_to_path(surf_full_name, TEMP_PATH))
         # Add to function list
         mountains_processes.append(
-            MntsImporter(i==0, result_temp_paths[i], TEMP_PATH, surfName, analysis_func_wrapper))
+            MntsImporter(i == 0, result_temp_paths[i], TEMP_PATH, surfName, analysis_func_wrapper))
     # Output generated paths and functions
     return result_paths, result_temp_paths, mountains_processes
+
 
 def select_analysis_option(pos):
     """Click on the analysis menu button to prepare for selecting the option"""
@@ -265,13 +270,18 @@ def select_analysis_option(pos):
     pyautogui.press("down", presses=pos, interval=0.1)
     pyautogui.press("enter", interval=0.1)
 
+
 class AnalysisOptionFuncWrapper:
     def __init__(self, index):
-        self.index = index    
+        self.index = index
+
     def call(self):
         select_analysis_option(self.index)
 
+
 _analysis_option_map = {}
+
+
 class AnalysisOption(Enum):
     """Used by ImportOptionsDialog to specify options for anlaysis combo box."""
     LengthRows = ("Length Analysis (rows)", None)
@@ -286,6 +296,7 @@ class AnalysisOption(Enum):
         # Assign analysis option function
         _analysis_option_map[label] = AnalysisOptionFuncWrapper(len(_analysis_option_map) + 1)
 
+
 class ImportOptionsDialog(wx.Dialog):
     """Create surface import options selection. This includes specifying the type of surface analysis
     being done, as well as the directory for saving the analysis data. It can then be used to return
@@ -293,12 +304,15 @@ class ImportOptionsDialog(wx.Dialog):
     application."""
 
     def __init__(self, parent, file_paths):
-        """@param file_paths - List of surface file paths that will be analyzed into result files."""
+        """
+        @param parent Parent window that this window was created from.
+        @param file_paths List of surface file paths that will be analyzed into result files.
+        """
         width = 600
         height = 250
         wx.Dialog.__init__(self, parent, wx.ID_ANY, "Surface Import Options", size=(width, height))
         self.options_panel = wx.Panel(self, wx.ID_ANY)
-        options_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.options_sizer = wx.BoxSizer(wx.VERTICAL)
 
         # Surface file path inputs
         self.file_paths = file_paths
@@ -308,54 +322,54 @@ class ImportOptionsDialog(wx.Dialog):
         self.mnts_processes = None
 
         # Analysis Type Selection
-        analysis_label = wx.StaticText(self.options_panel, wx.ID_ANY, label="Analysis Type:")
+        self.analysis_label = wx.StaticText(self.options_panel, wx.ID_ANY, label="Analysis Type:")
         self.analysis_combo = self.getTypeCombo(AnalysisOption)
 
         # Initialize sizer for both combo boxes
-        combo_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        analysis_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.combo_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.analysis_sizer = wx.BoxSizer(wx.VERTICAL)
         # Initialize Analyasis sizer
-        analysis_sizer.AddStretchSpacer()
-        analysis_sizer.Add(analysis_label, flag=wx.ALIGN_LEFT)
-        analysis_sizer.Add(self.analysis_combo, flag=wx.ALIGN_LEFT)
-        analysis_sizer.AddStretchSpacer()
+        self.analysis_sizer.AddStretchSpacer()
+        self.analysis_sizer.Add(self.analysis_label, flag=wx.ALIGN_LEFT)
+        self.analysis_sizer.Add(self.analysis_combo, flag=wx.ALIGN_LEFT)
+        self.analysis_sizer.AddStretchSpacer()
         # Layout combo sizers
-        combo_sizer.AddStretchSpacer()
-        combo_sizer.Add(analysis_sizer, flag=wx.CENTER)
-        combo_sizer.AddStretchSpacer()
+        self.combo_sizer.AddStretchSpacer()
+        self.combo_sizer.Add(self.analysis_sizer, flag=wx.CENTER)
+        self.combo_sizer.AddStretchSpacer()
 
         # Results folder selection button handling
-        results_label = wx.StaticText(self.options_panel, wx.ID_ANY, label="Select Results Folder:")
+        self.results_label = wx.StaticText(self.options_panel, wx.ID_ANY, label="Select Results Folder:")
         self.results_dir_dialog = wx.DirPickerCtrl(self.options_panel, wx.ID_ANY, message="Select Results Folder",
                                                    style=wx.DIRP_DEFAULT_STYLE)
 
         # Completion button initialization
-        completion_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        cancelBtn = wx.Button(self.options_panel, wx.ID_CANCEL, label="Cancel")
-        okBtn = wx.Button(self.options_panel, wx.ID_ANY, label="Ok")
-        completion_sizer.Add(cancelBtn, flag=wx.ALIGN_LEFT)
-        completion_sizer.Add(okBtn, flag=wx.ALIGN_LEFT)
+        self.completion_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.cancelBtn = wx.Button(self.options_panel, wx.ID_CANCEL, label="Cancel")
+        self.okBtn = wx.Button(self.options_panel, wx.ID_ANY, label="Ok")
+        self.completion_sizer.Add(self.cancelBtn, flag=wx.ALIGN_LEFT)
+        self.completion_sizer.Add(self.okBtn, flag=wx.ALIGN_LEFT)
 
         # Bind button handler to "Ok" button
-        self.Bind(wx.EVT_BUTTON, self.okBtnHandler, okBtn)
+        self.Bind(wx.EVT_BUTTON, self.okBtnHandler, self.okBtn)
 
         # Final initialization of dialog's sizer
-        options_sizer.AddStretchSpacer()
-        options_sizer.Add(combo_sizer, flag=wx.CENTER)
-        options_sizer.AddStretchSpacer()
-        options_sizer.Add(results_label, flag=wx.CENTER)
-        options_sizer.Add(self.results_dir_dialog, flag=wx.CENTER)
-        options_sizer.AddStretchSpacer()
-        options_sizer.Add(completion_sizer, flag=wx.CENTER)
-        options_sizer.AddStretchSpacer()
-        self.options_panel.SetSizerAndFit(options_sizer)
+        self.options_sizer.AddStretchSpacer()
+        self.options_sizer.Add(self.combo_sizer, flag=wx.CENTER)
+        self.options_sizer.AddStretchSpacer()
+        self.options_sizer.Add(self.results_label, flag=wx.CENTER)
+        self.options_sizer.Add(self.results_dir_dialog, flag=wx.CENTER)
+        self.options_sizer.AddStretchSpacer()
+        self.options_sizer.Add(self.completion_sizer, flag=wx.CENTER)
+        self.options_sizer.AddStretchSpacer()
+        self.options_panel.SetSizerAndFit(self.options_sizer)
 
     def getTypeCombo(self, enum):
         """Generates the combo boxes for each drop down option using a set of enums."""
-        choices  = [choice.label for choice in enum]
+        choices = [choice.label for choice in enum]
         return wx.ComboBox(self.options_panel, wx.ID_ANY, choices[0],
-                                        style=wx.CB_SIMPLE | wx.CB_READONLY,
-                                        choices=choices)
+                           style=wx.CB_SIMPLE | wx.CB_READONLY,
+                           choices=choices)
 
     def okBtnHandler(self, event):
         """Handles generation of result file names and mountains interaction functions
@@ -373,7 +387,7 @@ class ImportOptionsDialog(wx.Dialog):
             overwriteSearch = False
             if os.path.isdir(selected_results_dir):
                 overwriteSearch = True
-            else: # Create new directory to save files, directory accepted
+            else:  # Create new directory to save files, directory accepted
                 os.mkdir(selected_results_dir)
 
             analysis_func = _analysis_option_map[self.analysis_combo.GetStringSelection()]
@@ -407,38 +421,46 @@ class ImportOptionsDialog(wx.Dialog):
             error_dialog.CenterOnScreen()
             error_dialog.ShowModal()
 
-    def get_result_file_paths(self): return self.result_file_paths
-    def get_result_temp_paths(self): return self.result_temp_paths
-    def get_mnts_processes(self): return self.mnts_processes
+    def get_result_file_paths(self):
+        return self.result_file_paths
+
+    def get_result_temp_paths(self):
+        return self.result_temp_paths
+
+    def get_mnts_processes(self):
+        return self.mnts_processes
+
 
 class OverwriteDialog(wx.MessageDialog):
     """Dialog box to be displayed to give the user the option
     to overwrite the given existing files"""
+
     def __init__(self, parent, existing_files):
         existsStr = ["\n\t" + file_name for file_name in existing_files]
         existsStr = "".join(existsStr)
-        super().__init__(__main__.frame, 
-            "Files already exist in this directory. Are you sure "
-            "you want to overwrite these files?\n" + existsStr,
-            caption="File Overwriting",
-            style=wx.YES_NO|wx.ICON_WARNING)
+        super().__init__(frame,
+                         "Files already exist in this directory. Are you sure "
+                         "you want to overwrite these files?\n" + existsStr,
+                         caption="File Overwriting",
+                         style=wx.YES_NO | wx.ICON_WARNING)
+
 
 class ImportInfoDialog(wx.MessageDialog):
     """Dialog box to be displayed to explain to the user the warnings involved
     with using the import tool."""
 
     tool_information = \
-    "Please follow these requirements in order to have the most optimal/functional experience with" \
-    "the surface import tool:\n\n" \
-    "  - To recieve reliable results, the means of measuring and equipment used should be identical between surfaces\n"\
-    "  - Do not move your mouse or use the keyboard during the import process\n" \
-    "  - Enable the MountainsMap product configuration startup window\n" \
-    "  - Verify that last usage of MountainsMap did not terminate unexpectedly\n" \
-    "  - Verify that MountainsMap is launching in fullscreen\n" \
-    "  - The MountainsMap program must be running on a screen resolution of 720p or higher\n" \
-    "  - Drag your mouse to the top left corner of the screen to stop the import process"
+        "Please follow these requirements in order to have the most optimal/functional experience with" \
+        "the surface import tool:\n\n" \
+        "  - To recieve reliable results, the means of measuring and equipment used should be identical between surfaces\n" \
+        "  - Do not move your mouse or use the keyboard during the import process\n" \
+        "  - Enable the MountainsMap product configuration startup window\n" \
+        "  - Verify that last usage of MountainsMap did not terminate unexpectedly\n" \
+        "  - Verify that MountainsMap is launching in fullscreen\n" \
+        "  - The MountainsMap program must be running on a screen resolution of 720p or higher\n" \
+        "  - Drag your mouse to the top left corner of the screen to stop the import process"
 
     def __init__(self, parent):
-        super().__init__(__main__.frame, ImportInfoDialog.tool_information,
+        super().__init__(frame, ImportInfoDialog.tool_information,
                          caption="MountainsMap Import Tool Information",
                          style=wx.OK | wx.CANCEL | wx.ICON_INFORMATION)

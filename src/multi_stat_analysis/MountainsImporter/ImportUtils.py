@@ -1,8 +1,8 @@
 import sys, os, winreg, time, errno
 import pyautogui
 import subprocess
-from typing import Optional
 from ctypes import wintypes, windll, create_unicode_buffer, pointer
+
 
 class ResourceFiles:
     DIRECTORY = "resources"
@@ -19,9 +19,11 @@ class ResourceFiles:
     EXPORT_BTN = "export-curve.png"
     SAVE_BTN = "save-curve.png"
 
+
 def append_to_path(end_str, prefix=os.getcwd()):
     """Joins the given end string to the end of the file path prefix."""
     return os.path.join(os.sep, prefix, end_str)
+
 
 _DEFAULT_TIMEOUT = 60.0
 _resource_paths = {}
@@ -31,6 +33,7 @@ try:
     _resource_base_path = append_to_path(ResourceFiles.DIRECTORY, sys._MEIPASS)
 except Exception:
     _resource_base_path = append_to_path(ResourceFiles.DIRECTORY)
+
 
 def resource_abs_path(relative_path):
     """Get absolute path to resources, works for normal file handling and for PyInstaller.
@@ -49,6 +52,7 @@ def resource_abs_path(relative_path):
     _resource_paths[relative_path] = path
 
     return path
+
 
 def find_resource(relative_path, timeout=_DEFAULT_TIMEOUT, wait=True, func=None):
     """Using a path to a resource image file, wait for that image to appear.
@@ -86,6 +90,7 @@ def find_resource(relative_path, timeout=_DEFAULT_TIMEOUT, wait=True, func=None)
     # Loop exited, resource could not be found, return None
     return None
 
+
 def click_resource(relative_path, timeout=_DEFAULT_TIMEOUT, wait=True):
     """Using a path to a resource image file, wait for that image to appear, and then click on the screen.
     @return pos - center Point of object being clicked. Return None if position was not found"""
@@ -93,6 +98,7 @@ def click_resource(relative_path, timeout=_DEFAULT_TIMEOUT, wait=True):
     if not pos is None:
         pyautogui.click(*pos)
     return pos
+
 
 def get_foreground_window_rect(window_title):
     """Using given window title, find window coordinates.
@@ -104,6 +110,7 @@ def get_foreground_window_rect(window_title):
         return None
     return (rect.left, rect.top, rect.right, rect.bottom)
 
+
 def get_foreground_window_title():
     """Output the title of the current foreground window."""
     hWnd = windll.user32.GetForegroundWindow()
@@ -113,11 +120,15 @@ def get_foreground_window_title():
     # Output possible found window title
     return buf.value if buf.value else None
 
+
 class MountainsNotFound(str):
     def __init__(self):
         super().__init__()
 
+
 _MOUNTAINS_PATH = None
+
+
 def find_mountains_map() -> str:
     """Get the absolute path to the MountainsMap executable. If it cannot be found,
     an exception will be thrown."""
@@ -132,7 +143,7 @@ def find_mountains_map() -> str:
         # Open class ID key registery
         with winreg.ConnectRegistry(None, winreg.HKEY_CLASSES_ROOT) as reg:
             # Open MountainsMap's CLSID specific key
-            with winreg.OpenKey(reg, "CLSID\{B55C9B36-8A0F-463A-B367-9926963F08F7}\InprocServer32") as key:
+            with winreg.OpenKey(reg, "CLSID\\{B55C9B36-8A0F-463A-B367-9926963F08F7}\\InprocServer32") as key:
                 sub_count, val_count, last_changed = winreg.QueryInfoKey(key)
                 # Iterate through keys and find value containing MountainsMap path
                 for i in range(val_count):
@@ -140,7 +151,7 @@ def find_mountains_map() -> str:
                     # Path value for this key has no name
                     if not val_name:
                         mntsBinDir = val_data
-                        break # value has been found, break out of loop
+                        break  # value has been found, break out of loop
 
         # Grab folder path for Mountains 'bin' directories
         mntsBinDir = os.path.dirname(mntsBinDir)
@@ -152,14 +163,14 @@ def find_mountains_map() -> str:
         if __debug__:
             import traceback
             traceback.print_exc()
-        prev_path = _MOUNTAINS_PATH
         _MOUNTAINS_PATH = MountainsNotFound()
         excep = e
     finally:
-        # Raise exception if it occured
-        if not excep is None:
+        # Raise exception if it occurred
+        if excep is not None:
             raise excep
         return _MOUNTAINS_PATH
+
 
 class MountainsProcess(subprocess.Popen):
     """Starts a MountainsMap process that can then be interacted with to generate
@@ -171,12 +182,14 @@ class MountainsProcess(subprocess.Popen):
         super().__init__("\"" + find_mountains_map() + "\"" + \
                          " /CMDFILE:\"" + cmd_path + "\" /NOSPLASHCREEN")
 
+
 TEMP_PATH = append_to_path(".temp")
 TMPLT_PATH = resource_abs_path(ResourceFiles.SSFA_TEMPLATE)
 
+
 def write_mnts_surf_import_script(cmd_path, surf_file_path, initializer=True):
     # Write external command file for MountainsMap
-    with open(cmd_path, "w") as cmd_file :
+    with open(cmd_path, "w") as cmd_file:
         cmd_contents = []
         # If the command file has not been created yet, include extra initialization commands
         if initializer:
